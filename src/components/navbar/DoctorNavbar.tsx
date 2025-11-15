@@ -1,55 +1,94 @@
 "use client";
 
 import { UserButton, useUser } from "@clerk/nextjs";
-import { HomeIcon } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 export function DoctorNavbar() {
   const { user } = useUser();
   const pathname = usePathname();
 
+  // Generate breadcrumbs from pathname
+  const generateBreadcrumbs = () => {
+    if (!pathname) return [];
+
+    const paths = pathname.split("/").filter(Boolean);
+    const breadcrumbs: Array<{ label: string; href: string }> = [];
+
+    // Always start with Home
+    breadcrumbs.push({ label: "Home", href: "/doctor/dashboard" });
+
+    // If we're already on the dashboard, don't add duplicate
+    if (pathname === "/doctor/dashboard" || pathname === "/doctor") {
+      return breadcrumbs;
+    }
+
+    // Build breadcrumbs from path segments
+    paths.forEach((path, index) => {
+      const href = "/" + paths.slice(0, index + 1).join("/");
+      const label = path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, " ");
+      
+      // Skip if this would create a duplicate of the home breadcrumb
+      if (href !== "/doctor/dashboard") {
+        breadcrumbs.push({ label, href });
+      }
+    });
+
+    return breadcrumbs;
+  };
+
+  const breadcrumbs = generateBreadcrumbs();
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-2 border-b border-border/50 bg-background/80 backdrop-blur-md h-16">
-      <div className="max-w-7xl mx-auto flex justify-between items-center h-full">
-        {/* LOGO */}
-        <div className="flex items-center gap-8">
-          <Link href="/doctor/dashboard" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Medibook Logo" width={32} height={32} className="w-11" />
-          </Link>
+    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
+      <div className="flex h-16 items-center gap-4 px-6">
+        <SidebarTrigger />
 
-          <div className="flex items-center gap-6">
-            <Link
-              href="/doctor/dashboard"
-              className={`flex items-center gap-2 transition-colors ${
-                pathname === "/doctor/dashboard"
-                  ? "text-foreground hover:text-primary font-medium"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <HomeIcon className="w-4 h-4" />
-              <span className="hidden md:inline">Dashboard</span>
-            </Link>
-          </div>
-        </div>
+        {/* Breadcrumbs */}
+        <Breadcrumb className="hidden md:flex">
+          <BreadcrumbList>
+            {breadcrumbs.map((crumb, index) => {
+              const isLast = index === breadcrumbs.length - 1;
+              return (
+                <div key={`${crumb.href}-${index}`} className="flex items-center">
+                  {index > 0 && <BreadcrumbSeparator />}
+                  <BreadcrumbItem>
+                    {isLast ? (
+                      <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink asChild>
+                        <Link href={crumb.href}>{crumb.label}</Link>
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                </div>
+              );
+            })}
+          </BreadcrumbList>
+        </Breadcrumb>
 
-        {/* RIGHT SECTION */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="hidden lg:flex flex-col items-end">
-              <span className="text-sm font-medium text-foreground">
-                {user?.firstName} {user?.lastName}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {user?.emailAddresses?.[0]?.emailAddress}
-              </span>
-            </div>
-            <UserButton />
+        <div className="ml-auto flex items-center gap-3">
+          <div className="hidden lg:flex flex-col items-end">
+            <span className="text-sm font-medium text-foreground">
+              {user?.firstName} {user?.lastName}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {user?.emailAddresses?.[0]?.emailAddress}
+            </span>
           </div>
+          <UserButton />
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
 

@@ -38,6 +38,14 @@ export function useUserAppointments() {
   });
 }
 
+export function useAppointmentById(id: string) {
+  return useQuery({
+    queryKey: ["getAppointmentById", id],
+    queryFn: () => appointmentsService.getById(id),
+    enabled: !!id,
+  });
+}
+
 export function useUpdateAppointmentStatus() {
   const queryClient = useQueryClient();
 
@@ -46,6 +54,7 @@ export function useUpdateAppointmentStatus() {
       appointmentsService.updateStatus(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["getAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["getUserAppointments"] });
     },
     onError: (error) => console.error("Failed to update appointment:", error),
   });

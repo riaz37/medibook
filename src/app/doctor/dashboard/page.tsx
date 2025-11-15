@@ -1,7 +1,12 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import DoctorDashboardClient from "./DoctorDashboardClient";
+import { DoctorDashboardLayout } from "@/components/doctor/layout/DoctorDashboardLayout";
+import DoctorDashboardHero from "@/components/doctor/dashboard/DoctorDashboardHero";
+import DoctorStatsGrid from "@/components/doctor/dashboard/DoctorStatsGrid";
+import UpcomingAppointments from "@/components/doctor/dashboard/UpcomingAppointments";
+import QuickSettings from "@/components/doctor/dashboard/QuickSettings";
+import ActivityFeed from "@/components/doctor/dashboard/ActivityFeed";
 
 /**
  * Doctor Dashboard
@@ -22,7 +27,7 @@ async function DoctorDashboardPage() {
 
   // Check if user is a doctor (using session claims)
   if (role !== "doctor" && role !== "admin") {
-    redirect("/dashboard");
+    redirect("/patient/dashboard");
   }
 
   // Get user from database (only for doctor profile data)
@@ -66,46 +71,22 @@ async function DoctorDashboardPage() {
     }
   }
 
-  // Get doctor's appointments
-  const appointments = await prisma.appointment.findMany({
-    where: {
-      doctorId: dbUser.doctorProfile?.id,
-    },
-    include: {
-      user: {
-        select: {
-          firstName: true,
-          lastName: true,
-          email: true,
-          phone: true,
-        },
-      },
-    },
-    orderBy: {
-      date: "asc",
-    },
-  });
-
-  // Get appointment stats
-  const totalAppointments = appointments.length;
-  const pendingAppointments = appointments.filter((apt) => apt.status === "PENDING").length;
-  const upcomingAppointments = appointments.filter(
-    (apt) => new Date(apt.date) >= new Date() && (apt.status === "CONFIRMED" || apt.status === "PENDING")
-  ).length;
-  const completedAppointments = appointments.filter(
-    (apt) => apt.status === "COMPLETED"
-  ).length;
-
   return (
-    <DoctorDashboardClient
-      doctor={dbUser.doctorProfile}
-      appointments={appointments}
-      stats={{
-        total: totalAppointments,
-        upcoming: upcomingAppointments,
-        completed: completedAppointments,
-      }}
-    />
+    <DoctorDashboardLayout>
+      <div className="w-full">
+        <DoctorDashboardHero />
+        <DoctorStatsGrid />
+        <QuickSettings doctor={doctor} />
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <UpcomingAppointments />
+          </div>
+          <div>
+            <ActivityFeed />
+          </div>
+        </div>
+      </div>
+    </DoctorDashboardLayout>
   );
 }
 

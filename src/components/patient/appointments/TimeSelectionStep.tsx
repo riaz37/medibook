@@ -1,10 +1,10 @@
 import { useBookedTimeSlots } from "@/hooks/use-appointment";
 import { useDoctorAppointmentTypes, useDoctorAvailableSlots, useDoctorConfig } from "@/hooks/use-doctor-config";
 import { getNextDays } from "@/lib/config/app.config";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ClockIcon, AlertCircle } from "lucide-react";
-import { Card, CardContent } from "../ui/card";
-import { Alert, AlertDescription } from "../ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState } from "react";
 import { toast } from "sonner";
 

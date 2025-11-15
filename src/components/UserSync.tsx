@@ -28,8 +28,8 @@ function UserSync() {
               router.push("/doctor/dashboard");
             } else if (user.role === "ADMIN" && !pathname.startsWith("/admin")) {
               router.push("/admin");
-            } else if (user.role === "PATIENT" && pathname.startsWith("/doctor")) {
-              router.push("/dashboard");
+            } else if (user.role === "PATIENT" && (pathname.startsWith("/doctor") || pathname.startsWith("/admin"))) {
+              router.push("/patient/dashboard");
             }
           }
         } catch (error) {

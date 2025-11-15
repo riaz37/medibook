@@ -3,9 +3,9 @@
 import { vapi } from "@/lib/vapi";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useRef, useState } from "react";
-import { Card } from "../ui/card";
+import { Card } from "@/components/ui/card";
 import Image from "next/image";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 
 function VapiWidget() {
   const [callActive, setCallActive] = useState(false);

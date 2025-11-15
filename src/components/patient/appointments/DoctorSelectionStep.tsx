@@ -1,10 +1,10 @@
 import { useAvailableDoctors } from "@/hooks/use-doctors";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { MapPinIcon, PhoneIcon, StarIcon } from "lucide-react";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { DoctorCardsLoading } from "./DoctorCardsLoading";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DoctorCardsLoading } from "@/components/shared/appointments/DoctorCardsLoading";
 
 interface DoctorSelectionStepProps {
   selectedDentistId: string | null;

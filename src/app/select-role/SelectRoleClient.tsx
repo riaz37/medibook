@@ -39,7 +39,7 @@ export default function SelectRoleClient() {
       if (user.role === "DOCTOR") {
         router.push("/doctor/setup"); // Redirect to setup first
       } else {
-        router.push("/dashboard");
+        router.push("/patient/dashboard");
       }
     } catch (error) {
       console.error("Error selecting role:", error);

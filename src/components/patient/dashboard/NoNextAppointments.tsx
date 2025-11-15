@@ -1,7 +1,7 @@
 import { CalendarIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 
 function NoNextAppointments() {
   return (
@@ -18,7 +18,7 @@ function NoNextAppointments() {
             <CalendarIcon className="size-8 opacity-50" />
           </div>
           <p className="text-sm mb-3">No upcoming appointments</p>
-          <Link href="/appointments">
+          <Link href="/patient/appointments/book">
             <Button size="sm" variant="outline" className="w-full">
               Schedule Your Next Visit
             </Button>

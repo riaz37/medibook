@@ -1,9 +1,9 @@
 import { currentUser } from "@clerk/nextjs/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrainIcon, MessageSquareIcon } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { appointmentsService } from "@/lib/services";
 
 async function DentalHealthOverview() {
@@ -52,12 +52,12 @@ async function DentalHealthOverview() {
                 Book your first appointment or try our AI voice assistant for instant healthcare assistance.
               </p>
               <div className="flex gap-2">
-                <Link href="/voice">
+                <Link href="/patient/voice">
                   <Button size="sm" className="bg-primary hover:bg-primary/90">
                     Try AI Assistant
                   </Button>
                 </Link>
-                <Link href="/appointments">
+                <Link href="/patient/appointments/book">
                   <Button size="sm" variant="outline">
                     Book Appointment
                   </Button>

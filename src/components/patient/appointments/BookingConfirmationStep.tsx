@@ -1,8 +1,8 @@
 import { useDoctorAppointmentTypes } from "@/hooks/use-doctor-config";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import DoctorInfo from "./DoctorInfo";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import DoctorInfo from "@/components/shared/appointments/DoctorInfo";
 
 interface BookingConfirmationStepProps {
   selectedDentistId: string;

@@ -12,6 +12,7 @@ const isPublicRoute = createRouteMatcher([
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isDoctorRoute = createRouteMatcher(["/doctor(.*)"]);
+const isPatientRoute = createRouteMatcher(["/patient(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims } = await auth();
@@ -67,6 +68,27 @@ export default clerkMiddleware(async (auth, req) => {
       // Page routes redirect
       const url = new URL("/", req.url);
       return NextResponse.redirect(url);
+    }
+  }
+
+  // Protect patient routes - require patient role (or no role set yet, which will redirect to select-role)
+  if (isPatientRoute(req)) {
+    if (role === "doctor" || role === "admin") {
+      // API routes return JSON errors
+      if (isApiRoute) {
+        return NextResponse.json(
+          { error: "Forbidden: Patient access required" },
+          { status: 403 }
+        );
+      }
+      // Page routes redirect based on role
+      if (role === "doctor") {
+        const url = new URL("/doctor/dashboard", req.url);
+        return NextResponse.redirect(url);
+      } else if (role === "admin") {
+        const url = new URL("/admin", req.url);
+        return NextResponse.redirect(url);
+      }
     }
   }
 });
