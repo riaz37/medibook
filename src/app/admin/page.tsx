@@ -1,6 +1,13 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import AdminDashboardClient from "./AdminDashboardClient";
+import { AdminDashboardLayout } from "@/components/admin/layout/AdminDashboardLayout";
+import AdminDashboardHero from "@/components/admin/dashboard/AdminDashboardHero";
+import AdminStatsGrid from "@/components/admin/dashboard/AdminStatsGrid";
+import DoctorVerificationsCard from "@/components/admin/dashboard/DoctorVerificationsCard";
+import RecentActivity from "@/components/admin/dashboard/RecentActivity";
+import QuickActions from "@/components/admin/dashboard/QuickActions";
+import DoctorsManagement from "@/components/admin/DoctorsManagement";
+import RecentAppointments from "@/components/admin/RecentAppointments";
 
 /**
  * Admin Dashboard
@@ -26,11 +33,29 @@ async function AdminPage() {
     if (role === "doctor") {
       redirect("/doctor/dashboard");
     } else {
-      redirect("/dashboard");
+      redirect("/patient/dashboard");
     }
   }
 
-  return <AdminDashboardClient />;
+  return (
+    <AdminDashboardLayout>
+      <div className="max-w-7xl mx-auto w-full">
+        <AdminDashboardHero />
+        <AdminStatsGrid />
+        <QuickActions />
+        <div className="grid lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2">
+            <DoctorVerificationsCard />
+          </div>
+          <div>
+            <RecentActivity />
+          </div>
+        </div>
+        <DoctorsManagement />
+        <RecentAppointments />
+      </div>
+    </AdminDashboardLayout>
+  );
 }
 
 export default AdminPage;

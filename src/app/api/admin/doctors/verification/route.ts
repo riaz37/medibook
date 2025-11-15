@@ -11,12 +11,14 @@ export async function GET(request: NextRequest) {
     const context = await getAuthContext();
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status") || "PENDING";
+    const status = searchParams.get("status");
 
     const verifications = await prisma.doctorVerification.findMany({
-      where: {
-        status: status as "PENDING" | "APPROVED" | "REJECTED",
-      },
+      where: status
+        ? {
+            status: status as "PENDING" | "APPROVED" | "REJECTED",
+          }
+        : undefined,
       include: {
         doctor: {
           select: {

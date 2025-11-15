@@ -1,4 +1,5 @@
-import { useGetDoctors } from "@/hooks/use-doctors";
+"use client"
+import { useGetAllDoctorsForAdmin } from "@/hooks/use-doctors";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { EditIcon, MailIcon, PhoneIcon, PlusIcon, StethoscopeIcon } from "lucide-react";
@@ -7,10 +8,10 @@ import Image from "next/image";
 import { Badge } from "../ui/badge";
 import AddDoctorDialog from "./AddDoctorDialog";
 import EditDoctorDialog from "./EditDoctorDialog";
-import { Doctor } from "@prisma/client";
+import type { Doctor } from "@/lib/types";
 
 function DoctorsManagement() {
-  const { data: doctors = [] } = useGetDoctors();
+  const { data: doctors = [] } = useGetAllDoctorsForAdmin();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);

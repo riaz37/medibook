@@ -24,6 +24,17 @@ class DoctorsService extends BaseService {
   }
 
   /**
+   * Get all doctors for admin (includes unverified)
+   */
+  async getAllForAdmin(): Promise<Doctor[]> {
+    try {
+      return await apiClient.getAllDoctorsForAdmin();
+    } catch (error) {
+      throw this.handleError(error, "Failed to fetch doctors");
+    }
+  }
+
+  /**
    * Get available (active) doctors
    */
   async getAvailable(): Promise<Doctor[]> {

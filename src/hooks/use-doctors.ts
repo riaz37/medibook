@@ -11,6 +11,13 @@ export function useGetDoctors() {
   });
 }
 
+export function useGetAllDoctorsForAdmin() {
+  return useQuery({
+    queryKey: ["getAllDoctorsForAdmin"],
+    queryFn: () => doctorsService.getAllForAdmin(),
+  });
+}
+
 export function useCreateDoctor() {
   const queryClient = useQueryClient();
 

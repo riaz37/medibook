@@ -59,6 +59,7 @@ export interface Doctor {
   bio?: string | null;
   imageUrl: string;
   gender: Gender;
+  isVerified: boolean;
   appointmentCount?: number;
   createdAt: Date;
   updatedAt: Date;

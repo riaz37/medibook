@@ -15,6 +15,10 @@ class ApiClientService extends BaseService {
     return this.get("/api/doctors");
   }
 
+  async getAllDoctorsForAdmin() {
+    return this.get("/api/admin/doctors");
+  }
+
   async getAvailableDoctors() {
     return this.get("/api/doctors/available");
   }
