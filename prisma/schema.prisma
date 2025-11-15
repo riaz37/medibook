@@ -1,0 +1,181 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  phone     String?
+  role      UserRole @default(PATIENT)
+  createdAt DateTime @default(now()) // member since sep 2025
+  updatedAt DateTime @updatedAt
+
+  // relationships
+  appointments  Appointment[]
+  doctorProfile Doctor? // If user is a doctor, link to their doctor profile
+
+  @@map("users")
+}
+
+model Doctor {
+  id         String   @id @default(cuid())
+  userId     String?  @unique // Link to User if doctor is a registered user
+  name       String
+  email      String   @unique
+  phone      String
+  speciality String
+  bio        String?
+  imageUrl   String
+  gender     Gender
+  isVerified Boolean  @default(false) // Admin verification status
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // relationships
+  user             User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  appointments     Appointment[]
+  availability     DoctorAvailability?
+  appointmentTypes DoctorAppointmentType[]
+  workingHours     DoctorWorkingHours[]
+  verification     DoctorVerification?
+
+  @@map("doctors")
+}
+
+model DoctorAvailability {
+  id       String @id @default(cuid())
+  doctorId String @unique
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  // Time slots available (stored as JSON array of time strings)
+  timeSlots String // JSON array: ["09:00", "09:30", ...]
+
+  // Booking settings
+  slotDuration       Int @default(30) // minutes per slot
+  bookingAdvanceDays Int @default(30) // days in advance patients can book
+  minBookingHours    Int @default(24) // minimum hours before appointment
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("doctor_availability")
+}
+
+model DoctorWorkingHours {
+  id       String @id @default(cuid())
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Int // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime String // e.g., "09:00"
+  endTime   String // e.g., "17:00"
+  isWorking Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([doctorId, dayOfWeek])
+  @@map("doctor_working_hours")
+}
+
+model DoctorAppointmentType {
+  id       String @id @default(cuid())
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  name        String // e.g., "Regular Checkup", "Teeth Cleaning"
+  duration    Int // duration in minutes
+  description String?
+  price       Decimal? // optional price
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("doctor_appointment_types")
+}
+
+model Appointment {
+  id                String            @id @default(cuid())
+  date              DateTime
+  time              String // store time as string i.e. 14:30
+  duration          Int // duration in minutes (from appointment type or doctor default)
+  status            AppointmentStatus @default(PENDING) // Changed from CONFIRMED to PENDING
+  notes             String?
+  reason            String? // reason for appointment - teeth cleaning? emergency visit? etc.
+  appointmentTypeId String? // Link to doctor's appointment type
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // foreign keys
+  userId   String
+  doctorId String
+
+  // relationships
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("appointments")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AppointmentStatus {
+  PENDING // Awaiting doctor confirmation
+  CONFIRMED // Confirmed by doctor
+  COMPLETED // Appointment completed
+  CANCELLED // Cancelled by patient or doctor
+}
+
+enum UserRole {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+model DoctorVerification {
+  id       String @id @default(cuid())
+  doctorId String @unique
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  // Document URLs (stored in cloud storage or file system)
+  licenseUrl     String? // Medical license document
+  certificateUrl String? // Professional certificate
+  idDocumentUrl  String? // ID document
+  otherDocuments String? // JSON array of additional document URLs
+
+  // Verification status
+  status          VerificationStatus @default(PENDING)
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedBy      String? // Admin user ID who reviewed
+  rejectionReason String? // If rejected, reason for rejection
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("doctor_verifications")
+}
+
+enum VerificationStatus {
+  PENDING // Documents submitted, awaiting review
+  APPROVED // Approved by admin
+  REJECTED // Rejected by admin
+}
