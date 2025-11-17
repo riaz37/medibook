@@ -55,6 +55,7 @@ async function UpcomingAppointments() {
         appointments = dbAppointments.map((apt) => ({
           ...apt,
           date: apt.date,
+          reason: apt.reason ?? undefined,
         }));
       }
     } catch (error) {

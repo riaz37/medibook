@@ -12,8 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, Clock, CheckCircle2, AlertCircle, Phone, Mail, SearchIcon, XCircleIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useUser } from "@clerk/nextjs";
+import { useDoctorAppointments, useUpdateAppointmentStatus } from "@/hooks";
 
 type AppointmentStatus = "all" | "pending" | "upcoming" | "completed";
 
@@ -36,7 +36,6 @@ function DoctorAppointmentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useUser();
-  const queryClient = useQueryClient();
 
   // Get initial tab from URL or default to "all"
   const initialTab = (searchParams.get("status") as AppointmentStatus) || "all";
@@ -45,52 +44,28 @@ function DoctorAppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Fetch appointments
-  const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
-    queryKey: ["doctorAppointments"],
-    queryFn: async () => {
-      const response = await fetch("/api/appointments/doctor");
-      if (!response.ok) throw new Error("Failed to fetch appointments");
-      const data = await response.json();
-      // Transform appointments to match our interface
-      return data.map((apt: any) => ({
-        id: apt.id,
-        date: apt.date instanceof Date ? apt.date.toISOString() : apt.date,
-        time: apt.time,
-        status: apt.status,
-        reason: apt.reason,
-        notes: apt.notes,
-        user: apt.user || {
-          firstName: null,
-          lastName: null,
-          email: "",
-          phone: null,
-        },
-      }));
-    },
-  });
+  const { data: appointmentsData = [], isLoading } = useDoctorAppointments();
+  
+  // Transform appointments to match our interface
+  const appointments = useMemo(() => {
+    return appointmentsData.map((apt: any) => ({
+      id: apt.id,
+      date: apt.date instanceof Date ? apt.date.toISOString() : apt.date,
+      time: apt.time,
+      status: apt.status,
+      reason: apt.reason,
+      notes: apt.notes,
+      user: apt.user || {
+        firstName: null,
+        lastName: null,
+        email: "",
+        phone: null,
+      },
+    }));
+  }, [appointmentsData]);
 
   // Update appointment status mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const response = await fetch(`/api/appointments/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update appointment");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast.success("Appointment updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["doctorAppointments"] });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to update appointment");
-    },
-  });
+  const updateStatusMutation = useUpdateAppointmentStatus();
 
   // Filter appointments
   const filteredAppointments = useMemo(() => {
@@ -167,7 +142,17 @@ function DoctorAppointmentsPage() {
 
   // Handle status update
   const handleStatusUpdate = async (appointmentId: string, newStatus: "CONFIRMED" | "CANCELLED" | "COMPLETED") => {
-    updateStatusMutation.mutate({ id: appointmentId, status: newStatus });
+    updateStatusMutation.mutate(
+      { id: appointmentId, status: newStatus },
+      {
+        onSuccess: () => {
+          toast.success("Appointment updated successfully");
+        },
+        onError: (error: Error) => {
+          toast.error(error.message || "Failed to update appointment");
+        },
+      }
+    );
   };
 
   // Handle clear filters

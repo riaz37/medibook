@@ -4,12 +4,17 @@ import { prisma } from "@/lib/prisma";
 import { AppointmentStatus } from "@prisma/client";
 import { bookAppointmentSchema, appointmentQuerySchema } from "@/lib/validations";
 import { validateRequest, validateQuery } from "@/lib/utils/validation";
+import AppointmentConfirmationEmail from "@/components/emails/AppointmentConfirmationEmail";
+import transporter from "@/lib/nodemailer";
+import { render } from "@react-email/render";
+import { format } from "date-fns";
+import type nodemailer from "nodemailer";
 
 function transformAppointment(appointment: any) {
   return {
     ...appointment,
     patientName: `${appointment.user.firstName || ""} ${appointment.user.lastName || ""}`.trim(),
-    patientEmail: appointment.user.email,
+    patientEmail: appointment.user.email || "",
     doctorName: appointment.doctor.name,
     doctorImageUrl: appointment.doctor.imageUrl || "",
     date: appointment.date.toISOString().split("T")[0],
@@ -136,7 +141,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Middleware ensures user is authenticated
       const { userId: clerkUserId } = await auth();
-      user = await prisma.user.findUnique({ where: { clerkId: clerkUserId } });
+      user = await prisma.user.findUnique({ where: { clerkId: clerkUserId || undefined } });
       if (!user) {
         return NextResponse.json(
           { error: "User not found. Please ensure your account is properly set up." },
@@ -187,7 +192,7 @@ export async function POST(request: NextRequest) {
         duration,
         reason: reason || "General consultation",
         status: "PENDING" as any, // Changed from CONFIRMED to PENDING - Run `npx prisma generate` to fix type
-        appointmentTypeId: (appointmentTypeId || null) as any, // Run `npx prisma generate` to fix type
+        appointmentTypeId: (appointmentTypeId || undefined) as any, // Run `npx prisma generate` to fix type
       },
       include: {
         user: {
@@ -200,6 +205,47 @@ export async function POST(request: NextRequest) {
         doctor: { select: { name: true, imageUrl: true } },
       },
     });
+
+    // Get appointment type details for email
+    let appointmentType = null;
+    if (appointmentTypeId) {
+      try {
+        appointmentType = await (prisma as any).doctorAppointmentType?.findUnique({
+          where: { id: appointmentTypeId },
+        });
+      } catch (error) {
+        console.log("Could not fetch appointment type for email");
+      }
+    }
+
+    // Send confirmation email server-side (transactional)
+    try {
+      const appointmentDateFormatted = format(new Date(date), "EEEE, MMMM d, yyyy");
+      const emailHtml = await render(
+        AppointmentConfirmationEmail({
+          doctorName: appointment.doctor.name,
+          appointmentDate: appointmentDateFormatted,
+          appointmentTime: time,
+          appointmentType: appointmentType?.name || reason || "Appointment",
+          duration: appointmentType?.duration ? `${appointmentType.duration} minutes` : `${duration} minutes`,
+          price: appointmentType?.price ? `$${appointmentType.price.toString()}` : "N/A",
+        })
+      );
+
+      const mailOptions: nodemailer.SendMailOptions = {
+        from: process.env.SMTP_FROM || `Medibook <${process.env.SMTP_USER}>`,
+        to: user.email || "",
+        subject: "Appointment Confirmation - Medibook",
+        html: emailHtml,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log("Confirmation email sent successfully");
+    } catch (emailError) {
+      // Log error but don't fail the booking - email can be retried later
+      console.error("Failed to send confirmation email:", emailError);
+      // In production, you might want to queue this for retry
+    }
 
     return NextResponse.json(transformAppointment(appointment));
   } catch (error) {

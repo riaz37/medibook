@@ -11,9 +11,10 @@ import { useState, useMemo } from "react";
 import { useGetAllDoctorsForAdmin } from "@/hooks/use-doctors";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
-import { EditIcon, MailIcon, PhoneIcon } from "lucide-react";
+import { EditIcon, MailIcon, PhoneIcon, FileText } from "lucide-react";
 import AddDoctorDialog from "@/components/admin/AddDoctorDialog";
 import EditDoctorDialog from "@/components/admin/EditDoctorDialog";
+import ViewDoctorDocumentsDialog from "@/components/admin/ViewDoctorDocumentsDialog";
 import type { Doctor } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityListSkeleton } from "@/components/ui/loading-skeleton";
@@ -24,6 +25,7 @@ function AdminDoctorsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDocumentsDialogOpen, setIsViewDocumentsDialogOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
 
   // Filter doctors
@@ -60,6 +62,16 @@ function AdminDoctorsPage() {
 
   const handleCloseEditDialog = () => {
     setIsEditDialogOpen(false);
+    setSelectedDoctor(null);
+  };
+
+  const handleViewDocuments = (doctor: Doctor) => {
+    setSelectedDoctor(doctor);
+    setIsViewDocumentsDialogOpen(true);
+  };
+
+  const handleCloseViewDocumentsDialog = () => {
+    setIsViewDocumentsDialogOpen(false);
     setSelectedDoctor(null);
   };
 
@@ -254,6 +266,15 @@ function AdminDoctorsPage() {
                         size="sm"
                         variant="outline"
                         className="h-8 px-3"
+                        onClick={() => handleViewDocuments(doctor)}
+                      >
+                        <FileText className="size-4 mr-1" />
+                        View Docs
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-3"
                         onClick={() => handleEditDoctor(doctor)}
                       >
                         <EditIcon className="size-4 mr-1" />
@@ -275,6 +296,14 @@ function AdminDoctorsPage() {
         onClose={handleCloseEditDialog}
         doctor={selectedDoctor}
       />
+      {selectedDoctor && (
+        <ViewDoctorDocumentsDialog
+          isOpen={isViewDocumentsDialogOpen}
+          onClose={handleCloseViewDocumentsDialog}
+          doctorId={selectedDoctor.id}
+          doctorName={selectedDoctor.name}
+        />
+      )}
     </AdminDashboardLayout>
   );
 }

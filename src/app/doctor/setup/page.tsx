@@ -1,7 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import DoctorSetupClient from "./DoctorSetupClient";
 
 async function DoctorSetupPage() {
   const user = await currentUser();
@@ -42,12 +41,8 @@ async function DoctorSetupPage() {
     where: { doctorId: doctor.id },
   }).catch(() => null);
 
-  return (
-    <DoctorSetupClient
-      doctor={doctor}
-      verification={verification}
-    />
-  );
+  // Redirect to settings page (setup is now part of settings)
+  redirect("/doctor/settings");
 }
 
 export default DoctorSetupPage;

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
  * Legacy Route Redirect
  * Redirects /appointments/[id] to /patient/appointments/[id]
  */
-export default function AppointmentDetailsRedirect({
+export default async function AppointmentDetailsRedirect({
   params,
 }: {
   params: Promise<{ id: string }>;

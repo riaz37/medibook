@@ -57,6 +57,34 @@ class UsersService extends BaseService {
       return null;
     }
   }
+
+  /**
+   * Select user role
+   */
+  async selectRole(role: "PATIENT" | "DOCTOR" | "ADMIN"): Promise<User> {
+    try {
+      if (!role) {
+        throw new ApiException("Role is required");
+      }
+      return (await apiClient.selectUserRole(role)) as User;
+    } catch (error) {
+      throw this.handleError(error, "Failed to select role");
+    }
+  }
+
+  /**
+   * Handle and transform errors
+   */
+  private handleError(error: unknown, defaultMessage: string): ApiException {
+    if (error instanceof ApiException) {
+      return error;
+    }
+    return new ApiException(
+      error instanceof Error ? error.message : defaultMessage,
+      undefined,
+      error
+    );
+  }
 }
 
 // Export singleton instance

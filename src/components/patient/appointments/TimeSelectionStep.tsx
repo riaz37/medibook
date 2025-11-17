@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { DoctorAppointmentType } from "@/lib/types/doctor-config";
 
 interface TimeSelectionStepProps {
   selectedDentistId: string;
@@ -33,6 +34,7 @@ function TimeSelectionStep({
 }: TimeSelectionStepProps) {
   // Fetch doctor's appointment types
   const { data: appointmentTypes = [], isLoading: isLoadingTypes } = useDoctorAppointmentTypes(selectedDentistId);
+  const typedAppointmentTypes = appointmentTypes as DoctorAppointmentType[];
   
   // Fetch doctor's configuration for booking advance days
   const { data: doctorConfig } = useDoctorConfig(selectedDentistId);
@@ -43,6 +45,7 @@ function TimeSelectionStep({
     selectedDentistId,
     selectedDate
   );
+  const typedAvailableSlots = availableTimeSlots as string[];
   
   // Get available dates based on doctor's booking advance days
   const availableDates = getNextDays(bookingAdvanceDays);
@@ -93,7 +96,7 @@ function TimeSelectionStep({
           </div>
           {isLoadingTypes ? (
             <div className="text-sm text-muted-foreground">Loading appointment types...</div>
-          ) : appointmentTypes.length === 0 ? (
+          ) : typedAppointmentTypes.length === 0 ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -111,7 +114,7 @@ function TimeSelectionStep({
                 </Alert>
               )}
               <div className="space-y-3">
-                {appointmentTypes.map((type: { id: string; name: string; duration: number; price: number | null; description: string | null }) => (
+                {typedAppointmentTypes.map((type) => (
                   <Card
                     key={type.id}
                     className={`cursor-pointer transition-all hover:shadow-sm ${
@@ -175,13 +178,13 @@ function TimeSelectionStep({
               <h4 className="font-medium">Available Times</h4>
               {isLoadingSlots ? (
                 <div className="text-sm text-muted-foreground">Loading available times...</div>
-              ) : availableTimeSlots.length === 0 ? (
+              ) : typedAvailableSlots.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
                   No available time slots for this date.
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
-                  {availableTimeSlots.map((time: string) => (
+                  {typedAvailableSlots.map((time) => (
                     <Button
                       key={time}
                       variant={selectedTime === time ? "default" : "outline"}
@@ -203,7 +206,7 @@ function TimeSelectionStep({
       <div className="flex justify-end">
         <Button 
           onClick={handleContinue}
-          disabled={!selectedDate || !selectedTime || appointmentTypes.length === 0}
+          disabled={!selectedDate || !selectedTime || typedAppointmentTypes.length === 0}
         >
           Review Booking
         </Button>

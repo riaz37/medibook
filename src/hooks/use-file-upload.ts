@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { uploadService } from "@/lib/services";
 
 interface UploadResult {
   url: string;
@@ -51,34 +52,24 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
     setProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      if (folder) {
-        formData.append("folder", folder);
-      }
-
       // Simulate progress (Cloudinary doesn't provide progress events in this setup)
       const progressInterval = setInterval(() => {
         setProgress((prev) => Math.min(prev + 10, 90));
       }, 100);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const result = await uploadService.uploadFile(file, folder);
 
       clearInterval(progressInterval);
       setProgress(100);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to upload file");
-      }
-
-      const result: UploadResult = await response.json();
+      const uploadResult: UploadResult = {
+        url: result.url,
+        publicId: result.publicId,
+      };
+      
       toast.success("File uploaded successfully");
-      onSuccess?.(result);
-      return result;
+      onSuccess?.(uploadResult);
+      return uploadResult;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to upload file";
@@ -98,23 +89,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
     }
 
     try {
-      const params = new URLSearchParams();
-      if (publicId) {
-        params.append("publicId", publicId);
-      }
-      if (url) {
-        params.append("url", url);
-      }
-
-      const response = await fetch(`/api/upload?${params.toString()}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete file");
-      }
-
+      await uploadService.deleteFile(publicId || undefined, url);
       toast.success("File deleted successfully");
       return true;
     } catch (error) {

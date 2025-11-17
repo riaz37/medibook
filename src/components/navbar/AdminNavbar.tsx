@@ -2,6 +2,7 @@
 
 import { UserButton, useUser } from "@clerk/nextjs";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -77,6 +78,7 @@ export function AdminNavbar() {
         </Breadcrumb>
 
         <div className="ml-auto flex items-center gap-3">
+          <AnimatedThemeToggler className="h-9 w-9" />
           <div className="hidden lg:flex flex-col items-end">
             <span className="text-sm font-medium text-foreground">
               {user?.firstName} {user?.lastName}

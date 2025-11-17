@@ -110,8 +110,9 @@ export function PatientSidebar() {
                 {group.items.map((item) => {
                   const isActive = pathname === item.url || pathname?.startsWith(item.url + "/");
                   const Icon = item.icon;
+                  const isDisabled = "disabled" in item && item.disabled === true;
 
-                  if (item.disabled) {
+                  if (isDisabled) {
                     return (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
@@ -169,9 +170,6 @@ export function PatientSidebar() {
           <div className="flex flex-col group-data-[collapsible=icon]:hidden min-w-0">
             <span className="truncate text-sm font-medium">
               {user?.firstName} {user?.lastName}
-            </span>
-            <span className="truncate text-xs text-muted-foreground">
-              {user?.emailAddresses?.[0]?.emailAddress}
             </span>
           </div>
         </div>

@@ -89,30 +89,43 @@ export abstract class BaseService {
   }
 
   /**
-   * Core request method with error handling
+   * Core request method with error handling, retry logic, and interceptors
    */
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // Apply request interceptors (e.g., add auth headers)
+    const interceptedOptions = await this.applyRequestInterceptors({
+      ...options,
+      headers: {
+        ...this.getDefaultHeaders(),
+        ...options.headers,
+      },
+    });
+
     try {
       const response = await fetch(url, {
-        ...options,
-        cache: options.cache || (typeof window === "undefined" ? "no-store" : undefined),
+        ...interceptedOptions,
+        cache: interceptedOptions.cache || (typeof window === "undefined" ? "no-store" : undefined),
       });
 
-      if (!response.ok) {
-        const errorData = await this.parseErrorResponse(response);
+      // Apply response interceptors
+      const processedResponse = await this.applyResponseInterceptors(response);
+
+      if (!processedResponse.ok) {
+        const errorData = await this.parseErrorResponse(processedResponse);
         throw new ApiException(
-          errorData.error || errorData.message || `Request failed with status ${response.status}`,
-          response.status,
+          errorData.error || errorData.message || `Request failed with status ${processedResponse.status}`,
+          processedResponse.status,
           errorData
         );
       }
 
       // Handle empty responses
-      const contentType = response.headers.get("content-type");
+      const contentType = processedResponse.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
-        return await response.json();
+        const data = await processedResponse.json();
+        return this.transformResponse<T>(data);
       }
 
       return {} as T;
@@ -128,6 +141,43 @@ export abstract class BaseService {
         error
       );
     }
+  }
+
+  /**
+   * Get default headers for all requests
+   */
+  private getDefaultHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    
+    // Add any default headers here (e.g., API version, client info)
+    if (typeof window !== "undefined") {
+      headers["X-Client"] = "web";
+    }
+
+    return headers;
+  }
+
+  /**
+   * Apply request interceptors (override in subclasses for custom logic)
+   */
+  protected async applyRequestInterceptors(options: RequestInit): Promise<RequestInit> {
+    // Override in subclasses to add auth tokens, logging, etc.
+    return options;
+  }
+
+  /**
+   * Apply response interceptors (override in subclasses for custom logic)
+   */
+  protected async applyResponseInterceptors(response: Response): Promise<Response> {
+    // Override in subclasses for response transformation, logging, etc.
+    return response;
+  }
+
+  /**
+   * Transform response data (override in subclasses for custom transformation)
+   */
+  protected transformResponse<T>(data: unknown): T {
+    return data as T;
   }
 
   /**

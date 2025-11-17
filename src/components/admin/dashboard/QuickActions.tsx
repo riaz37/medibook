@@ -82,7 +82,7 @@ export default function QuickActions() {
         })}
       </div>
 
-      <AddDoctorDialog open={isAddDoctorOpen} onOpenChange={setIsAddDoctorOpen} />
+      <AddDoctorDialog isOpen={isAddDoctorOpen} onClose={() => setIsAddDoctorOpen(false)} />
     </>
   );
 }

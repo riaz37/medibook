@@ -47,10 +47,9 @@ const menuItems = [
       },
       {
         title: "Settings",
-        url: "#",
+        url: "/doctor/settings",
         icon: Settings,
-        badge: "Coming Soon",
-        disabled: true,
+        badge: null,
       },
     ],
   },
@@ -126,8 +125,8 @@ export function DoctorSidebar() {
               <SidebarMenu>
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = !item.disabled && pathname?.startsWith(item.url);
-                  const isDisabled = item.disabled;
+                  const isDisabled = "disabled" in item && item.disabled === true;
+                  const isActive = !isDisabled && pathname?.startsWith(item.url);
 
                   if (isDisabled) {
                     return (

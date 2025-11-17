@@ -11,7 +11,12 @@ class DoctorsConfigService extends BaseService {
   /**
    * Get doctor availability configuration
    */
-  async getAvailability(doctorId: string) {
+  async getAvailability(doctorId: string): Promise<{
+    timeSlots: string[];
+    slotDuration: number;
+    bookingAdvanceDays: number;
+    minBookingHours: number;
+  }> {
     try {
       const availability = await prisma.doctorAvailability.findUnique({
         where: { doctorId },
@@ -20,7 +25,7 @@ class DoctorsConfigService extends BaseService {
       if (!availability) {
         // Return default availability
         return {
-          timeSlots: [],
+          timeSlots: [] as string[],
           slotDuration: 30,
           bookingAdvanceDays: 30,
           minBookingHours: 24,
@@ -98,8 +103,8 @@ class DoctorsConfigService extends BaseService {
     doctorId: string,
     hours: Array<{
       dayOfWeek: number;
-      startTime: string;
-      endTime: string;
+      startTime?: string | null;
+      endTime?: string | null;
       isWorking: boolean;
     }>
   ) {
@@ -109,12 +114,17 @@ class DoctorsConfigService extends BaseService {
         where: { doctorId },
       });
 
-      // Create new hours
+      // Create new hours - only include startTime/endTime if isWorking is true
       const created = await prisma.doctorWorkingHours.createMany({
-        data: hours.map((h) => ({
-          doctorId,
-          ...h,
-        })),
+        data: hours
+          .filter((h) => h.isWorking && h.startTime && h.endTime)
+          .map((h) => ({
+            doctorId,
+            dayOfWeek: h.dayOfWeek,
+            startTime: h.startTime!,
+            endTime: h.endTime!,
+            isWorking: h.isWorking,
+          })),
       });
 
       return created;

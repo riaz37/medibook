@@ -4,7 +4,8 @@ import { doctorVerificationSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 
 /**
- * GET /api/doctors/[id]/verification - Get verification status (doctor only)
+ * GET /api/doctors/[id]/verification - Get verification status
+ * Accessible by: the doctor themselves or admin users
  */
 export async function GET(
   request: NextRequest,

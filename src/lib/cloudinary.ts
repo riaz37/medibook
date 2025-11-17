@@ -1,11 +1,41 @@
-import { v2 as cloudinary } from "cloudinary";
+import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+/**
+ * Configure Cloudinary
+ * 
+ * Supports two configuration methods (in order of preference):
+ * 1. CLOUDINARY_URL - Single environment variable (recommended)
+ *    Format: cloudinary://api_key:api_secret@cloud_name
+ * 2. Individual environment variables (fallback)
+ *    - CLOUDINARY_CLOUD_NAME
+ *    - CLOUDINARY_API_KEY
+ *    - CLOUDINARY_API_SECRET
+ * 
+ * @see https://next.cloudinary.dev/ for Next.js best practices
+ * @see https://cloudinary.com/documentation/node_integration#configuration
+ */
+if (process.env.CLOUDINARY_URL) {
+  // Preferred method: Use CLOUDINARY_URL
+  cloudinary.config();
+} else {
+  // Fallback: Use individual environment variables
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error(
+      "Cloudinary configuration missing. Please set either CLOUDINARY_URL or " +
+      "CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET"
+    );
+  }
+
+  cloudinary.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+  });
+}
 
 export { cloudinary };
 
@@ -31,15 +61,16 @@ export async function uploadToCloudinary(
       uploadOptions.public_id = publicId;
     }
 
-    let uploadResult;
+    let uploadResult: UploadApiResponse;
     if (Buffer.isBuffer(file)) {
       // Upload from buffer
-      uploadResult = await new Promise((resolve, reject) => {
+      uploadResult = await new Promise<UploadApiResponse>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           uploadOptions,
           (error, result) => {
             if (error) reject(error);
-            else resolve(result);
+            else if (result) resolve(result);
+            else reject(new Error("Upload failed: No result returned"));
           }
         );
         uploadStream.end(file);

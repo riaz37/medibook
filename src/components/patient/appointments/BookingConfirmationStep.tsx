@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DoctorInfo from "@/components/shared/appointments/DoctorInfo";
+import type { DoctorAppointmentType } from "@/lib/types/doctor-config";
 
 interface BookingConfirmationStepProps {
   selectedDentistId: string;
@@ -26,7 +27,8 @@ function BookingConfirmationStep({
   onModify,
 }: BookingConfirmationStepProps) {
   const { data: appointmentTypes = [] } = useDoctorAppointmentTypes(selectedDentistId);
-  const appointmentType = appointmentTypes.find((t: { id: string }) => t.id === selectedType);
+  const typedAppointmentTypes = appointmentTypes as DoctorAppointmentType[];
+  const appointmentType = typedAppointmentTypes.find((t) => t.id === selectedType);
 
   return (
     <div className="space-y-6">

@@ -13,8 +13,8 @@ export function validateRequest<T>(
     const parsed = schema.parse(data);
     return { success: true, data: parsed };
   } catch (error) {
-    if (error instanceof z.ZodError && error.errors && Array.isArray(error.errors)) {
-      const errors = error.errors.map((err) => ({
+    if (error instanceof z.ZodError && error.issues && Array.isArray(error.issues)) {
+      const errors = error.issues.map((err: z.ZodIssue) => ({
         field: err.path.join("."),
         message: err.message,
       }));
@@ -66,8 +66,8 @@ export function validateQuery<T>(
     const parsed = schema.parse(queryObj);
     return { success: true, data: parsed };
   } catch (error) {
-    if (error instanceof z.ZodError && error.errors && Array.isArray(error.errors)) {
-      const errors = error.errors.map((err) => ({
+    if (error instanceof z.ZodError && error.issues && Array.isArray(error.issues)) {
+      const errors = error.issues.map((err: z.ZodIssue) => ({
         field: err.path.join("."),
         message: err.message,
       }));

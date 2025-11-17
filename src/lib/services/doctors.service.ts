@@ -17,7 +17,7 @@ class DoctorsService extends BaseService {
    */
   async getAll(): Promise<Doctor[]> {
     try {
-      return await apiClient.getDoctors();
+      return (await apiClient.getDoctors()) as Doctor[];
     } catch (error) {
       throw this.handleError(error, "Failed to fetch doctors");
     }
@@ -28,7 +28,7 @@ class DoctorsService extends BaseService {
    */
   async getAllForAdmin(): Promise<Doctor[]> {
     try {
-      return await apiClient.getAllDoctorsForAdmin();
+      return (await apiClient.getAllDoctorsForAdmin()) as Doctor[];
     } catch (error) {
       throw this.handleError(error, "Failed to fetch doctors");
     }
@@ -39,7 +39,7 @@ class DoctorsService extends BaseService {
    */
   async getAvailable(): Promise<Doctor[]> {
     try {
-      return await apiClient.getAvailableDoctors();
+      return (await apiClient.getAvailableDoctors()) as Doctor[];
     } catch (error) {
       throw this.handleError(error, "Failed to fetch available doctors");
     }
@@ -53,7 +53,7 @@ class DoctorsService extends BaseService {
       if (!id) {
         throw new ApiException("Doctor ID is required");
       }
-      return await apiClient.getDoctorById(id);
+      return (await apiClient.getDoctorById(id)) as Doctor;
     } catch (error) {
       throw this.handleError(error, "Failed to fetch doctor");
     }
@@ -65,7 +65,7 @@ class DoctorsService extends BaseService {
   async create(input: CreateDoctorInput): Promise<Doctor> {
     try {
       this.validateCreateInput(input);
-      return await apiClient.createDoctor(input);
+      return (await apiClient.createDoctor(input)) as Doctor;
     } catch (error) {
       throw this.handleError(error, "Failed to create doctor");
     }
@@ -78,7 +78,7 @@ class DoctorsService extends BaseService {
     try {
       this.validateUpdateInput(input);
       const { id, ...data } = input;
-      return await apiClient.updateDoctor(id, data);
+      return (await apiClient.updateDoctor(id, data)) as Doctor;
     } catch (error) {
       throw this.handleError(error, "Failed to update doctor");
     }
@@ -87,7 +87,7 @@ class DoctorsService extends BaseService {
   /**
    * Delete a doctor
    */
-  async delete(id: string): Promise<void> {
+  async deleteDoctor(id: string): Promise<void> {
     try {
       if (!id) {
         throw new ApiException("Doctor ID is required");
@@ -95,6 +95,192 @@ class DoctorsService extends BaseService {
       await apiClient.deleteDoctor(id);
     } catch (error) {
       throw this.handleError(error, "Failed to delete doctor");
+    }
+  }
+
+  /**
+   * Get doctor verification documents
+   */
+  async getVerification(doctorId: string) {
+    try {
+      if (!doctorId) {
+        throw new ApiException("Doctor ID is required");
+      }
+      return await apiClient.getDoctorVerification(doctorId);
+    } catch (error) {
+      throw this.handleError(error, "Failed to fetch verification documents");
+    }
+  }
+
+  /**
+   * Submit doctor verification documents
+   */
+  async submitVerification(doctorId: string, data: {
+    licenseUrl?: string;
+    certificateUrl?: string;
+    idDocumentUrl?: string;
+    otherDocuments?: string;
+  }) {
+    try {
+      if (!doctorId) {
+        throw new ApiException("Doctor ID is required");
+      }
+      if (!data.licenseUrl) {
+        throw new ApiException("Medical license is required");
+      }
+      return await apiClient.submitDoctorVerification(doctorId, data);
+    } catch (error) {
+      throw this.handleError(error, "Failed to submit verification documents");
+    }
+  }
+
+  /**
+   * Get doctor configuration
+   */
+  async getConfig(doctorId: string) {
+    try {
+      if (!doctorId) {
+        throw new ApiException("Doctor ID is required");
+      }
+      return await apiClient.getDoctorConfig(doctorId);
+    } catch (error) {
+      throw this.handleError(error, "Failed to fetch doctor configuration");
+    }
+  }
+
+  /**
+   * Update doctor configuration
+   */
+  async updateConfig(doctorId: string, data: {
+    slotDuration?: number;
+    bookingAdvanceDays?: number;
+    minBookingHours?: number;
+    timeSlots?: string[];
+  }) {
+    try {
+      if (!doctorId) {
+        throw new ApiException("Doctor ID is required");
+      }
+      return await apiClient.updateDoctorConfig(doctorId, data);
+    } catch (error) {
+      throw this.handleError(error, "Failed to update doctor configuration");
+    }
+  }
+
+  /**
+   * Get doctor working hours
+   */
+  async getWorkingHours(doctorId: string) {
+    try {
+      if (!doctorId) {
+        throw new ApiException("Doctor ID is required");
+      }
+      return await apiClient.getDoctorWorkingHours(doctorId);
+    } catch (error) {
+      throw this.handleError(error, "Failed to fetch working hours");
+    }
+  }
+
+  /**
+   * Update doctor working hours
+   */
+  async updateWorkingHours(doctorId: string, data: Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    isWorking: boolean;
+  }>) {
+    try {
+      if (!doctorId) {
+        throw new ApiException("Doctor ID is required");
+      }
+      return await apiClient.updateDoctorWorkingHours(doctorId, data);
+    } catch (error) {
+      throw this.handleError(error, "Failed to update working hours");
+    }
+  }
+
+  /**
+   * Get doctor appointment types
+   */
+  async getAppointmentTypes(doctorId: string) {
+    try {
+      if (!doctorId) {
+        throw new ApiException("Doctor ID is required");
+      }
+      return await apiClient.getDoctorAppointmentTypes(doctorId);
+    } catch (error) {
+      throw this.handleError(error, "Failed to fetch appointment types");
+    }
+  }
+
+  /**
+   * Create doctor appointment type
+   */
+  async createAppointmentType(doctorId: string, data: {
+    name: string;
+    duration: number;
+    description?: string;
+    price?: number;
+  }) {
+    try {
+      if (!doctorId) {
+        throw new ApiException("Doctor ID is required");
+      }
+      if (!data.name || !data.duration) {
+        throw new ApiException("Name and duration are required");
+      }
+      return await apiClient.createDoctorAppointmentType(doctorId, data);
+    } catch (error) {
+      throw this.handleError(error, "Failed to create appointment type");
+    }
+  }
+
+  /**
+   * Update doctor appointment type
+   */
+  async updateAppointmentType(doctorId: string, typeId: string, data: {
+    name?: string;
+    duration?: number;
+    description?: string;
+    price?: number;
+    isActive?: boolean;
+  }) {
+    try {
+      if (!doctorId || !typeId) {
+        throw new ApiException("Doctor ID and Type ID are required");
+      }
+      return await apiClient.updateDoctorAppointmentType(doctorId, typeId, data);
+    } catch (error) {
+      throw this.handleError(error, "Failed to update appointment type");
+    }
+  }
+
+  /**
+   * Delete doctor appointment type
+   */
+  async deleteAppointmentType(doctorId: string, typeId: string) {
+    try {
+      if (!doctorId || !typeId) {
+        throw new ApiException("Doctor ID and Type ID are required");
+      }
+      return await apiClient.deleteDoctorAppointmentType(doctorId, typeId);
+    } catch (error) {
+      throw this.handleError(error, "Failed to delete appointment type");
+    }
+  }
+
+  /**
+   * Get doctor available slots for a date
+   */
+  async getAvailableSlots(doctorId: string, date: string) {
+    try {
+      if (!doctorId || !date) {
+        throw new ApiException("Doctor ID and date are required");
+      }
+      return await apiClient.getDoctorAvailableSlots(doctorId, date);
+    } catch (error) {
+      throw this.handleError(error, "Failed to fetch available slots");
     }
   }
 

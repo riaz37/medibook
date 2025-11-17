@@ -5,7 +5,7 @@
  * This file re-exports server functions via dynamic imports for backward compatibility
  */
 
-import { Roles } from "@/types/globals";
+import { Roles } from "../../../types/globals";
 
 /**
  * Check if the current user has a specific role

@@ -4,6 +4,7 @@ import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "../ui/button";
+import { AnimatedThemeToggler } from "../ui/animated-theme-toggler";
 
 function Header() {
   return (
@@ -24,6 +25,7 @@ function Header() {
         </div>
 
         <div className="flex items-center gap-3">
+          <AnimatedThemeToggler className="h-9 w-9" />
           <SignInButton mode="modal">
             <Button variant={"ghost"} size={"sm"}>
               Login

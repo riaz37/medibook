@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDoctorSettingsStore } from "@/lib/stores/doctor-settings.store";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Save, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
+import { useDoctorConfig, useCreateDoctorAppointmentType, useUpdateDoctorAppointmentType, useDeleteDoctorAppointmentType } from "@/hooks";
 
 interface AppointmentTypesSettingsProps {
   doctorId: string;
@@ -19,7 +19,6 @@ interface AppointmentTypesSettingsProps {
 }
 
 export default function AppointmentTypesSettings({ doctorId, open, onOpenChange }: AppointmentTypesSettingsProps) {
-  const queryClient = useQueryClient();
   const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
   const [editingAppointmentType, setEditingAppointmentType] = useState<any>(null);
   const [newAppointmentType, setNewAppointmentType] = useState({
@@ -39,15 +38,7 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
     isLoading: storeLoading,
   } = useDoctorSettingsStore();
 
-  const { data: config, isLoading: queryLoading } = useQuery({
-    queryKey: ["doctorConfig", doctorId],
-    queryFn: async () => {
-      const response = await fetch(`/api/doctors/${doctorId}/config`);
-      if (!response.ok) throw new Error("Failed to fetch config");
-      return response.json();
-    },
-    enabled: open,
-  });
+  const { data: config, isLoading: queryLoading } = useDoctorConfig(open ? doctorId : null);
 
   useEffect(() => {
     if (config && open) {
@@ -64,100 +55,63 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
     }
   }, [config, open, initializeFromConfig]);
 
-  const createAppointmentTypeMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch(`/api/doctors/${doctorId}/appointment-types`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create appointment type");
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast.success("Appointment type created successfully");
-      queryClient.invalidateQueries({ queryKey: ["doctorConfig", doctorId] });
-      addAppointmentType(data);
-      setIsAppointmentDialogOpen(false);
-      setNewAppointmentType({ name: "", duration: 30, description: "", price: "" });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-
-  const updateAppointmentTypeMutation = useMutation({
-    mutationFn: async ({ typeId, data }: { typeId: string; data: any }) => {
-      const response = await fetch(`/api/doctors/${doctorId}/appointment-types/${typeId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update appointment type");
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast.success("Appointment type updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["doctorConfig", doctorId] });
-      updateAppointmentType(data.id, data);
-      setIsAppointmentDialogOpen(false);
-      setEditingAppointmentType(null);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-
-  const deleteAppointmentTypeMutation = useMutation({
-    mutationFn: async (typeId: string) => {
-      const response = await fetch(`/api/doctors/${doctorId}/appointment-types/${typeId}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete appointment type");
-      }
-      return response.json();
-    },
-    onSuccess: (_, typeId) => {
-      toast.success("Appointment type deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["doctorConfig", doctorId] });
-      removeAppointmentType(typeId);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+  const createAppointmentTypeMutation = useCreateDoctorAppointmentType();
+  const updateAppointmentTypeMutation = useUpdateDoctorAppointmentType();
+  const deleteAppointmentTypeMutation = useDeleteDoctorAppointmentType();
 
   const handleCreateAppointmentType = () => {
     if (!newAppointmentType.name || !newAppointmentType.duration) {
       toast.error("Name and duration are required");
       return;
     }
-    createAppointmentTypeMutation.mutate({
-      ...newAppointmentType,
-      price: newAppointmentType.price ? parseFloat(newAppointmentType.price) : undefined,
-    });
+    createAppointmentTypeMutation.mutate(
+      {
+        doctorId,
+        data: {
+          ...newAppointmentType,
+          price: newAppointmentType.price ? parseFloat(newAppointmentType.price) : undefined,
+        },
+      },
+      {
+        onSuccess: (data: any) => {
+          toast.success("Appointment type created successfully");
+          addAppointmentType(data);
+          setIsAppointmentDialogOpen(false);
+          setNewAppointmentType({ name: "", duration: 30, description: "", price: "" });
+        },
+        onError: (error: Error) => {
+          toast.error(error.message);
+        },
+      }
+    );
   };
 
   const handleUpdateAppointmentType = () => {
     if (!editingAppointmentType) return;
-    updateAppointmentTypeMutation.mutate({
-      typeId: editingAppointmentType.id,
-      data: {
-        name: editingAppointmentType.name,
-        duration: editingAppointmentType.duration,
-        description: editingAppointmentType.description,
-        price: editingAppointmentType.price ? parseFloat(editingAppointmentType.price) : null,
-        isActive: editingAppointmentType.isActive,
+    updateAppointmentTypeMutation.mutate(
+      {
+        doctorId,
+        typeId: editingAppointmentType.id,
+        data: {
+          name: editingAppointmentType.name,
+          duration: editingAppointmentType.duration,
+          description: editingAppointmentType.description,
+          price: editingAppointmentType.price ? parseFloat(editingAppointmentType.price) : undefined,
+          isActive: editingAppointmentType.isActive,
+        },
       },
-    });
+      {
+        onSuccess: (data: any) => {
+          toast.success("Appointment type updated successfully");
+          updateAppointmentType(data.id, data);
+          setIsAppointmentDialogOpen(false);
+          setEditingAppointmentType(null);
+        },
+        onError: (error: Error) => {
+          toast.error(error.message);
+        },
+      }
+    );
   };
 
   if (queryLoading || storeLoading) {
@@ -248,7 +202,18 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
                         size="sm"
                         onClick={() => {
                           if (confirm("Are you sure you want to delete this appointment type?")) {
-                            deleteAppointmentTypeMutation.mutate(type.id);
+                            deleteAppointmentTypeMutation.mutate(
+                              { doctorId, typeId: type.id },
+                              {
+                                onSuccess: () => {
+                                  toast.success("Appointment type deleted successfully");
+                                  removeAppointmentType(type.id);
+                                },
+                                onError: (error: Error) => {
+                                  toast.error(error.message);
+                                },
+                              }
+                            );
                           }
                         }}
                       >

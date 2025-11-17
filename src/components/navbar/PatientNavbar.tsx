@@ -1,10 +1,9 @@
 "use client";
 
 import { UserButton, useUser } from "@clerk/nextjs";
-import { PlusIcon } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -68,18 +67,8 @@ export function PatientNavbar() {
         </Breadcrumb>
 
         <div className="ml-auto flex items-center gap-3">
-          <Link href="/patient/appointments/book" className="hidden md:block">
-            <Button size="sm">
-              <PlusIcon className="w-4 h-4 mr-2" />
-              Book Appointment
-            </Button>
-          </Link>
-          <Link href="/patient/appointments/book" className="md:hidden">
-            <Button size="sm" variant="outline">
-              <PlusIcon className="w-4 h-4" />
-            </Button>
-          </Link>
           <div className="flex items-center gap-3">
+            <AnimatedThemeToggler className="h-9 w-9" />
             <div className="hidden lg:flex flex-col items-end">
               <span className="text-sm font-medium text-foreground">
                 {user?.firstName} {user?.lastName}

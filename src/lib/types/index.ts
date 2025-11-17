@@ -27,6 +27,26 @@ export interface Appointment {
   updatedAt: Date;
 }
 
+// Extended Appointment with relations (used when fetching by ID)
+export interface AppointmentWithRelations extends Appointment {
+  doctor?: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    speciality: string | null;
+    imageUrl: string | null;
+    bio: string | null;
+  };
+  appointmentType?: {
+    id: string;
+    name: string;
+    duration: number;
+    price: number | null;
+    description: string | null;
+  } | null;
+}
+
 export interface BookAppointmentInput {
   doctorId: string;
   date: string;
@@ -44,6 +64,17 @@ export interface UpdateAppointmentStatusInput {
 export interface AppointmentStats {
   totalAppointments: number;
   completedAppointments: number;
+}
+
+export interface RescheduleAppointmentInput {
+  id: string;
+  date: string;
+  time: string;
+}
+
+export interface CancelAppointmentInput {
+  id: string;
+  reason?: string;
 }
 
 // ============================================================================
@@ -137,4 +168,21 @@ export interface AppointmentConfirmationEmailData {
 // ============================================================================
 
 export type { Gender } from "@prisma/client";
+
+// ============================================================================
+// Verification Types
+// ============================================================================
+
+export type { DoctorVerification } from "./verification";
+
+// ============================================================================
+// Doctor Configuration Types
+// ============================================================================
+
+export type {
+  DoctorAvailability,
+  DoctorWorkingHour,
+  DoctorAppointmentType,
+  DoctorConfig,
+} from "./doctor-config";
 

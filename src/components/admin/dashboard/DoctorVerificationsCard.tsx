@@ -5,30 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, ArrowRight, Clock } from "lucide-react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-
-interface Verification {
-  id: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  submittedAt: Date | null;
-  doctor: {
-    id: string;
-    name: string;
-    email: string;
-    speciality: string;
-  };
-}
+import { useAdminDoctorVerifications, type Verification } from "@/hooks";
 
 export default function DoctorVerificationsCard() {
-  const { data: verifications = [], isLoading } = useQuery<Verification[]>({
-    queryKey: ["adminVerifications", "PENDING"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/doctors/verification?status=PENDING");
-      if (!response.ok) throw new Error("Failed to fetch verifications");
-      return response.json();
-    },
-  });
+  const { data: verifications = [], isLoading } = useAdminDoctorVerifications("PENDING");
 
   const pendingCount = verifications.length;
   const recentVerifications = verifications.slice(0, 3);

@@ -8,6 +8,7 @@ import { UserRole } from "@prisma/client";
 import { User, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
+import { usersService } from "@/lib/services";
 
 export default function SelectRoleClient() {
   const router = useRouter();
@@ -22,18 +23,7 @@ export default function SelectRoleClient() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/users/select-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: selectedRole }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to set role");
-      }
-
-      const user = await response.json();
+      const user = await usersService.selectRole(selectedRole);
       
       // Redirect based on role
       if (user.role === "DOCTOR") {

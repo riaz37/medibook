@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { useAdminDoctorVerifications } from "@/hooks";
 
 type VerificationStatus = "all" | "PENDING" | "APPROVED" | "REJECTED";
 
@@ -35,15 +35,7 @@ function AdminVerificationsPage() {
   const [activeTab, setActiveTab] = useState<VerificationStatus>("all");
 
   // Fetch all verifications
-  const { data: allVerifications = [], isLoading } = useQuery<Verification[]>({
-    queryKey: ["adminVerifications", "all"],
-    queryFn: async () => {
-      // Fetch all verifications (no status filter)
-      const response = await fetch("/api/admin/doctors/verification");
-      if (!response.ok) throw new Error("Failed to fetch verifications");
-      return response.json();
-    },
-  });
+  const { data: allVerifications = [], isLoading } = useAdminDoctorVerifications();
 
   // Filter verifications by status
   const filteredVerifications = useMemo(() => {

@@ -10,6 +10,7 @@ import { Calendar, Clock, CheckCircle2, AlertCircle, Phone, Mail, Settings, Cale
 import { format } from "date-fns";
 import type { Doctor, Appointment, User } from "@prisma/client";
 import { toast } from "sonner";
+import { appointmentsService } from "@/lib/services";
 import AvailabilitySettings from "@/components/doctor/AvailabilitySettings";
 import WorkingHoursSettings from "@/components/doctor/WorkingHoursSettings";
 import AppointmentTypesSettings from "@/components/doctor/AppointmentTypesSettings";
@@ -52,29 +53,20 @@ export default function DoctorDashboardClient({
   const handleStatusUpdate = async (appointmentId: string, newStatus: "CONFIRMED" | "CANCELLED" | "COMPLETED") => {
     setIsUpdating(appointmentId);
     try {
-      const response = await fetch(`/api/appointments/${appointmentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await appointmentsService.updateStatus({ id: appointmentId, status: newStatus });
       
-      if (response.ok) {
-        toast.success(
-          newStatus === "CONFIRMED" 
-            ? "Appointment confirmed successfully" 
-            : newStatus === "CANCELLED"
-            ? "Appointment cancelled"
-            : "Appointment marked as completed"
-        );
-        // Reload to show updated status
-        setTimeout(() => window.location.reload(), 1000);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to update appointment status");
-      }
+      toast.success(
+        newStatus === "CONFIRMED" 
+          ? "Appointment confirmed successfully" 
+          : newStatus === "CANCELLED"
+          ? "Appointment cancelled"
+          : "Appointment marked as completed"
+      );
+      // Reload to show updated status
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       console.error("Error updating appointment:", error);
-      toast.error("Failed to update appointment status");
+      toast.error(error instanceof Error ? error.message : "Failed to update appointment status");
     } finally {
       setIsUpdating(null);
     }

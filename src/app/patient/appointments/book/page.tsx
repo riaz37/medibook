@@ -80,7 +80,8 @@ function BookAppointmentPage() {
       return;
     }
 
-    const appointmentType = appointmentTypes.find((t: { id: string }) => t.id === selectedAppointmentTypeId);
+    const typedAppointmentTypes = appointmentTypes as any[];
+    const appointmentType = typedAppointmentTypes.find((t: { id: string }) => t.id === selectedAppointmentTypeId);
     
     if (!appointmentType) {
       toast.error("Selected appointment type not found. Please try again.");
@@ -100,27 +101,8 @@ function BookAppointmentPage() {
           // store the appointment details to show in the modal
           setBookedAppointment(appointment);
 
-          try {
-            const emailResponse = await fetch("/api/send-appointment-email", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                userEmail: appointment.patientEmail,
-                doctorName: appointment.doctorName,
-                appointmentDate: format(new Date(appointment.date), "EEEE, MMMM d, yyyy"),
-                appointmentTime: appointment.time,
-                appointmentType: appointmentType?.name || "Appointment",
-                duration: appointmentType?.duration ? `${appointmentType.duration} minutes` : "30 minutes",
-                price: appointmentType?.price ? `$${appointmentType.price}` : "N/A",
-              }),
-            });
-
-            if (!emailResponse.ok) console.error("Failed to send confirmation email");
-          } catch (error) {
-            console.error("Error sending confirmation email:", error);
-          }
+          // Email is now sent server-side automatically
+          // No need to make a separate API call
 
           // show the success modal
           setShowConfirmationModal(true);

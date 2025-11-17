@@ -10,6 +10,8 @@ import type {
   BookAppointmentInput,
   UpdateAppointmentStatusInput,
   AppointmentStats,
+  RescheduleAppointmentInput,
+  CancelAppointmentInput,
 } from "@/lib/types";
 
 class AppointmentsService extends BaseService {
@@ -21,6 +23,17 @@ class AppointmentsService extends BaseService {
       return (await apiClient.getAppointments()) as Appointment[];
     } catch (error) {
       throw this.handleError(error, "Failed to fetch appointments");
+    }
+  }
+
+  /**
+   * Get doctor appointments
+   */
+  async getDoctorAppointments(doctorId?: string): Promise<Appointment[]> {
+    try {
+      return (await apiClient.getDoctorAppointments(doctorId)) as Appointment[];
+    } catch (error) {
+      throw this.handleError(error, "Failed to fetch doctor appointments");
     }
   }
 
@@ -103,6 +116,44 @@ class AppointmentsService extends BaseService {
   }
 
   /**
+   * Reschedule an appointment
+   */
+  async reschedule(input: RescheduleAppointmentInput): Promise<Appointment> {
+    try {
+      this.validateRescheduleInput(input);
+      return (await apiClient.rescheduleAppointment(input.id, input.date, input.time)) as Appointment;
+    } catch (error) {
+      throw this.handleError(error, "Failed to reschedule appointment");
+    }
+  }
+
+  /**
+   * Cancel an appointment
+   */
+  async cancel(input: CancelAppointmentInput): Promise<Appointment> {
+    try {
+      this.validateCancelInput(input);
+      return (await apiClient.cancelAppointment(input.id, input.reason)) as Appointment;
+    } catch (error) {
+      throw this.handleError(error, "Failed to cancel appointment");
+    }
+  }
+
+  /**
+   * Export appointment as ICS calendar file
+   */
+  async exportToICS(id: string): Promise<Blob> {
+    try {
+      if (!id) {
+        throw new ApiException("Appointment ID is required");
+      }
+      return await apiClient.exportAppointmentToICS(id);
+    } catch (error) {
+      throw this.handleError(error, "Failed to export appointment");
+    }
+  }
+
+  /**
    * Validate book input
    */
   private validateBookInput(input: BookAppointmentInput): void {
@@ -138,6 +189,42 @@ class AppointmentsService extends BaseService {
     }
     if (!input.status) {
       throw new ApiException("Status is required");
+    }
+  }
+
+  /**
+   * Validate reschedule input
+   */
+  private validateRescheduleInput(input: RescheduleAppointmentInput): void {
+    if (!input.id) {
+      throw new ApiException("Appointment ID is required");
+    }
+    if (!input.date) {
+      throw new ApiException("Date is required");
+    }
+    if (!input.time) {
+      throw new ApiException("Time is required");
+    }
+
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(input.date)) {
+      throw new ApiException("Date must be in YYYY-MM-DD format");
+    }
+
+    // Validate time format
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!timeRegex.test(input.time)) {
+      throw new ApiException("Time must be in HH:MM format (24-hour)");
+    }
+  }
+
+  /**
+   * Validate cancel input
+   */
+  private validateCancelInput(input: CancelAppointmentInput): void {
+    if (!input.id) {
+      throw new ApiException("Appointment ID is required");
     }
   }
 

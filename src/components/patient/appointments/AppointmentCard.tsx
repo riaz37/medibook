@@ -13,10 +13,10 @@ export interface AppointmentCardProps {
     id: string;
     doctorName: string;
     doctorImageUrl?: string;
-    reason: string;
+    reason?: string | null;
     date: string;
     time: string;
-    status: "CONFIRMED" | "COMPLETED" | "CANCELLED";
+    status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
     duration?: number;
     price?: number;
   };
@@ -25,12 +25,14 @@ export interface AppointmentCardProps {
 }
 
 const statusColors = {
+  PENDING: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20",
   CONFIRMED: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
   COMPLETED: "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20",
   CANCELLED: "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20",
 };
 
 const statusLabels = {
+  PENDING: "Pending",
   CONFIRMED: "Confirmed",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
