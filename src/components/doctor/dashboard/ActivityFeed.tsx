@@ -6,6 +6,7 @@ import { format, parseISO, differenceInDays } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 
 async function ActivityFeed() {
   const context = await getAuthContext();
@@ -138,9 +139,11 @@ async function ActivityFeed() {
             })}
           </div>
         ) : (
-          <div className="text-center text-muted-foreground py-8">
-            No recent activity. Your appointment activity will appear here.
-          </div>
+          <EmptyState
+            icon={Clock}
+            title="No recent activity"
+            description="Your appointment activity will appear here once you have appointments."
+          />
         )}
       </CardContent>
     </Card>

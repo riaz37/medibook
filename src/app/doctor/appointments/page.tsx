@@ -14,6 +14,8 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
 import { useDoctorAppointments, useUpdateAppointmentStatus } from "@/hooks";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageLoading } from "@/components/ui/loading-skeleton";
 
 type AppointmentStatus = "all" | "pending" | "upcoming" | "completed";
 
@@ -247,20 +249,25 @@ function DoctorAppointmentsPage() {
 
               <TabsContent value={activeTab} className="space-y-4">
                 {isLoading ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50 animate-pulse" />
-                    <p>Loading appointments...</p>
-                  </div>
+                  <PageLoading message="Loading appointments..." />
                 ) : filteredAppointments.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No appointments found</p>
-                    {hasActiveFilters && (
-                      <Button variant="outline" onClick={handleClearFilters} className="mt-4">
-                        Clear Filters
-                      </Button>
-                    )}
-                  </div>
+                  <EmptyState
+                    icon={Calendar}
+                    title="No appointments found"
+                    description={
+                      hasActiveFilters
+                        ? "Try adjusting your filters to find appointments."
+                        : "You don't have any appointments yet."
+                    }
+                    action={
+                      hasActiveFilters
+                        ? {
+                            label: "Clear Filters",
+                            onClick: handleClearFilters,
+                          }
+                        : undefined
+                    }
+                  />
                 ) : (
                   <div className="space-y-4">
                     {filteredAppointments.map((appointment) => {

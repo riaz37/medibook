@@ -68,11 +68,11 @@ export default function DoctorSettingsClient({ doctor, verification }: DoctorSet
   const [isViewDocumentsDialogOpen, setIsViewDocumentsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   
-  // Check if we should open documents tab from URL
+  // Check if we should open a specific tab from URL
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "documents") {
-      setActiveTab("documents");
+    if (tab === "documents" || tab === "profile") {
+      setActiveTab(tab);
     }
   }, [searchParams]);
   

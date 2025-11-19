@@ -1,13 +1,9 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BrainIcon, MessageSquareIcon } from "lucide-react";
+import { BrainIcon, HeartIcon, ShieldIcon, SparklesIcon } from "lucide-react";
 import { format } from "date-fns";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { appointmentsService } from "@/lib/services";
 
 async function DentalHealthOverview() {
-  const appointmentStats = await appointmentsService.getStats();
   const user = await currentUser();
 
   return (
@@ -15,54 +11,56 @@ async function DentalHealthOverview() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BrainIcon className="size-5 text-primary" />
-          Your Healthcare
+          Your Healthcare Journey
         </CardTitle>
-        <CardDescription>Keep track of your healthcare journey</CardDescription>
+        <CardDescription>Tips and insights to maintain your health</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="text-center p-4 bg-muted/30 rounded-xl">
-            <div className="text-2xl font-bold text-primary mb-1">
-              {appointmentStats.completedAppointments}
-            </div>
-            <div className="text-sm text-muted-foreground">Completed Visits</div>
-          </div>
-          <div className="text-center p-4 bg-muted/30 rounded-xl">
-            <div className="text-2xl font-bold text-primary mb-1">
-              {appointmentStats.totalAppointments}
-            </div>
-            <div className="text-sm text-muted-foreground">Total Appointments</div>
-          </div>
-          <div className="text-center p-4 bg-muted/30 rounded-xl">
+        <div className="space-y-6">
+          {/* Member Since */}
+          <div className="text-center p-4 bg-gradient-to-br from-primary/5 to-muted/30 rounded-xl border border-primary/20">
             <div className="text-2xl font-bold text-primary mb-1">
               {format(new Date(user?.createdAt!), "MMM yyyy")}
             </div>
             <div className="text-sm text-muted-foreground">Member Since</div>
           </div>
-        </div>
 
-        <div className="mt-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/20">
-          <div className="flex items-start gap-3">
-            <div className="size-10 bg-primary/20 rounded-lg flex items-center justify-center shrink-0">
-              <MessageSquareIcon className="size-5 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-primary mb-1">Ready to get started?</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Book your first appointment or try our AI voice assistant for instant healthcare assistance.
-              </p>
-              <div className="flex gap-2">
-                <Link href="/patient/voice">
-                  <Button size="sm" className="bg-primary hover:bg-primary/90">
-                    Try AI Assistant
-                  </Button>
-                </Link>
-                <Link href="/patient/appointments/book">
-                  <Button size="sm" variant="outline">
-                    Book Appointment
-                  </Button>
-                </Link>
+          {/* Health Tips */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="p-4 bg-muted/30 rounded-xl border border-border">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <HeartIcon className="size-5 text-primary" />
+                </div>
+                <h4 className="font-semibold text-sm">Regular Checkups</h4>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Schedule regular appointments to maintain optimal health
+              </p>
+            </div>
+            
+            <div className="p-4 bg-muted/30 rounded-xl border border-border">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <ShieldIcon className="size-5 text-primary" />
+                </div>
+                <h4 className="font-semibold text-sm">Preventive Care</h4>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Early detection and prevention are key to long-term wellness
+              </p>
+            </div>
+            
+            <div className="p-4 bg-muted/30 rounded-xl border border-border">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <SparklesIcon className="size-5 text-primary" />
+                </div>
+                <h4 className="font-semibold text-sm">AI Assistance</h4>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Get instant healthcare guidance with our AI voice assistant
+              </p>
             </div>
           </div>
         </div>

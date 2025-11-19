@@ -2,30 +2,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Calendar, CheckCircle2, List, AlertCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext } from "@/lib/server/auth-utils";
-import { isAfter, isSameDay } from "date-fns";
-
-async function getDoctorStats(doctorId: string) {
-  try {
-    const today = new Date();
-    const appointments = await prisma.appointment.findMany({
-      where: { doctorId },
-      select: { date: true, status: true },
-    });
-
-    const total = appointments.length;
-    const pending = appointments.filter((apt) => apt.status === "PENDING").length;
-    const upcoming = appointments.filter((appointment) => {
-      const appointmentDate = appointment.date;
-      const isUpcoming = isSameDay(appointmentDate, today) || isAfter(appointmentDate, today);
-      return isUpcoming && (appointment.status === "CONFIRMED" || appointment.status === "PENDING");
-    }).length;
-    const completed = appointments.filter((apt) => apt.status === "COMPLETED").length;
-
-    return { total, pending, upcoming, completed };
-  } catch {
-    return { total: 0, pending: 0, upcoming: 0, completed: 0 };
-  }
-}
+import { getDoctorStats } from "@/lib/utils/appointments";
 
 export default async function DoctorStatsGrid() {
   const context = await getAuthContext();

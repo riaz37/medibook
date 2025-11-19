@@ -52,6 +52,8 @@ model Doctor {
   appointmentTypes DoctorAppointmentType[]
   workingHours     DoctorWorkingHours[]
   verification     DoctorVerification?
+  paymentAccount   DoctorPaymentAccount? // Stripe Connect account
+  payments         AppointmentPayment[] // Payment records
 
   @@map("doctors")
 }
@@ -126,8 +128,9 @@ model Appointment {
   doctorId String
 
   // relationships
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor  Doctor              @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  payment AppointmentPayment? // Payment record for this appointment
 
   @@map("appointments")
 }
@@ -178,4 +181,154 @@ enum VerificationStatus {
   PENDING // Documents submitted, awaiting review
   APPROVED // Approved by admin
   REJECTED // Rejected by admin
+}
+
+// Payment System Models
+
+model AppointmentPayment {
+  id            String      @id @default(cuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  // Payment amounts
+  appointmentPrice     Decimal // Original appointment price (what patient pays)
+  commissionAmount     Decimal // Platform commission
+  commissionPercentage Decimal // Commission % used at time of booking
+  doctorPayoutAmount   Decimal // Amount doctor receives (appointmentPrice - commissionAmount)
+
+  // Patient payment
+  patientPaid           Boolean   @default(false)
+  patientPaidAt         DateTime?
+  stripePaymentIntentId String?   @unique
+  stripeChargeId        String?   @unique
+
+  // Doctor payout
+  doctorPaid        Boolean   @default(false)
+  doctorPaidAt      DateTime?
+  stripeTransferId  String?   @unique
+  payoutScheduledAt DateTime? // When payout is scheduled
+
+  // Payment status
+  status PaymentStatus @default(PENDING)
+
+  // Refund tracking
+  refunded       Boolean     @default(false)
+  refundAmount   Decimal?
+  refundReason   String?
+  refundedAt     DateTime?
+  stripeRefundId String?
+  refundType     RefundType?
+
+  // Relations
+  refunds PaymentRefund[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([doctorId, createdAt])
+  @@index([status, createdAt])
+  @@map("appointment_payments")
+}
+
+model DoctorPaymentAccount {
+  id       String @id @default(cuid())
+  doctorId String @unique
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  // Stripe Connect account
+  stripeAccountId String              @unique
+  accountStatus   StripeAccountStatus @default(PENDING)
+
+  // Onboarding
+  onboardingLink          String?
+  onboardingLinkExpiresAt DateTime?
+  onboardingCompleted     Boolean   @default(false)
+
+  // Account details
+  email    String?
+  country  String?
+  currency String? @default("usd")
+
+  // Payout settings
+  payoutEnabled  Boolean @default(false)
+  payoutSchedule String? // e.g., "daily", "weekly", "monthly"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("doctor_payment_accounts")
+}
+
+model PlatformSettings {
+  id String @id @default(cuid())
+
+  // Commission settings
+  commissionPercentage Decimal  @default(3.0) // Default 3%
+  minCommission        Decimal? // Optional minimum commission amount
+  maxCommission        Decimal? // Optional maximum commission amount
+
+  // Settings metadata
+  updatedBy String? // Admin user ID who updated
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@map("platform_settings")
+}
+
+model PaymentRefund {
+  id        String             @id @default(cuid())
+  paymentId String
+  payment   AppointmentPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  // Refund details
+  amount                 Decimal
+  refundType             RefundType
+  reason                 String
+  hoursBeforeAppointment Int? // Hours before appointment when refunded
+
+  // Stripe refund
+  stripeRefundId String?  @unique
+  refundedAt     DateTime @default(now())
+
+  // Status
+  status RefundStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([paymentId])
+  @@map("payment_refunds")
+}
+
+enum PaymentStatus {
+  PENDING // Payment initiated, awaiting completion
+  PROCESSING // Payment being processed
+  COMPLETED // Payment successful
+  FAILED // Payment failed
+  REFUNDED // Payment refunded
+  PARTIALLY_REFUNDED // Partial refund
+}
+
+enum RefundType {
+  FULL // Full refund
+  PARTIAL // Partial refund
+  COMMISSION_ONLY // Only commission refunded
+  NO_REFUND // No refund (no-show, etc.)
+}
+
+enum RefundStatus {
+  PENDING // Refund initiated
+  PROCESSING // Refund being processed
+  COMPLETED // Refund completed
+  FAILED // Refund failed
+}
+
+enum StripeAccountStatus {
+  PENDING // Account creation pending
+  RESTRICTED // Account restricted (needs verification)
+  ACTIVE // Account active and ready
+  REJECTED // Account rejected
 }

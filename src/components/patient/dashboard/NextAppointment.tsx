@@ -223,15 +223,9 @@ async function NextAppointment() {
 
         {/* Quick Actions */}
         <div className="flex gap-2">
-          <Link href="/patient/appointments/book" className="flex-1">
-            <Button className="w-full" size="sm">
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              Book New
-            </Button>
-          </Link>
           <Link href="/patient/appointments" className="flex-1">
             <Button variant="outline" className="w-full" size="sm">
-              Manage
+              View All
             </Button>
           </Link>
         </div>

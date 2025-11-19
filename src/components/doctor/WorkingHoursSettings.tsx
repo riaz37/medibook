@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Save, Calendar } from "lucide-react";
-import { toast } from "sonner";
 import { useDoctorConfig, useUpdateDoctorWorkingHours } from "@/hooks";
+import { showSuccess, showError, handleApiError, toastMessages } from "@/lib/utils/toast";
 
 interface WorkingHoursSettingsProps {
   doctorId: string;
@@ -68,10 +68,12 @@ export default function WorkingHoursSettings({ doctorId, open, onOpenChange }: W
       { doctorId, data: workingHours },
       {
         onSuccess: () => {
-          toast.success("Working hours updated successfully");
+          showSuccess(toastMessages.success.settingsSaved);
+          onOpenChange(false);
         },
         onError: (error: Error) => {
-          toast.error(error.message);
+          const errorMessage = handleApiError(error, toastMessages.error.settingsSaveFailed);
+          showError(errorMessage);
         },
       }
     );

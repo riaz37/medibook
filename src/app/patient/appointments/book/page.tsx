@@ -5,16 +5,17 @@ import BookingConfirmationStep from "@/components/patient/appointments/BookingCo
 import DoctorSelectionStep from "@/components/patient/appointments/DoctorSelectionStep";
 import ProgressSteps from "@/components/patient/appointments/ProgressSteps";
 import TimeSelectionStep from "@/components/patient/appointments/TimeSelectionStep";
+import PaymentStep from "@/components/patient/appointments/PaymentStep";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import { useBookAppointment } from "@/hooks/use-appointment";
 import { useDoctorAppointmentTypes } from "@/hooks/use-doctor-config";
 import { useAppointmentBookingStore } from "@/lib/stores/appointment-booking.store";
 import { format } from "date-fns";
-import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usersService } from "@/lib/services";
 import { useUser } from "@clerk/nextjs";
+import { showError, handleApiError, toastMessages } from "@/lib/utils/toast";
 
 function BookAppointmentPage() {
   const router = useRouter();
@@ -49,6 +50,7 @@ function BookAppointmentPage() {
     currentStep,
     showConfirmationModal,
     bookedAppointment,
+    createdAppointmentId,
     setSelectedDoctorId,
     setSelectedDate,
     setSelectedTime,
@@ -56,6 +58,7 @@ function BookAppointmentPage() {
     setCurrentStep,
     setShowConfirmationModal,
     setBookedAppointment,
+    setCreatedAppointmentId,
     goToNextStep,
     goToPreviousStep,
     resetBooking,
@@ -71,12 +74,12 @@ function BookAppointmentPage() {
 
   const handleBookAppointment = async () => {
     if (!selectedDoctorId || !selectedDate || !selectedTime) {
-      toast.error("Please fill in all required fields");
+      showError(toastMessages.error.validationError);
       return;
     }
 
     if (!selectedAppointmentTypeId) {
-      toast.error("Please select an appointment type");
+      showError("Please select an appointment type");
       return;
     }
 
@@ -84,35 +87,57 @@ function BookAppointmentPage() {
     const appointmentType = typedAppointmentTypes.find((t: { id: string }) => t.id === selectedAppointmentTypeId);
     
     if (!appointmentType) {
-      toast.error("Selected appointment type not found. Please try again.");
+      showError("Selected appointment type not found. Please try again.");
       return;
     }
 
-    bookAppointmentMutation.mutate(
-      {
-        doctorId: selectedDoctorId,
-        date: selectedDate,
-        time: selectedTime,
-        reason: appointmentType?.name || "Appointment",
-        appointmentTypeId: selectedAppointmentTypeId, // Link to appointment type
-      },
-      {
-        onSuccess: async (appointment) => {
-          // store the appointment details to show in the modal
-          setBookedAppointment(appointment);
-
-          // Email is now sent server-side automatically
-          // No need to make a separate API call
-
-          // show the success modal
-          setShowConfirmationModal(true);
-
-          // reset form after successful booking
-          resetBooking();
+    // Check if appointment type has a price (payment required)
+    if (appointmentType.price && appointmentType.price > 0) {
+      // Create appointment first, then proceed to payment
+      bookAppointmentMutation.mutate(
+        {
+          doctorId: selectedDoctorId,
+          date: selectedDate,
+          time: selectedTime,
+          reason: appointmentType?.name || "Appointment",
+          appointmentTypeId: selectedAppointmentTypeId,
         },
-        onError: (error) => toast.error(`Failed to book appointment: ${error.message}`),
-      }
-    );
+        {
+          onSuccess: async (appointment) => {
+            // Store appointment ID for payment step
+            setCreatedAppointmentId(appointment.id);
+            // Proceed to payment step
+            goToNextStep();
+          },
+          onError: (error) => {
+            const errorMessage = handleApiError(error, toastMessages.error.appointmentBookFailed);
+            showError(errorMessage);
+          },
+        }
+      );
+    } else {
+      // No price - create appointment without payment (free appointment)
+      bookAppointmentMutation.mutate(
+        {
+          doctorId: selectedDoctorId,
+          date: selectedDate,
+          time: selectedTime,
+          reason: appointmentType?.name || "Appointment",
+          appointmentTypeId: selectedAppointmentTypeId,
+        },
+        {
+          onSuccess: async (appointment) => {
+            setBookedAppointment(appointment);
+            setShowConfirmationModal(true);
+            resetBooking();
+          },
+          onError: (error) => {
+            const errorMessage = handleApiError(error, toastMessages.error.appointmentBookFailed);
+            showError(errorMessage);
+          },
+        }
+      );
+    }
   };
 
   return (
@@ -158,6 +183,16 @@ function BookAppointmentPage() {
             onBack={goToPreviousStep}
             onModify={() => setCurrentStep(2)}
             onConfirm={handleBookAppointment}
+          />
+        )}
+
+        {currentStep === 4 && selectedDoctorId && createdAppointmentId && (
+          <PaymentStep
+            selectedDentistId={selectedDoctorId}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            selectedType={selectedAppointmentTypeId}
+            onBack={goToPreviousStep}
           />
         )}
       </div>

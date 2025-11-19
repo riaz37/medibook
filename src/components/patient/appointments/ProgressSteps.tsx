@@ -1,6 +1,6 @@
 import { ChevronRightIcon } from "lucide-react";
 
-const PROGRESS_STEPS = ["Select Doctor", "Choose Time", "Confirm"];
+const PROGRESS_STEPS = ["Select Doctor", "Choose Time", "Confirm", "Payment"];
 
 function ProgressSteps({ currentStep }: { currentStep: number }) {
   return (

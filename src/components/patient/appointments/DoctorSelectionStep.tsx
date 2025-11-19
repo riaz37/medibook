@@ -1,10 +1,11 @@
 import { useAvailableDoctors } from "@/hooks/use-doctors";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
-import { MapPinIcon, PhoneIcon, StarIcon } from "lucide-react";
+import { MapPinIcon, PhoneIcon, StarIcon, UserX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DoctorCardsLoading } from "@/components/shared/appointments/DoctorCardsLoading";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface DoctorSelectionStepProps {
   selectedDentistId: string | null;
@@ -31,10 +32,11 @@ function DoctorSelectionStep({
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-semibold">Choose Your Doctor</h2>
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg mb-2">No doctors available at the moment</p>
-          <p className="text-sm">Please check back later or contact support.</p>
-        </div>
+        <EmptyState
+          icon={UserX}
+          title="No doctors available"
+          description="There are no doctors available at the moment. Please check back later or contact support."
+        />
       </div>
     );
   }
@@ -47,10 +49,20 @@ function DoctorSelectionStep({
         {doctors.map((doctor) => (
           <Card
             key={doctor.id}
-            className={`cursor-pointer transition-all hover:shadow-lg ${
+            className={`cursor-pointer transition-all hover:shadow-lg focus-within:ring-2 focus-within:ring-primary ${
               selectedDentistId === doctor.id ? "ring-2 ring-primary" : ""
             }`}
             onClick={() => onSelectDentist(doctor.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectDentist(doctor.id);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label={`Select ${doctor.name}, ${doctor.speciality || "General Practice"}`}
+            aria-pressed={selectedDentistId === doctor.id}
           >
             <CardHeader className="pb-4">
               <div className="flex items-start gap-4">

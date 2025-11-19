@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Get appointment type details for email
+    // Get appointment type details
     let appointmentType = null;
     if (appointmentTypeId) {
       try {
@@ -214,37 +214,42 @@ export async function POST(request: NextRequest) {
           where: { id: appointmentTypeId },
         });
       } catch (error) {
-        console.log("Could not fetch appointment type for email");
+        console.log("Could not fetch appointment type");
       }
     }
 
-    // Send confirmation email server-side (transactional)
-    try {
-      const appointmentDateFormatted = format(new Date(date), "EEEE, MMMM d, yyyy");
-      const emailHtml = await render(
-        AppointmentConfirmationEmail({
-          doctorName: appointment.doctor.name,
-          appointmentDate: appointmentDateFormatted,
-          appointmentTime: time,
-          appointmentType: appointmentType?.name || reason || "Appointment",
-          duration: appointmentType?.duration ? `${appointmentType.duration} minutes` : `${duration} minutes`,
-          price: appointmentType?.price ? `$${appointmentType.price.toString()}` : "N/A",
-        })
-      );
+    // Check if payment is required
+    const requiresPayment = appointmentType?.price && Number(appointmentType.price) > 0;
 
-      const mailOptions: nodemailer.SendMailOptions = {
-        from: process.env.SMTP_FROM || `Medibook <${process.env.SMTP_USER}>`,
-        to: user.email || "",
-        subject: "Appointment Confirmation - Medibook",
-        html: emailHtml,
-      };
+    // Only send confirmation email if payment is not required
+    // If payment is required, email will be sent after payment is confirmed via webhook
+    if (!requiresPayment) {
+      try {
+        const appointmentDateFormatted = format(new Date(date), "EEEE, MMMM d, yyyy");
+        const emailHtml = await render(
+          AppointmentConfirmationEmail({
+            doctorName: appointment.doctor.name,
+            appointmentDate: appointmentDateFormatted,
+            appointmentTime: time,
+            appointmentType: appointmentType?.name || reason || "Appointment",
+            duration: appointmentType?.duration ? `${appointmentType.duration} minutes` : `${duration} minutes`,
+            price: appointmentType?.price ? `$${appointmentType.price.toString()}` : "N/A",
+          })
+        );
 
-      await transporter.sendMail(mailOptions);
-      console.log("Confirmation email sent successfully");
-    } catch (emailError) {
-      // Log error but don't fail the booking - email can be retried later
-      console.error("Failed to send confirmation email:", emailError);
-      // In production, you might want to queue this for retry
+        const mailOptions: nodemailer.SendMailOptions = {
+          from: process.env.SMTP_FROM || `Medibook <${process.env.SMTP_USER}>`,
+          to: user.email || "",
+          subject: "Appointment Confirmation - Medibook",
+          html: emailHtml,
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log("Confirmation email sent successfully");
+      } catch (emailError) {
+        // Log error but don't fail the booking - email can be retried later
+        console.error("Failed to send confirmation email:", emailError);
+      }
     }
 
     return NextResponse.json(transformAppointment(appointment));

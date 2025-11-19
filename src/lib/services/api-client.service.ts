@@ -205,6 +205,18 @@ class ApiClientService extends BaseService {
     return this.post("/api/users/select-role", { role });
   }
 
+  async getUserProfile() {
+    return this.get("/api/users/profile");
+  }
+
+  async updateUserProfile(data: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string | null;
+  }) {
+    return this.put("/api/users/profile", data);
+  }
+
   // Admin API
   async getAdminDoctorVerifications(status?: "PENDING" | "APPROVED" | "REJECTED") {
     const queryString = status ? this.buildQueryString({ status }) : "";

@@ -6,7 +6,8 @@ import { ChevronLeftIcon, ClockIcon, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState } from "react";
-import { toast } from "sonner";
+import { showError } from "@/lib/utils/toast";
+import { LoadingSpinner } from "@/components/ui/loading-skeleton";
 import type { DoctorAppointmentType } from "@/lib/types/doctor-config";
 
 interface TimeSelectionStepProps {
@@ -60,15 +61,15 @@ function TimeSelectionStep({
   const handleContinue = () => {
     if (!selectedType) {
       setShowTypeError(true);
-      toast.error("Please select an appointment type to continue");
+      showError("Please select an appointment type to continue");
       return;
     }
     if (!selectedDate) {
-      toast.error("Please select a date");
+      showError("Please select a date");
       return;
     }
     if (!selectedTime) {
-      toast.error("Please select a time");
+      showError("Please select a time");
       return;
     }
     setShowTypeError(false);
@@ -95,7 +96,10 @@ function TimeSelectionStep({
             <span className="text-sm text-destructive">*</span>
           </div>
           {isLoadingTypes ? (
-            <div className="text-sm text-muted-foreground">Loading appointment types...</div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <LoadingSpinner size="sm" />
+              Loading appointment types...
+            </div>
           ) : typedAppointmentTypes.length === 0 ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -117,13 +121,24 @@ function TimeSelectionStep({
                 {typedAppointmentTypes.map((type) => (
                   <Card
                     key={type.id}
-                    className={`cursor-pointer transition-all hover:shadow-sm ${
+                    className={`cursor-pointer transition-all hover:shadow-sm focus-within:ring-2 focus-within:ring-primary ${
                       selectedType === type.id ? "ring-2 ring-primary" : showTypeError ? "ring-2 ring-destructive" : ""
                     }`}
                     onClick={() => {
                       onTypeChange(type.id);
                       setShowTypeError(false);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onTypeChange(type.id);
+                        setShowTypeError(false);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Select ${type.name} appointment, ${type.duration} minutes${type.price ? `, $${type.price}` : ""}`}
+                    aria-pressed={selectedType === type.id}
                   >
                     <CardContent className="p-4">
                       <div className="flex justify-between items-center">
@@ -177,7 +192,10 @@ function TimeSelectionStep({
             <div className="space-y-3">
               <h4 className="font-medium">Available Times</h4>
               {isLoadingSlots ? (
-                <div className="text-sm text-muted-foreground">Loading available times...</div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <LoadingSpinner size="sm" />
+                  Loading available times...
+                </div>
               ) : typedAvailableSlots.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
                   No available time slots for this date.

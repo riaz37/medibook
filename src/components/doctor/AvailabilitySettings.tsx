@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Save, Clock } from "lucide-react";
-import { toast } from "sonner";
+import { showSuccess, showError, handleApiError, toastMessages } from "@/lib/utils/toast";
 
 interface AvailabilitySettingsProps {
   doctorId: string;
@@ -68,11 +68,13 @@ export default function AvailabilitySettings({ doctorId, open, onOpenChange }: A
       return response.json();
     },
     onSuccess: () => {
-      toast.success("Availability updated successfully");
+      showSuccess(toastMessages.success.settingsSaved);
       queryClient.invalidateQueries({ queryKey: ["doctorConfig", doctorId] });
+      onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      const errorMessage = handleApiError(error, toastMessages.error.settingsSaveFailed);
+      showError(errorMessage);
     },
   });
 

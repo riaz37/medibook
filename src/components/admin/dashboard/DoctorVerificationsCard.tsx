@@ -7,6 +7,7 @@ import { CheckCircle2, XCircle, ArrowRight, Clock } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { useAdminDoctorVerifications, type Verification } from "@/hooks";
+import { LoadingSpinner } from "@/components/ui/loading-skeleton";
 
 export default function DoctorVerificationsCard() {
   const { data: verifications = [], isLoading } = useAdminDoctorVerifications("PENDING");
@@ -35,9 +36,11 @@ export default function DoctorVerificationsCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            <p className="text-sm">Loading verifications...</p>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center space-y-2">
+              <LoadingSpinner size="md" className="mx-auto" />
+              <p className="text-sm text-muted-foreground">Loading verifications...</p>
+            </div>
           </div>
         ) : pendingCount === 0 ? (
           <div className="text-center py-8">

@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, FileText, Loader2, AlertCircle } from "lucide-react";
+import { ExternalLink, FileText, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LoadingSpinner } from "@/components/ui/loading-skeleton";
 
 interface ViewDoctorDocumentsDialogProps {
   isOpen: boolean;
@@ -81,8 +82,8 @@ export default function ViewDoctorDocumentsDialog({
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+            <div className="text-center space-y-2">
+              <LoadingSpinner size="md" className="mx-auto" />
               <p className="text-sm text-muted-foreground">Loading documents...</p>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export function StatCardSkeleton() {
   return (
@@ -46,6 +47,73 @@ export function ActivityListSkeleton({ count = 5 }: { count?: number }) {
         <ActivityItemSkeleton key={i} />
       ))}
     </div>
+  );
+}
+
+/**
+ * Loading Spinner Component
+ * Reusable spinner for consistent loading states
+ */
+export function LoadingSpinner({ 
+  size = "md", 
+  className 
+}: { 
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const sizeClasses = {
+    sm: "w-4 h-4 border-2",
+    md: "w-8 h-8 border-4",
+    lg: "w-16 h-16 border-4",
+  };
+
+  return (
+    <div
+      className={cn(
+        "border-primary border-t-transparent rounded-full animate-spin",
+        sizeClasses[size],
+        className
+      )}
+      role="status"
+      aria-label="Loading"
+    />
+  );
+}
+
+/**
+ * Page Loading Component
+ * Full page loading state with spinner and message
+ */
+export function PageLoading({ 
+  message = "Loading...", 
+  className 
+}: { 
+  message?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex items-center justify-center min-h-[400px] p-8", className)}>
+      <div className="text-center space-y-4">
+        <LoadingSpinner size="lg" className="mx-auto" />
+        <p className="text-muted-foreground">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Card Loading Component
+ * Loading state for card content
+ */
+export function CardLoading({ className }: { className?: string }) {
+  return (
+    <Card className={className}>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-center py-8">
+          <LoadingSpinner size="md" />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

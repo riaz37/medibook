@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings, CalendarDays, Stethoscope, User } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import AvailabilitySettings from "@/components/doctor/AvailabilitySettings";
 import WorkingHoursSettings from "@/components/doctor/WorkingHoursSettings";
 import AppointmentTypesSettings from "@/components/doctor/AppointmentTypesSettings";
@@ -13,6 +14,7 @@ interface QuickSettingsProps {
 }
 
 export default function QuickSettings({ doctor }: QuickSettingsProps) {
+  const router = useRouter();
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [workingHoursOpen, setWorkingHoursOpen] = useState(false);
   const [appointmentTypesOpen, setAppointmentTypesOpen] = useState(false);
@@ -40,10 +42,7 @@ export default function QuickSettings({ doctor }: QuickSettingsProps) {
       title: "Profile Settings",
       description: "Update your profile information",
       icon: User,
-      onClick: () => {
-        // Future: Navigate to profile settings
-      },
-      disabled: true,
+      onClick: () => router.push("/doctor/settings?tab=profile"),
     },
   ];
 

@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Save, Stethoscope } from "lucide-react";
-import { toast } from "sonner";
 import { useDoctorConfig, useCreateDoctorAppointmentType, useUpdateDoctorAppointmentType, useDeleteDoctorAppointmentType } from "@/hooks";
+import { showSuccess, showError, handleApiError, toastMessages } from "@/lib/utils/toast";
+import { CommissionPreview } from "./CommissionPreview";
 
 interface AppointmentTypesSettingsProps {
   doctorId: string;
@@ -61,7 +62,7 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
 
   const handleCreateAppointmentType = () => {
     if (!newAppointmentType.name || !newAppointmentType.duration) {
-      toast.error("Name and duration are required");
+      showError(toastMessages.error.validationError);
       return;
     }
     createAppointmentTypeMutation.mutate(
@@ -74,13 +75,14 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
       },
       {
         onSuccess: (data: any) => {
-          toast.success("Appointment type created successfully");
+          showSuccess("Appointment type created successfully");
           addAppointmentType(data);
           setIsAppointmentDialogOpen(false);
           setNewAppointmentType({ name: "", duration: 30, description: "", price: "" });
         },
         onError: (error: Error) => {
-          toast.error(error.message);
+          const errorMessage = handleApiError(error, "Failed to create appointment type");
+          showError(errorMessage);
         },
       }
     );
@@ -102,13 +104,14 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
       },
       {
         onSuccess: (data: any) => {
-          toast.success("Appointment type updated successfully");
+          showSuccess("Appointment type updated successfully");
           updateAppointmentType(data.id, data);
           setIsAppointmentDialogOpen(false);
           setEditingAppointmentType(null);
         },
         onError: (error: Error) => {
-          toast.error(error.message);
+          const errorMessage = handleApiError(error, "Failed to update appointment type");
+          showError(errorMessage);
         },
       }
     );
@@ -206,11 +209,12 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
                               { doctorId, typeId: type.id },
                               {
                                 onSuccess: () => {
-                                  toast.success("Appointment type deleted successfully");
+                                  showSuccess("Appointment type deleted successfully");
                                   removeAppointmentType(type.id);
                                 },
                                 onError: (error: Error) => {
-                                  toast.error(error.message);
+                                  const errorMessage = handleApiError(error, "Failed to delete appointment type");
+                                  showError(errorMessage);
                                 },
                               }
                             );
@@ -296,6 +300,19 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
                 />
               </div>
             </div>
+            {/* Commission Preview */}
+            {(editingAppointmentType?.price || newAppointmentType.price) && (
+              <CommissionPreview
+                appointmentPrice={
+                  editingAppointmentType?.price
+                    ? parseFloat(editingAppointmentType.price) || null
+                    : newAppointmentType.price
+                    ? parseFloat(newAppointmentType.price) || null
+                    : null
+                }
+                className="mt-4"
+              />
+            )}
             <div>
               <Label htmlFor="typeDescription">Description</Label>
               <Textarea

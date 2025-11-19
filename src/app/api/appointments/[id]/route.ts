@@ -42,6 +42,17 @@ export async function GET(
             email: true,
           },
         },
+        payment: {
+          select: {
+            id: true,
+            appointmentPrice: true,
+            commissionAmount: true,
+            doctorPayoutAmount: true,
+            status: true,
+            patientPaid: true,
+            doctorPaid: true,
+          },
+        },
       },
     });
 
@@ -106,10 +117,73 @@ export async function PUT(
 
     const { status } = validation.data;
 
+    // Get current appointment to check previous status
+    const currentAppointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        payment: true,
+      },
+    });
+
+    if (!currentAppointment) {
+      return NextResponse.json(
+        { error: "Appointment not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update appointment status
     const updatedAppointment = await prisma.appointment.update({
       where: { id },
       data: { status: status as AppointmentStatus },
+      include: {
+        payment: {
+          select: {
+            id: true,
+            appointmentPrice: true,
+            commissionAmount: true,
+            doctorPayoutAmount: true,
+            status: true,
+            patientPaid: true,
+            doctorPaid: true,
+          },
+        },
+      },
     });
+
+    // If status changed to CONFIRMED, validate payment is processed
+    if (
+      status === "CONFIRMED" &&
+      currentAppointment.status !== "CONFIRMED"
+    ) {
+      // If appointment has a payment record, ensure it's been processed
+      if (currentAppointment.payment) {
+        if (!currentAppointment.payment.patientPaid) {
+          return NextResponse.json(
+            { 
+              error: "Cannot confirm appointment: Patient payment not yet processed. Please wait for payment confirmation." 
+            },
+            { status: 400 }
+          );
+        }
+        
+        if (currentAppointment.payment.status !== "COMPLETED") {
+          return NextResponse.json(
+            { 
+              error: `Cannot confirm appointment: Payment status is ${currentAppointment.payment.status}. Payment must be completed.` 
+            },
+            { status: 400 }
+          );
+        }
+      }
+      
+      // Log successful confirmation with commission info
+      if (currentAppointment.payment) {
+        console.log(
+          `Appointment ${id} confirmed. Commission: $${currentAppointment.payment.commissionAmount}, Doctor payout: $${currentAppointment.payment.doctorPayoutAmount}`
+        );
+      }
+    }
 
     return NextResponse.json(updatedAppointment);
   } catch (error) {

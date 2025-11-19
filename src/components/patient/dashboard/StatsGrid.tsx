@@ -3,25 +3,7 @@ import { Calendar, CheckCircle2, List, Mic } from "lucide-react";
 import { appointmentsService } from "@/lib/services";
 import { getAuthContext } from "@/lib/server/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { isAfter, isSameDay } from "date-fns";
-
-async function getUpcomingCount(userId: string): Promise<number> {
-  try {
-    const today = new Date();
-    const appointments = await prisma.appointment.findMany({
-      where: { userId },
-      select: { date: true, status: true },
-    });
-
-    return appointments.filter((appointment) => {
-      const appointmentDate = appointment.date;
-      const isUpcoming = isSameDay(appointmentDate, today) || isAfter(appointmentDate, today);
-      return isUpcoming && (appointment.status === "CONFIRMED" || appointment.status === "PENDING");
-    }).length;
-  } catch {
-    return 0;
-  }
-}
+import { getUpcomingAppointmentCount } from "@/lib/utils/appointments";
 
 export default async function StatsGrid() {
   const stats = await appointmentsService.getStats();
@@ -35,7 +17,7 @@ export default async function StatsGrid() {
         select: { id: true },
       });
       if (user) {
-        upcomingCount = await getUpcomingCount(user.id);
+        upcomingCount = await getUpcomingAppointmentCount(user.id);
       }
     } catch (error) {
       console.error("Error fetching upcoming count:", error);

@@ -73,6 +73,33 @@ class UsersService extends BaseService {
   }
 
   /**
+   * Get user profile
+   */
+  async getProfile(): Promise<User | null> {
+    try {
+      return (await apiClient.getUserProfile()) as User;
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(data: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string | null;
+  }): Promise<User> {
+    try {
+      return (await apiClient.updateUserProfile(data)) as User;
+    } catch (error) {
+      throw this.handleError(error, "Failed to update profile");
+    }
+  }
+
+  /**
    * Handle and transform errors
    */
   private handleError(error: unknown, defaultMessage: string): ApiException {

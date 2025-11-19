@@ -1,39 +1,15 @@
 import Image from "next/image";
 import { currentUser } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, SettingsIcon, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { CalendarIcon, SettingsIcon, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext } from "@/lib/server/auth-utils";
-import { isAfter, isSameDay, parseISO } from "date-fns";
-
-async function getDoctorStats(doctorId: string) {
-  try {
-    const today = new Date();
-    const appointments = await prisma.appointment.findMany({
-      where: { doctorId },
-      select: { date: true, status: true },
-    });
-
-    const pending = appointments.filter((apt) => apt.status === "PENDING").length;
-    const upcoming = appointments.filter((appointment) => {
-      const appointmentDate = appointment.date;
-      const isUpcoming = isSameDay(appointmentDate, today) || isAfter(appointmentDate, today);
-      return isUpcoming && (appointment.status === "CONFIRMED" || appointment.status === "PENDING");
-    }).length;
-
-    return { pending, upcoming };
-  } catch {
-    return { pending: 0, upcoming: 0 };
-  }
-}
 
 export default async function DoctorDashboardHero() {
   const user = await currentUser();
   const context = await getAuthContext();
   let doctor = null;
-  let stats = { pending: 0, upcoming: 0 };
   let isVerified = false;
 
   if (context) {
@@ -46,7 +22,6 @@ export default async function DoctorDashboardHero() {
       if (dbUser?.doctorProfile) {
         doctor = dbUser.doctorProfile;
         isVerified = doctor.isVerified;
-        stats = await getDoctorStats(doctor.id);
       }
     } catch (error) {
       console.error("Error fetching doctor data:", error);
@@ -84,23 +59,6 @@ export default async function DoctorDashboardHero() {
           <p className="text-muted-foreground text-sm md:text-base">
             Manage your appointments, patients, and practice settings. Stay on top of your schedule and provide the best care.
           </p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="flex flex-wrap items-center gap-4 pt-2">
-          <div className="flex items-center gap-2">
-            <div className="text-2xl font-bold text-primary">{stats.upcoming}</div>
-            <div className="text-sm text-muted-foreground">Upcoming</div>
-          </div>
-          {stats.pending > 0 && (
-            <>
-              <div className="h-4 w-px bg-border"></div>
-              <div className="flex items-center gap-2">
-                <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
-                <div className="text-sm text-muted-foreground">Pending</div>
-              </div>
-            </>
-          )}
         </div>
 
         <div className="flex flex-wrap gap-3 mt-4">

@@ -52,10 +52,9 @@ const menuItems = [
       },
       {
         title: "Settings",
-        url: "#",
+        url: "/admin/settings",
         icon: Settings,
-        badge: "Coming Soon",
-        disabled: true,
+        badge: null,
       },
     ],
   },

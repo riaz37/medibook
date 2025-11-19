@@ -8,6 +8,8 @@ const isPublicRoute = createRouteMatcher([
   "/api/vapi-get-doctors",
   "/api/vapi-get-available-times",
   "/api/send-appointment-email",
+  "/api/webhooks/stripe", // Stripe webhook - must be public
+  "/api/settings/commission", // Commission percentage - needed for preview
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);

@@ -14,9 +14,13 @@ interface AppointmentBookingState {
   setSelectedTime: (time: string) => void;
   setSelectedAppointmentTypeId: (typeId: string) => void;
 
-  // Step 3: Confirmation
-  currentStep: number; // 1: select doctor, 2: select time, 3: confirm
+  // Step 3: Confirmation, Step 4: Payment
+  currentStep: number; // 1: select doctor, 2: select time, 3: confirm, 4: payment
   setCurrentStep: (step: number) => void;
+
+  // Created appointment (before payment)
+  createdAppointmentId: string | null;
+  setCreatedAppointmentId: (id: string | null) => void;
 
   // Modal state
   showConfirmationModal: boolean;
@@ -37,6 +41,7 @@ const initialState = {
   selectedTime: "",
   selectedAppointmentTypeId: "",
   currentStep: 1,
+  createdAppointmentId: null,
   showConfirmationModal: false,
   bookedAppointment: null,
 };
@@ -65,7 +70,7 @@ export const useAppointmentBookingStore = create<AppointmentBookingState>()(
       setCurrentStep: (step) => set({ currentStep: step }),
       goToNextStep: () => {
         const current = get().currentStep;
-        if (current < 3) {
+        if (current < 4) {
           set({ currentStep: current + 1 });
         }
       },
@@ -75,6 +80,9 @@ export const useAppointmentBookingStore = create<AppointmentBookingState>()(
           set({ currentStep: current - 1 });
         }
       },
+
+      // Appointment ID
+      setCreatedAppointmentId: (id) => set({ createdAppointmentId: id }),
 
       // Modal
       setShowConfirmationModal: (show) => set({ showConfirmationModal: show }),

@@ -6,6 +6,7 @@ import { format, parseISO, isToday, isAfter, differenceInDays } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type Appointment = {
   id: string;
@@ -98,12 +99,15 @@ export default async function ActivityFeed() {
       </CardHeader>
       <CardContent>
         {recentAppointments.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground mb-4">No recent activity</p>
-            <Link href="/patient/appointments/book">
-              <Button size="sm">Book Your First Appointment</Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title="No recent activity"
+            description="Your appointment activity will appear here once you book appointments."
+            action={{
+              label: "Book Your First Appointment",
+              href: "/patient/appointments/book",
+            }}
+          />
         ) : (
           <div className="space-y-4">
             {recentAppointments.map((appointment) => {

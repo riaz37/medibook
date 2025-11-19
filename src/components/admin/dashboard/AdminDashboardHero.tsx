@@ -4,42 +4,22 @@ import { Button } from "@/components/ui/button";
 import { SettingsIcon, UsersIcon, CheckCircle2Icon } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getAuthContext } from "@/lib/server/auth-utils";
 
-async function getAdminStats() {
+async function getPendingVerifications() {
   try {
-    const doctors = await prisma.doctor.findMany({
-      select: { id: true, isVerified: true },
-    });
-
-    const appointments = await prisma.appointment.findMany({
-      select: { status: true },
-    });
-
     const verifications = await (prisma as any).doctorVerification?.findMany({
       where: { status: "PENDING" },
       select: { id: true },
     }).catch(() => []);
-
-    return {
-      totalDoctors: doctors.length,
-      verifiedDoctors: doctors.filter((d) => d.isVerified).length,
-      pendingVerifications: verifications?.length || 0,
-      totalAppointments: appointments.length,
-    };
+    return verifications?.length || 0;
   } catch {
-    return {
-      totalDoctors: 0,
-      verifiedDoctors: 0,
-      pendingVerifications: 0,
-      totalAppointments: 0,
-    };
+    return 0;
   }
 }
 
 export default async function AdminDashboardHero() {
   const user = await currentUser();
-  const stats = await getAdminStats();
+  const pendingVerifications = await getPendingVerifications();
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -65,27 +45,14 @@ export default async function AdminDashboardHero() {
           </p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="flex flex-wrap items-center gap-4 pt-2">
-          {stats.pendingVerifications > 0 && (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="text-2xl font-bold text-orange-600">{stats.pendingVerifications}</div>
-                <div className="text-sm text-muted-foreground">Pending Verifications</div>
-              </div>
-              <div className="h-4 w-px bg-border"></div>
-            </>
-          )}
-          <div className="flex items-center gap-2">
-            <div className="text-2xl font-bold text-primary">{stats.totalDoctors}</div>
-            <div className="text-sm text-muted-foreground">Total Doctors</div>
+        {pendingVerifications > 0 && (
+          <div className="flex flex-wrap items-center gap-4 pt-2">
+            <div className="flex items-center gap-2">
+              <div className="text-2xl font-bold text-orange-600">{pendingVerifications}</div>
+              <div className="text-sm text-muted-foreground">Pending Verifications</div>
+            </div>
           </div>
-          <div className="h-4 w-px bg-border"></div>
-          <div className="flex items-center gap-2">
-            <div className="text-2xl font-bold text-primary">{stats.totalAppointments}</div>
-            <div className="text-sm text-muted-foreground">Total Appointments</div>
-          </div>
-        </div>
+        )}
 
         <div className="flex flex-wrap gap-3 mt-4">
           <Link href="/admin/doctors">
@@ -94,11 +61,11 @@ export default async function AdminDashboardHero() {
               Manage Doctors
             </Button>
           </Link>
-          {stats.pendingVerifications > 0 && (
+          {pendingVerifications > 0 && (
             <Link href="/admin/verifications">
               <Button size="lg" variant="outline">
                 <CheckCircle2Icon className="w-4 h-4 mr-2" />
-                Review Verifications ({stats.pendingVerifications})
+                Review Verifications ({pendingVerifications})
               </Button>
             </Link>
           )}
