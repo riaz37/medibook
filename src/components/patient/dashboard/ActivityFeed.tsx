@@ -79,7 +79,7 @@ export default async function ActivityFeed() {
   };
 
   return (
-    <Card>
+    <Card data-tour="activity">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>

@@ -4,9 +4,9 @@ import { useMemo } from "react";
 import { parseISO, isPast, isToday, isAfter } from "date-fns";
 import AppointmentCard, { AppointmentCardProps } from "./AppointmentCard";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ActivityListSkeleton } from "@/components/ui/loading-skeleton";
 import { Calendar } from "lucide-react";
 import Link from "next/link";
+import { AppointmentsListSkeleton } from "./AppointmentsListSkeleton";
 
 export type AppointmentFilter = "all" | "upcoming" | "completed";
 
@@ -128,7 +128,7 @@ export default function AppointmentsList({
   }, [filteredAppointments]);
 
   if (isLoading) {
-    return <ActivityListSkeleton count={5} />;
+    return <AppointmentsListSkeleton count={5} />;
   }
 
   if (sortedAppointments.length === 0) {

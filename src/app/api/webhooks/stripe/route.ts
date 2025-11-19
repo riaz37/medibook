@@ -3,7 +3,10 @@ import { stripe } from "@/lib/stripe";
 import { paymentService } from "@/lib/services/payment.service";
 import { payoutService } from "@/lib/services/payout.service";
 import { headers } from "next/headers";
+import { createLogger } from "@/lib/logger";
 import Stripe from "stripe";
+
+const logger = createLogger("stripe-webhook");
 
 /**
  * POST /api/webhooks/stripe
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.error("STRIPE_WEBHOOK_SECRET is not set");
+    logger.error("Stripe webhook secret missing");
     return NextResponse.json(
       { error: "Webhook secret not configured" },
       { status: 500 }
@@ -36,7 +39,7 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     const error = err instanceof Error ? err.message : "Unknown error";
-    console.error("Webhook signature verification failed:", error);
+    logger.error("Stripe webhook signature verification failed", { error });
     return NextResponse.json(
       { error: `Webhook Error: ${error}` },
       { status: 400 }
@@ -66,13 +69,22 @@ export async function POST(request: NextRequest) {
         await handleTransferFailed(event.data.object as Stripe.Transfer);
         break;
 
+      case "transfer.paid":
+        // Transfer was successfully paid out to doctor
+        // This is already handled by transfer.created, but we log it for completeness
+        logger.info("Transfer paid event received", { transferId: (event.data.object as Stripe.Transfer).id });
+        break;
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Error processing webhook:", error);
+    logger.error("Error processing Stripe webhook", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      eventType: event.type,
+    });
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }
@@ -88,14 +100,19 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   const chargeId = paymentIntent.latest_charge as string;
 
   if (!chargeId) {
-    console.error("No charge ID in payment intent");
+    logger.warn("payment_intent.succeeded missing charge ID", { paymentIntentId });
     return;
   }
 
-  await paymentService.confirmPayment(paymentIntentId, chargeId);
+  const appointmentId =
+    (paymentIntent.metadata?.appointmentId as string | undefined) || undefined;
 
-  // Get payment to schedule payout and send email
-  const payment = await paymentService.getPaymentByIntentId(paymentIntentId);
+  const payment = await paymentService.confirmPayment(
+    paymentIntentId,
+    chargeId,
+    appointmentId
+  );
+
   if (payment && payment.appointment) {
     // Hold payout until after appointment
     await paymentService.holdDoctorPayout(
@@ -108,7 +125,10 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       const { emailService } = await import("@/lib/services/email.service");
       await emailService.sendAppointmentConfirmation(payment.appointmentId);
     } catch (error) {
-      console.error("Failed to send confirmation email:", error);
+      logger.error("Failed to send confirmation email after payment", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        appointmentId: payment.appointmentId,
+      });
       // Don't fail webhook if email fails
     }
   }
@@ -118,7 +138,9 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
  * Handle failed payment
  */
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
-  await paymentService.markPaymentFailed(paymentIntent.id);
+  const appointmentId =
+    (paymentIntent.metadata?.appointmentId as string | undefined) || undefined;
+  await paymentService.markPaymentFailed(paymentIntent.id, appointmentId);
 }
 
 /**
@@ -127,7 +149,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
 async function handleChargeRefunded(charge: Stripe.Charge) {
   // This will be handled by the refund service
   // The refund service will update the payment record
-  console.log("Charge refunded:", charge.id);
+  logger.info("Charge refunded event received", { chargeId: charge.id });
 }
 
 /**
@@ -138,9 +160,17 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
 }
 
 /**
- * Handle failed transfer
+ * Handle failed transfer (doctor payout failed)
  */
 async function handleTransferFailed(transfer: Stripe.Transfer) {
+  logger.error("Transfer failed", {
+    transferId: transfer.id,
+    amount: transfer.amount,
+    destination: transfer.destination,
+    failureCode: transfer.failure_code,
+    failureMessage: transfer.failure_message,
+  });
+
   await payoutService.markPayoutFailed(transfer.id);
 }
 

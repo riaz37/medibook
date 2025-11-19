@@ -14,6 +14,7 @@ import { appointmentsService } from "@/lib/services";
 import AvailabilitySettings from "@/components/doctor/AvailabilitySettings";
 import WorkingHoursSettings from "@/components/doctor/WorkingHoursSettings";
 import AppointmentTypesSettings from "@/components/doctor/AppointmentTypesSettings";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface DoctorDashboardClientProps {
   doctor: Doctor | null;
@@ -35,6 +36,9 @@ export default function DoctorDashboardClient({
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [workingHoursOpen, setWorkingHoursOpen] = useState(false);
   const [appointmentTypesOpen, setAppointmentTypesOpen] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
+  const [appointmentToUpdate, setAppointmentToUpdate] = useState<{ id: string; status: "CONFIRMED" | "CANCELLED" | "COMPLETED" } | null>(null);
 
   const filteredAppointments = appointments.filter((apt) => {
     if (selectedStatus === "pending") {
@@ -194,9 +198,36 @@ export default function DoctorDashboardClient({
 
               <TabsContent value={selectedStatus} className="space-y-4">
                 {filteredAppointments.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No appointments found</p>
+                  <div className="text-center py-12">
+                    <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">
+                      {selectedStatus === "pending"
+                        ? "No pending appointments"
+                        : selectedStatus === "upcoming"
+                        ? "No upcoming appointments"
+                        : selectedStatus === "completed"
+                        ? "No completed appointments"
+                        : "No appointments found"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+                      {selectedStatus === "pending"
+                        ? "All appointments have been confirmed or cancelled. New appointment requests will appear here."
+                        : selectedStatus === "upcoming"
+                        ? "You don't have any upcoming appointments scheduled. Patients can book appointments through your profile."
+                        : selectedStatus === "completed"
+                        ? "You haven't completed any appointments yet. Completed appointments will appear here."
+                        : "You don't have any appointments yet. Share your profile with patients to start receiving bookings."}
+                    </p>
+                    {selectedStatus === "all" && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setAppointmentTypesOpen(true)}
+                        className="mt-2"
+                      >
+                        <Stethoscope className="w-4 h-4 mr-2" />
+                        Set Up Appointment Types
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -281,9 +312,8 @@ export default function DoctorDashboardClient({
                                       variant="destructive"
                                       size="sm"
                                       onClick={() => {
-                                        if (confirm("Are you sure you want to cancel this appointment?")) {
-                                          handleStatusUpdate(appointment.id, "CANCELLED");
-                                        }
+                                        setAppointmentToUpdate({ id: appointment.id, status: "CANCELLED" });
+                                        setCancelConfirmOpen(true);
                                       }}
                                       disabled={isUpdating === appointment.id}
                                     >
@@ -296,9 +326,8 @@ export default function DoctorDashboardClient({
                                     variant="outline"
                                     size="sm"
                                     onClick={() => {
-                                      if (confirm("Mark this appointment as completed?")) {
-                                        handleStatusUpdate(appointment.id, "COMPLETED");
-                                      }
+                                      setAppointmentToUpdate({ id: appointment.id, status: "COMPLETED" });
+                                      setCompleteConfirmOpen(true);
                                     }}
                                     disabled={isUpdating === appointment.id}
                                   >
@@ -339,6 +368,41 @@ export default function DoctorDashboardClient({
           />
         </>
       )}
+
+      {/* Cancel Appointment Confirmation */}
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        onOpenChange={setCancelConfirmOpen}
+        title="Cancel Appointment"
+        description="Are you sure you want to cancel this appointment? The patient will be notified."
+        warningText="This action cannot be undone. If payment was made, a refund may be processed according to your cancellation policy."
+        confirmLabel="Cancel Appointment"
+        cancelLabel="Keep Appointment"
+        variant="destructive"
+        onConfirm={() => {
+          if (appointmentToUpdate && appointmentToUpdate.status === "CANCELLED") {
+            handleStatusUpdate(appointmentToUpdate.id, "CANCELLED");
+            setAppointmentToUpdate(null);
+          }
+        }}
+      />
+
+      {/* Complete Appointment Confirmation */}
+      <ConfirmDialog
+        open={completeConfirmOpen}
+        onOpenChange={setCompleteConfirmOpen}
+        title="Mark Appointment as Completed"
+        description="Mark this appointment as completed? This will update the appointment status and may trigger payment processing."
+        confirmLabel="Mark Complete"
+        cancelLabel="Cancel"
+        variant="default"
+        onConfirm={() => {
+          if (appointmentToUpdate && appointmentToUpdate.status === "COMPLETED") {
+            handleStatusUpdate(appointmentToUpdate.id, "COMPLETED");
+            setAppointmentToUpdate(null);
+          }
+        }}
+      />
     </>
   );
 }

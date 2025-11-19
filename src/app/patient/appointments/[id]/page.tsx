@@ -13,6 +13,16 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { useState } from "react";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 const statusColors = {
   CONFIRMED: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
@@ -38,12 +48,9 @@ export default function AppointmentDetailsPage({
   const { id } = use(params);
   const { data: appointment, isLoading, error } = useAppointmentById(id);
   const updateStatusMutation = useUpdateAppointmentStatus();
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   const handleCancel = () => {
-    if (!confirm("Are you sure you want to cancel this appointment?")) {
-      return;
-    }
-
     updateStatusMutation.mutate(
       { id, status: "CANCELLED" },
       {
@@ -98,15 +105,26 @@ export default function AppointmentDetailsPage({
   return (
     <PatientDashboardLayout>
       <div className="max-w-4xl mx-auto w-full">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
+        {/* Breadcrumb */}
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/patient/dashboard">Dashboard</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/patient/appointments">Appointments</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Appointment Details</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
@@ -243,7 +261,7 @@ export default function AppointmentDetailsPage({
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={handleCancel}
+                    onClick={() => setCancelConfirmOpen(true)}
                     disabled={updateStatusMutation.isPending}
                   >
                     <X className="w-4 h-4 mr-2" />
@@ -279,6 +297,19 @@ export default function AppointmentDetailsPage({
           </div>
         </div>
       </div>
+
+      {/* Cancel Appointment Confirmation */}
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        onOpenChange={setCancelConfirmOpen}
+        title="Cancel Appointment"
+        description="Are you sure you want to cancel this appointment? You may be able to reschedule instead."
+        warningText="If you cancel less than 24 hours before your appointment, cancellation fees may apply according to the doctor's policy."
+        confirmLabel="Cancel Appointment"
+        cancelLabel="Keep Appointment"
+        variant="destructive"
+        onConfirm={handleCancel}
+      />
     </PatientDashboardLayout>
   );
 }

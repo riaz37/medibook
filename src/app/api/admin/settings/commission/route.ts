@@ -18,6 +18,12 @@ export async function GET(request: NextRequest) {
     }
 
     const settings = await commissionService.getPlatformSettings();
+    if (!settings) {
+      return NextResponse.json(
+        { error: "Commission settings not found" },
+        { status: 404 }
+      );
+    }
     return NextResponse.json({
       commissionPercentage: Number(settings.commissionPercentage),
       minCommission: settings.minCommission ? Number(settings.minCommission) : null,

@@ -36,7 +36,8 @@ export default function Error({
         </CardHeader>
         <CardContent className="space-y-4">
           {error.message && (
-            <div className="p-3 bg-muted rounded-lg">
+            <div className="p-3 bg-muted rounded-lg space-y-2">
+              <p className="text-sm font-medium text-foreground">Error Details:</p>
               <p className="text-sm font-mono text-muted-foreground break-all">
                 {error.message}
               </p>
@@ -47,7 +48,7 @@ export default function Error({
               Error ID: {error.digest}
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button onClick={reset} variant="outline" className="flex-1">
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
@@ -58,6 +59,11 @@ export default function Error({
                 Go Home
               </Link>
             </Button>
+          </div>
+          <div className="pt-2 border-t">
+            <p className="text-xs text-muted-foreground text-center">
+              If this problem persists, please contact support with the error ID above.
+            </p>
           </div>
         </CardContent>
       </Card>

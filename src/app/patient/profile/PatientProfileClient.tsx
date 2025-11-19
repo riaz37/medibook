@@ -17,13 +17,23 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Save, User, Mail, Phone, CheckCircle2 } from "lucide-react";
+import { Save, User as UserIcon, Mail, Phone, CheckCircle2 } from "lucide-react";
 import { usersService } from "@/lib/services";
+import { FormFieldEnhanced } from "@/components/ui/form-field-enhanced";
 import type { User } from "@/lib/types";
 import { PageLoading } from "@/components/ui/loading-skeleton";
 import { showSuccess, showError, handleApiError, toastMessages } from "@/lib/utils/toast";
 import { userProfileFormSchema, type UserProfileFormInput } from "@/lib/validations/user.schema";
 import { useState } from "react";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import Link from "next/link";
 
 export default function PatientProfileClient() {
   const { user: clerkUser } = useUser();
@@ -100,7 +110,7 @@ export default function PatientProfileClient() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="size-5 text-primary" />
+              <UserIcon className="size-5 text-primary" />
               Personal Information
             </CardTitle>
             <CardDescription>Update your personal details</CardDescription>
@@ -110,40 +120,40 @@ export default function PatientProfileClient() {
               <FormField
                 control={form.control}
                 name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      First Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your first name"
-                        disabled={form.formState.isSubmitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                render={({ field, fieldState }) => (
+                  <FormFieldEnhanced
+                    label="First Name"
+                    required
+                    error={fieldState.error}
+                    touched={fieldState.isTouched}
+                    isValid={!fieldState.error && fieldState.isTouched}
+                  >
+                    <Input
+                      placeholder="Enter your first name"
+                      disabled={form.formState.isSubmitting}
+                      {...field}
+                    />
+                  </FormFieldEnhanced>
                 )}
               />
 
               <FormField
                 control={form.control}
                 name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Last Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your last name"
-                        disabled={form.formState.isSubmitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                render={({ field, fieldState }) => (
+                  <FormFieldEnhanced
+                    label="Last Name"
+                    required
+                    error={fieldState.error}
+                    touched={fieldState.isTouched}
+                    isValid={!fieldState.error && fieldState.isTouched}
+                  >
+                    <Input
+                      placeholder="Enter your last name"
+                      disabled={form.formState.isSubmitting}
+                      {...field}
+                    />
+                  </FormFieldEnhanced>
                 )}
               />
             </div>
@@ -175,26 +185,27 @@ export default function PatientProfileClient() {
             <FormField
               control={form.control}
               name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Phone className="size-4 text-muted-foreground" />
-                    Phone Number
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="tel"
-                      placeholder="Enter your phone number"
-                      disabled={form.formState.isSubmitting}
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Optional. Include country code for international numbers.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
+              render={({ field, fieldState }) => (
+                <FormFieldEnhanced
+                  label={
+                    <span className="flex items-center gap-2">
+                      <Phone className="size-4 text-muted-foreground" />
+                      Phone Number
+                    </span>
+                  }
+                  description="Optional. Include country code for international numbers."
+                  error={fieldState.error}
+                  touched={fieldState.isTouched}
+                  isValid={!fieldState.error && fieldState.isTouched && !!field.value}
+                >
+                  <Input
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    disabled={form.formState.isSubmitting}
+                    {...field}
+                    value={field.value || ""}
+                  />
+                </FormFieldEnhanced>
               )}
             />
 

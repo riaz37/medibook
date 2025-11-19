@@ -7,6 +7,7 @@ import ActivityFeed from "@/components/patient/dashboard/ActivityFeed";
 import MainActions from "@/components/patient/dashboard/MainActions";
 import NextAppointment from "@/components/patient/dashboard/NextAppointment";
 import DentalHealthOverview from "@/components/patient/dashboard/DentalHealthOverview";
+import { PatientOnboardingTour } from "@/components/patient/dashboard/PatientOnboardingTour";
 
 /**
  * Patient Dashboard
@@ -40,6 +41,7 @@ async function DashboardPage() {
   // Patient dashboard
   return (
     <PatientDashboardLayout>
+      <PatientOnboardingTour />
       <div className="max-w-7xl mx-auto w-full">
         <DashboardHero />
         <StatsGrid />

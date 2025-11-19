@@ -1,6 +1,5 @@
 "use client";
 
-import { UserButton, useUser } from "@clerk/nextjs";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import {
@@ -15,7 +14,6 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export function DoctorNavbar() {
-  const { user } = useUser();
   const pathname = usePathname();
 
   // Generate breadcrumbs from pathname
@@ -79,15 +77,6 @@ export function DoctorNavbar() {
 
         <div className="ml-auto flex items-center gap-3">
           <AnimatedThemeToggler className="h-9 w-9" />
-          <div className="hidden lg:flex flex-col items-end">
-            <span className="text-sm font-medium text-foreground">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {user?.emailAddresses?.[0]?.emailAddress}
-            </span>
-          </div>
-          <UserButton />
         </div>
       </div>
     </header>

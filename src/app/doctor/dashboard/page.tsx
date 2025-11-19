@@ -7,6 +7,9 @@ import DoctorStatsGrid from "@/components/doctor/dashboard/DoctorStatsGrid";
 import UpcomingAppointments from "@/components/doctor/dashboard/UpcomingAppointments";
 import QuickSettings from "@/components/doctor/dashboard/QuickSettings";
 import ActivityFeed from "@/components/doctor/dashboard/ActivityFeed";
+import { AppointmentTrendsChart } from "@/components/doctor/dashboard/AppointmentTrendsChart";
+import { Suspense } from "react";
+import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
 
 /**
  * Doctor Dashboard
@@ -74,15 +77,26 @@ async function DoctorDashboardPage() {
   return (
     <DoctorDashboardLayout>
       <div className="w-full">
-        <DoctorDashboardHero />
-        <DoctorStatsGrid />
+        <Suspense fallback={<div className="h-32 bg-muted animate-pulse rounded-3xl mb-8" />}>
+          <DoctorDashboardHero />
+        </Suspense>
+        <Suspense fallback={<StatCardGridSkeleton count={4} />}>
+          <DoctorStatsGrid />
+        </Suspense>
         <QuickSettings doctor={doctor} />
+        <Suspense fallback={<CardLoading />}>
+          <AppointmentTrendsChart />
+        </Suspense>
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <UpcomingAppointments />
+            <Suspense fallback={<CardLoading />}>
+              <UpcomingAppointments />
+            </Suspense>
           </div>
           <div>
-            <ActivityFeed />
+            <Suspense fallback={<CardLoading />}>
+              <ActivityFeed />
+            </Suspense>
           </div>
         </div>
       </div>

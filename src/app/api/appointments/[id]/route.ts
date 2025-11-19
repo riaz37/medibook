@@ -132,26 +132,7 @@ export async function PUT(
       );
     }
 
-    // Update appointment status
-    const updatedAppointment = await prisma.appointment.update({
-      where: { id },
-      data: { status: status as AppointmentStatus },
-      include: {
-        payment: {
-          select: {
-            id: true,
-            appointmentPrice: true,
-            commissionAmount: true,
-            doctorPayoutAmount: true,
-            status: true,
-            patientPaid: true,
-            doctorPaid: true,
-          },
-        },
-      },
-    });
-
-    // If status changed to CONFIRMED, validate payment is processed
+    // If status changed to CONFIRMED, validate payment and payout readiness
     if (
       status === "CONFIRMED" &&
       currentAppointment.status !== "CONFIRMED"
@@ -183,7 +164,58 @@ export async function PUT(
           `Appointment ${id} confirmed. Commission: $${currentAppointment.payment.commissionAmount}, Doctor payout: $${currentAppointment.payment.doctorPayoutAmount}`
         );
       }
+
+      // Ensure doctor payout account is active before confirming
+      const doctorPaymentAccount = await prisma.doctorPaymentAccount.findUnique({
+        where: { doctorId: currentAppointment.doctorId },
+        select: {
+          accountStatus: true,
+          payoutEnabled: true,
+        },
+      });
+
+      if (!doctorPaymentAccount) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot confirm appointment: Doctor payout account is not set up. Please complete Stripe onboarding.",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (
+        doctorPaymentAccount.accountStatus !== "ACTIVE" ||
+        doctorPaymentAccount.payoutEnabled === false
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot confirm appointment: Doctor payout account is not active. Please finish Stripe onboarding.",
+          },
+          { status: 400 }
+        );
+      }
     }
+
+    // Update appointment status after validations pass
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id },
+      data: { status: status as AppointmentStatus },
+      include: {
+        payment: {
+          select: {
+            id: true,
+            appointmentPrice: true,
+            commissionAmount: true,
+            doctorPayoutAmount: true,
+            status: true,
+            patientPaid: true,
+            doctorPaid: true,
+          },
+        },
+      },
+    });
 
     return NextResponse.json(updatedAppointment);
   } catch (error) {

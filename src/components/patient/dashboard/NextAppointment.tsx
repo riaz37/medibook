@@ -114,7 +114,7 @@ async function NextAppointment() {
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+    <Card data-tour="appointments" className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>

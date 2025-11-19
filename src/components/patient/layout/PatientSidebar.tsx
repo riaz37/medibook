@@ -24,7 +24,7 @@ import {
   SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
-import { useUser } from "@clerk/nextjs";
+import { useUser, UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 
 const menuItems = [
@@ -156,12 +156,13 @@ export function PatientSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-            <User className="size-4 text-primary" />
-          </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden min-w-0">
+          <UserButton />
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden min-w-0 flex-1">
             <span className="truncate text-sm font-medium">
               {user?.firstName} {user?.lastName}
+            </span>
+            <span className="truncate text-xs text-muted-foreground">
+              {user?.emailAddresses?.[0]?.emailAddress}
             </span>
           </div>
         </div>

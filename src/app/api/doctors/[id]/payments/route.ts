@@ -34,12 +34,16 @@ export async function GET(
       where: { doctorId: id },
       include: {
         appointment: {
-          include: {
-            appointmentType: {
+          select: {
+            id: true,
+            appointmentTypeId: true,
+            date: true,
+            time: true,
+            status: true,
+            user: {
               select: {
-                id: true,
-                name: true,
-                price: true,
+                firstName: true,
+                lastName: true,
               },
             },
           },
@@ -49,7 +53,33 @@ export async function GET(
       take: 100, // Limit to last 100 payments
     });
 
-    return NextResponse.json(payments);
+    // Fetch appointment types separately
+    const paymentsWithTypes = await Promise.all(
+      payments.map(async (payment) => {
+        let appointmentType = null;
+        if (payment.appointment?.appointmentTypeId) {
+          appointmentType = await prisma.doctorAppointmentType.findUnique({
+            where: { id: payment.appointment.appointmentTypeId },
+            select: {
+              id: true,
+              name: true,
+              price: true,
+            },
+          });
+        }
+        return {
+          ...payment,
+          appointment: payment.appointment
+            ? {
+                ...payment.appointment,
+                appointmentType,
+              }
+            : null,
+        };
+      })
+    );
+
+    return NextResponse.json(paymentsWithTypes);
   } catch (error) {
     console.error("Error fetching doctor payments:", error);
     return NextResponse.json(

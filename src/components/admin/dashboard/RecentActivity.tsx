@@ -132,8 +132,18 @@ async function RecentActivity() {
             })}
           </div>
         ) : (
-          <div className="text-center text-muted-foreground py-8">
-            No recent activity. System activity will appear here.
+          <div className="text-center py-12">
+            <div className="flex flex-col items-center gap-3">
+              <div className="size-12 bg-muted rounded-full flex items-center justify-center">
+                <Clock className="size-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold mb-1">No recent activity</h3>
+                <p className="text-xs text-muted-foreground">
+                  System activity and updates will appear here as they occur.
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

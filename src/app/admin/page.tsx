@@ -8,6 +8,9 @@ import RecentActivity from "@/components/admin/dashboard/RecentActivity";
 import QuickActions from "@/components/admin/dashboard/QuickActions";
 import DoctorsManagement from "@/components/admin/DoctorsManagement";
 import RecentAppointments from "@/components/admin/RecentAppointments";
+import { RevenueChart } from "@/components/admin/dashboard/RevenueChart";
+import { Suspense } from "react";
+import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
 
 /**
  * Admin Dashboard
@@ -40,19 +43,34 @@ async function AdminPage() {
   return (
     <AdminDashboardLayout>
       <div className="max-w-7xl mx-auto w-full">
-        <AdminDashboardHero />
-        <AdminStatsGrid />
+        <Suspense fallback={<div className="h-32 bg-muted animate-pulse rounded-3xl mb-8" />}>
+          <AdminDashboardHero />
+        </Suspense>
+        <Suspense fallback={<StatCardGridSkeleton count={4} />}>
+          <AdminStatsGrid />
+        </Suspense>
+        <Suspense fallback={<CardLoading />}>
+          <RevenueChart />
+        </Suspense>
         <QuickActions />
         <div className="grid lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
-            <DoctorVerificationsCard />
+            <Suspense fallback={<CardLoading />}>
+              <DoctorVerificationsCard />
+            </Suspense>
           </div>
           <div>
-            <RecentActivity />
+            <Suspense fallback={<CardLoading />}>
+              <RecentActivity />
+            </Suspense>
           </div>
         </div>
-        <DoctorsManagement />
-        <RecentAppointments />
+        <Suspense fallback={<CardLoading />}>
+          <DoctorsManagement />
+        </Suspense>
+        <Suspense fallback={<CardLoading />}>
+          <RecentAppointments />
+        </Suspense>
       </div>
     </AdminDashboardLayout>
   );

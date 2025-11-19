@@ -25,7 +25,7 @@ export default async function StatsGrid() {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div data-tour="stats-grid" className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
       <StatCard
         title="Total Appointments"
         value={stats.totalAppointments || 0}

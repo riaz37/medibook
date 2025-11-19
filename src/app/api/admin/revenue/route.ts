@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext } from "@/lib/server/auth-utils";
+import { subDays, format, startOfDay } from "date-fns";
 
 /**
  * GET /api/admin/revenue
@@ -15,6 +16,60 @@ export async function GET(request: NextRequest) {
         { error: "Unauthorized - Admin access required" },
         { status: 403 }
       );
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const period = searchParams.get("period");
+    
+    // If period is specified, return trends data
+    if (period) {
+      const days = parseInt(period);
+      const startDate = startOfDay(subDays(new Date(), days));
+      
+      const payments = await prisma.appointmentPayment.findMany({
+        where: {
+          status: "COMPLETED",
+          createdAt: {
+            gte: startDate,
+          },
+        },
+        select: {
+          createdAt: true,
+          commissionAmount: true,
+          patientPaid: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      });
+
+      // Group by date
+      const trends: Record<string, { date: string; revenue: number; commission: number }> = {};
+      
+      // Initialize all dates in range
+      for (let i = 0; i < days; i++) {
+        const date = subDays(new Date(), days - 1 - i);
+        const dateKey = format(date, "yyyy-MM-dd");
+        trends[dateKey] = {
+          date: format(date, "MMM d"),
+          revenue: 0,
+          commission: 0,
+        };
+      }
+
+      // Sum payments by date
+      payments.forEach((payment) => {
+        const dateKey = format(payment.createdAt, "yyyy-MM-dd");
+        if (trends[dateKey]) {
+          trends[dateKey].revenue += Number(payment.patientPaid || 0);
+          trends[dateKey].commission += Number(payment.commissionAmount || 0);
+        }
+      });
+
+      return NextResponse.json({
+        period: days,
+        data: Object.values(trends),
+      });
     }
 
     // Get total revenue (only COMPLETED payments count as revenue)

@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileQuestion, Home, ArrowLeft } from "lucide-react";
@@ -8,6 +10,12 @@ import Link from "next/link";
  * Displayed when a page or route is not found
  */
 export default function NotFound() {
+  const handleGoBack = () => {
+    if (typeof window !== "undefined") {
+      window.history.back();
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="max-w-md w-full text-center">
@@ -33,11 +41,9 @@ export default function NotFound() {
                 Go Home
               </Link>
             </Button>
-            <Button asChild variant="default" className="flex-1" onClick={() => window.history.back()}>
-              <Link href="#" onClick={(e) => { e.preventDefault(); window.history.back(); }}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Go Back
-              </Link>
+            <Button variant="default" className="flex-1" onClick={handleGoBack}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go Back
             </Button>
           </div>
         </CardContent>

@@ -68,13 +68,14 @@ export class ErrorBoundary extends Component<Props, State> {
             </CardHeader>
             <CardContent className="space-y-4">
               {this.state.error && (
-                <div className="p-3 bg-muted rounded-lg">
+                <div className="p-3 bg-muted rounded-lg space-y-2">
+                  <p className="text-sm font-medium text-foreground">Error Details:</p>
                   <p className="text-sm font-mono text-muted-foreground break-all">
                     {this.state.error.message || "Unknown error"}
                   </p>
                 </div>
               )}
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={this.handleReset} variant="outline" className="flex-1">
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Try Again
@@ -85,6 +86,11 @@ export class ErrorBoundary extends Component<Props, State> {
                     Go Home
                   </Link>
                 </Button>
+              </div>
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground text-center">
+                  If this problem persists, please contact support with the error details above.
+                </p>
               </div>
             </CardContent>
           </Card>

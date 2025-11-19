@@ -16,6 +16,8 @@ import { useUser } from "@clerk/nextjs";
 import { useDoctorAppointments, useUpdateAppointmentStatus } from "@/hooks";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageLoading } from "@/components/ui/loading-skeleton";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AppointmentStatus = "all" | "pending" | "upcoming" | "completed";
 
@@ -44,6 +46,9 @@ function DoctorAppointmentsPage() {
   const [activeTab, setActiveTab] = useState<AppointmentStatus>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
+  const [appointmentToUpdate, setAppointmentToUpdate] = useState<{ id: string; status: "CONFIRMED" | "CANCELLED" | "COMPLETED" } | null>(null);
 
   // Fetch appointments
   const { data: appointmentsData = [], isLoading } = useDoctorAppointments();
@@ -68,6 +73,7 @@ function DoctorAppointmentsPage() {
 
   // Update appointment status mutation
   const updateStatusMutation = useUpdateAppointmentStatus();
+  const queryClient = useQueryClient();
 
   // Filter appointments
   const filteredAppointments = useMemo(() => {
@@ -142,16 +148,34 @@ function DoctorAppointmentsPage() {
     router.push(`/doctor/appointments?status=${tab}`);
   };
 
-  // Handle status update
+  // Handle status update with optimistic update
   const handleStatusUpdate = async (appointmentId: string, newStatus: "CONFIRMED" | "CANCELLED" | "COMPLETED") => {
+    // Optimistically update the UI
+    const previousData = queryClient.getQueryData(["doctorAppointments"]);
+    
+    queryClient.setQueryData(["doctorAppointments"], (old: any) => {
+      if (!old) return old;
+      return old.map((apt: any) =>
+        apt.id === appointmentId ? { ...apt, status: newStatus } : apt
+      );
+    });
+
     updateStatusMutation.mutate(
       { id: appointmentId, status: newStatus },
       {
         onSuccess: () => {
           toast.success("Appointment updated successfully");
+          queryClient.invalidateQueries({ queryKey: ["doctorAppointments"] });
         },
         onError: (error: Error) => {
-          toast.error(error.message || "Failed to update appointment");
+          // Rollback optimistic update on error
+          queryClient.setQueryData(["doctorAppointments"], previousData);
+          toast.error(error.message || "Failed to update appointment", {
+            action: {
+              label: "Retry",
+              onClick: () => handleStatusUpdate(appointmentId, newStatus),
+            },
+          });
         },
       }
     );
@@ -351,9 +375,8 @@ function DoctorAppointmentsPage() {
                                       variant="destructive"
                                       size="sm"
                                       onClick={() => {
-                                        if (confirm("Are you sure you want to cancel this appointment?")) {
-                                          handleStatusUpdate(appointment.id, "CANCELLED");
-                                        }
+                                        setAppointmentToUpdate({ id: appointment.id, status: "CANCELLED" });
+                                        setCancelConfirmOpen(true);
                                       }}
                                       disabled={updateStatusMutation.isPending}
                                     >
@@ -366,9 +389,8 @@ function DoctorAppointmentsPage() {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => {
-                                      if (confirm("Mark this appointment as completed?")) {
-                                        handleStatusUpdate(appointment.id, "COMPLETED");
-                                      }
+                                      setAppointmentToUpdate({ id: appointment.id, status: "COMPLETED" });
+                                      setCompleteConfirmOpen(true);
                                     }}
                                     disabled={updateStatusMutation.isPending}
                                   >
@@ -388,6 +410,41 @@ function DoctorAppointmentsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cancel Appointment Confirmation */}
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        onOpenChange={setCancelConfirmOpen}
+        title="Cancel Appointment"
+        description="Are you sure you want to cancel this appointment? The patient will be notified."
+        warningText="This action cannot be undone. If payment was made, a refund may be processed according to your cancellation policy."
+        confirmLabel="Cancel Appointment"
+        cancelLabel="Keep Appointment"
+        variant="destructive"
+        onConfirm={() => {
+          if (appointmentToUpdate && appointmentToUpdate.status === "CANCELLED") {
+            handleStatusUpdate(appointmentToUpdate.id, "CANCELLED");
+            setAppointmentToUpdate(null);
+          }
+        }}
+      />
+
+      {/* Complete Appointment Confirmation */}
+      <ConfirmDialog
+        open={completeConfirmOpen}
+        onOpenChange={setCompleteConfirmOpen}
+        title="Mark Appointment as Completed"
+        description="Mark this appointment as completed? This will update the appointment status and may trigger payment processing."
+        confirmLabel="Mark Complete"
+        cancelLabel="Cancel"
+        variant="default"
+        onConfirm={() => {
+          if (appointmentToUpdate && appointmentToUpdate.status === "COMPLETED") {
+            handleStatusUpdate(appointmentToUpdate.id, "COMPLETED");
+            setAppointmentToUpdate(null);
+          }
+        }}
+      />
     </DoctorDashboardLayout>
   );
 }

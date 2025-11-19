@@ -12,6 +12,7 @@ import { Plus, Trash2, Save, Stethoscope } from "lucide-react";
 import { useDoctorConfig, useCreateDoctorAppointmentType, useUpdateDoctorAppointmentType, useDeleteDoctorAppointmentType } from "@/hooks";
 import { showSuccess, showError, handleApiError, toastMessages } from "@/lib/utils/toast";
 import { CommissionPreview } from "./CommissionPreview";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface AppointmentTypesSettingsProps {
   doctorId: string;
@@ -28,6 +29,8 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
     description: "",
     price: "",
   });
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [appointmentTypeToDelete, setAppointmentTypeToDelete] = useState<any>(null);
 
   const {
     appointmentTypes,
@@ -204,21 +207,8 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
                         variant="destructive"
                         size="sm"
                         onClick={() => {
-                          if (confirm("Are you sure you want to delete this appointment type?")) {
-                            deleteAppointmentTypeMutation.mutate(
-                              { doctorId, typeId: type.id },
-                              {
-                                onSuccess: () => {
-                                  showSuccess("Appointment type deleted successfully");
-                                  removeAppointmentType(type.id);
-                                },
-                                onError: (error: Error) => {
-                                  const errorMessage = handleApiError(error, "Failed to delete appointment type");
-                                  showError(errorMessage);
-                                },
-                              }
-                            );
-                          }
+                          setAppointmentTypeToDelete(type);
+                          setDeleteConfirmOpen(true);
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -364,6 +354,40 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Appointment Type"
+        description="Are you sure you want to delete this appointment type? This action cannot be undone."
+        warningText={
+          appointmentTypeToDelete
+            ? "If this appointment type is used in existing appointments, those appointments will remain but the type details may be lost."
+            : undefined
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={() => {
+          if (appointmentTypeToDelete) {
+            deleteAppointmentTypeMutation.mutate(
+              { doctorId, typeId: appointmentTypeToDelete.id },
+              {
+                onSuccess: () => {
+                  showSuccess("Appointment type deleted successfully");
+                  removeAppointmentType(appointmentTypeToDelete.id);
+                  setAppointmentTypeToDelete(null);
+                },
+                onError: (error: Error) => {
+                  const errorMessage = handleApiError(error, "Failed to delete appointment type");
+                  showError(errorMessage);
+                },
+              }
+            );
+          }
+        }}
+      />
     </>
   );
 }

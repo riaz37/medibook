@@ -44,10 +44,18 @@ export function showSuccess(message: string, duration = 3000) {
 }
 
 /**
- * Show error toast
+ * Show error toast with optional retry action
  */
-export function showError(message: string, duration = 5000) {
-  toast.error(message, { duration });
+export function showError(message: string, duration = 5000, retry?: () => void) {
+  toast.error(message, {
+    duration,
+    action: retry
+      ? {
+          label: "Retry",
+          onClick: retry,
+        }
+      : undefined,
+  });
 }
 
 /**

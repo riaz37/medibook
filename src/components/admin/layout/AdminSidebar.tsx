@@ -16,6 +16,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -26,6 +27,7 @@ import {
   SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { useUser, UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 
 const menuItems = [
@@ -102,6 +104,7 @@ const menuItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { user } = useUser();
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -177,6 +180,20 @@ export function AdminSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border p-4">
+        <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+          <UserButton />
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden min-w-0 flex-1">
+            <span className="truncate text-sm font-medium">
+              {user?.firstName} {user?.lastName}
+            </span>
+            <span className="truncate text-xs text-muted-foreground">
+              {user?.emailAddresses?.[0]?.emailAddress}
+            </span>
+          </div>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }

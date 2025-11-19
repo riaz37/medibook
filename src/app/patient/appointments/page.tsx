@@ -107,8 +107,18 @@ function AppointmentsPage() {
     setStatusFilter("all");
   };
 
-  // Handle cancel appointment
+  // Handle cancel appointment with optimistic update
   const handleCancel = async (id: string) => {
+    // Optimistically update the UI
+    const previousAppointments = queryClient.getQueryData(["getUserAppointments"]);
+    
+    queryClient.setQueryData(["getUserAppointments"], (old: any) => {
+      if (!old) return old;
+      return old.map((apt: any) =>
+        apt.id === id ? { ...apt, status: "CANCELLED" } : apt
+      );
+    });
+
     updateStatusMutation.mutate(
       { id, status: "CANCELLED" },
       {
@@ -117,7 +127,12 @@ function AppointmentsPage() {
           queryClient.invalidateQueries({ queryKey: ["getUserAppointments"] });
         },
         onError: (error) => {
-          toast.error("Failed to cancel appointment");
+          // Rollback optimistic update on error
+          queryClient.setQueryData(["getUserAppointments"], previousAppointments);
+          toast.error("Failed to cancel appointment", undefined, () => {
+            // Retry on error toast click
+            handleCancel(id);
+          });
           console.error("Error cancelling appointment:", error);
         },
       }

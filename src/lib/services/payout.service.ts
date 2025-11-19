@@ -132,14 +132,49 @@ export class PayoutService {
 
   /**
    * Mark payout as failed
+   * When a transfer fails, we keep doctorPaid as false so admin can retry
    */
   async markPayoutFailed(transferId: string) {
     try {
-      // Log the failure, but don't update payment status
-      // Admin can manually retry
-      console.error("Payout failed for transfer:", transferId);
+      // Find the payment record by transfer ID
+      const payment = await prisma.appointmentPayment.findUnique({
+        where: { stripeTransferId: transferId },
+        include: {
+          doctor: {
+            select: { name: true, email: true },
+          },
+          appointment: {
+            select: { id: true, date: true, time: true },
+          },
+        },
+      });
+
+      if (!payment) {
+        console.error(`Payment record not found for failed transfer: ${transferId}`);
+        return;
+      }
+
+      // Keep doctorPaid as false (transfer failed, so doctor wasn't paid)
+      // The stripeTransferId remains so we can track which transfer failed
+      // Admin can manually retry the payout
+
+      console.error("Payout failed for transfer", {
+        transferId,
+        paymentId: payment.id,
+        appointmentId: payment.appointmentId,
+        doctorId: payment.doctorId,
+        doctorName: payment.doctor.name,
+        payoutAmount: payment.doctorPayoutAmount.toString(),
+        appointmentDate: payment.appointment?.date,
+      });
+
+      // Note: We don't update doctorPaid to false because it should already be false
+      // The transfer was created but failed, so the payment record should reflect that
+      // The admin dashboard can query for payments where doctorPaid=false and stripeTransferId is set
+      // to identify failed payouts that need retry
     } catch (error) {
       console.error("Error marking payout as failed:", error);
+      throw error;
     }
   }
 

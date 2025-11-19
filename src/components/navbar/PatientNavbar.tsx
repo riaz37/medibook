@@ -1,6 +1,6 @@
 "use client";
 
-import { UserButton, useUser } from "@clerk/nextjs";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
@@ -13,10 +13,33 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { usePathname } from "next/navigation";
+import { NotificationCenter } from "@/components/shared/NotificationCenter";
+import type { Notification } from "@/components/shared/NotificationCenter";
 
 export function PatientNavbar() {
-  const { user } = useUser();
   const pathname = usePathname();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Load notifications (in a real app, this would come from an API)
+  useEffect(() => {
+    // Example notifications - in production, fetch from API
+    const exampleNotifications: Notification[] = [];
+    setNotifications(exampleNotifications);
+  }, []);
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleDismiss = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
 
   // Generate breadcrumbs from pathname
   const generateBreadcrumbs = () => {
@@ -66,19 +89,14 @@ export function PatientNavbar() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div className="ml-auto flex items-center gap-3">
-          <div className="flex items-center gap-3">
-            <AnimatedThemeToggler className="h-9 w-9" />
-            <div className="hidden lg:flex flex-col items-end">
-              <span className="text-sm font-medium text-foreground">
-                {user?.firstName} {user?.lastName}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {user?.emailAddresses?.[0]?.emailAddress}
-              </span>
-            </div>
-            <UserButton />
-          </div>
+        <div className="ml-auto flex items-center gap-2">
+          <NotificationCenter
+            notifications={notifications}
+            onMarkAsRead={handleMarkAsRead}
+            onMarkAllAsRead={handleMarkAllAsRead}
+            onDismiss={handleDismiss}
+          />
+          <AnimatedThemeToggler className="h-9 w-9" />
         </div>
       </div>
     </header>

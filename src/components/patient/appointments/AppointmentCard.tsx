@@ -115,6 +115,7 @@ export default function AppointmentCard({
                   size="sm"
                   onClick={() => onViewDetails(appointment.id)}
                   asChild
+                  className="min-h-[44px] touch-manipulation"
                 >
                   <Link href={`/appointments/${appointment.id}`}>View Details</Link>
                 </Button>
@@ -124,7 +125,7 @@ export default function AppointmentCard({
                   variant="outline"
                   size="sm"
                   onClick={() => onCancel(appointment.id)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 min-h-[44px] touch-manipulation"
                 >
                   <X className="w-4 h-4 mr-1" />
                   Cancel
