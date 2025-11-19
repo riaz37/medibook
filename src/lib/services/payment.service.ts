@@ -10,7 +10,7 @@ import { RefundType } from "@prisma/client";
 export class PaymentService {
   /**
    * Process appointment payment
-   * Creates payment intent and records payment
+   * Creates or updates payment record for an appointment
    */
   async processAppointmentPayment(
     appointmentId: string,
@@ -24,9 +24,33 @@ export class PaymentService {
       const { commissionAmount, doctorPayoutAmount, commissionPercentageUsed } =
         commissionService.calculateCommission(appointmentPrice, commissionPercentage);
 
-      // Create payment record
-      const payment = await prisma.appointmentPayment.create({
-        data: {
+      // Check if payment already exists
+      const existingPayment = await prisma.appointmentPayment.findUnique({
+        where: { appointmentId },
+      });
+
+      // If payment exists and is already completed, don't update it
+      if (existingPayment && existingPayment.patientPaid) {
+        return existingPayment;
+      }
+
+      // Use upsert to create or update payment record
+      const payment = await prisma.appointmentPayment.upsert({
+        where: { appointmentId },
+        update: {
+          appointmentPrice,
+          commissionAmount,
+          commissionPercentage: commissionPercentageUsed,
+          doctorPayoutAmount,
+          stripePaymentIntentId: paymentIntentId || existingPayment?.stripePaymentIntentId || null,
+          // Preserve completed status, otherwise set to PENDING for new payment intent
+          status: existingPayment?.status === "COMPLETED" 
+            ? "COMPLETED" 
+            : paymentIntentId 
+              ? "PENDING" 
+              : existingPayment?.status || "PENDING",
+        },
+        create: {
           appointmentId,
           doctorId,
           appointmentPrice,
@@ -34,13 +58,19 @@ export class PaymentService {
           commissionPercentage: commissionPercentageUsed,
           doctorPayoutAmount,
           stripePaymentIntentId: paymentIntentId || null,
-          status: "PROCESSING",
+          status: paymentIntentId ? "PENDING" : "PROCESSING",
         },
       });
 
       return payment;
     } catch (error) {
       console.error("Error processing appointment payment:", error);
+      
+      // Provide more specific error messages
+      if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+        throw new Error("Payment record already exists for this appointment");
+      }
+      
       throw new Error("Failed to process payment");
     }
   }

@@ -63,23 +63,13 @@ export async function POST(request: NextRequest) {
       description: `Appointment with ${appointment.doctor.name}`,
     });
 
-    // Create or update payment record
-    if (existingPayment) {
-      await prisma.appointmentPayment.update({
-        where: { id: existingPayment.id },
-        data: {
-          stripePaymentIntentId: paymentIntent.id,
-          status: "PENDING",
-        },
-      });
-    } else {
-      await paymentService.processAppointmentPayment(
-        appointmentId,
-        appointmentPrice,
-        doctorId,
-        paymentIntent.id
-      );
-    }
+    // Create or update payment record (handles existing payments gracefully)
+    await paymentService.processAppointmentPayment(
+      appointmentId,
+      appointmentPrice,
+      doctorId,
+      paymentIntent.id
+    );
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,

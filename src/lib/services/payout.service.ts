@@ -131,10 +131,11 @@ export class PayoutService {
   }
 
   /**
-   * Mark payout as failed
-   * When a transfer fails, we keep doctorPaid as false so admin can retry
+   * Mark payout as reversed
+   * When a transfer is reversed, we update the payment record to reflect the reversal
+   * This typically happens due to disputes, chargebacks, or manual reversals
    */
-  async markPayoutFailed(transferId: string) {
+  async markPayoutReversed(transferId: string) {
     try {
       // Find the payment record by transfer ID
       const payment = await prisma.appointmentPayment.findUnique({
@@ -154,11 +155,17 @@ export class PayoutService {
         return;
       }
 
-      // Keep doctorPaid as false (transfer failed, so doctor wasn't paid)
-      // The stripeTransferId remains so we can track which transfer failed
-      // Admin can manually retry the payout
+      // Update doctorPaid to false since the transfer was reversed
+      // The stripeTransferId remains so we can track which transfer was reversed
+      await prisma.appointmentPayment.update({
+        where: { id: payment.id },
+        data: {
+          doctorPaid: false,
+          doctorPaidAt: null,
+        },
+      });
 
-      console.error("Payout failed for transfer", {
+      console.error("Payout reversed for transfer", {
         transferId,
         paymentId: payment.id,
         appointmentId: payment.appointmentId,
@@ -168,10 +175,9 @@ export class PayoutService {
         appointmentDate: payment.appointment?.date,
       });
 
-      // Note: We don't update doctorPaid to false because it should already be false
-      // The transfer was created but failed, so the payment record should reflect that
-      // The admin dashboard can query for payments where doctorPaid=false and stripeTransferId is set
-      // to identify failed payouts that need retry
+      // Note: The transfer was reversed, so doctorPaid is set to false
+      // Admin can manually retry the payout if needed
+      // This typically happens due to disputes, chargebacks, or manual reversals
     } catch (error) {
       console.error("Error marking payout as failed:", error);
       throw error;

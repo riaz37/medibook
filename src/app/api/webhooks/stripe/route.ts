@@ -65,15 +65,11 @@ export async function POST(request: NextRequest) {
         await handleTransferCreated(event.data.object as Stripe.Transfer);
         break;
 
-      case "transfer.failed":
-        await handleTransferFailed(event.data.object as Stripe.Transfer);
+      case "transfer.reversed":
+        await handleTransferReversed(event.data.object as Stripe.Transfer);
         break;
 
-      case "transfer.paid":
-        // Transfer was successfully paid out to doctor
-        // This is already handled by transfer.created, but we log it for completeness
-        logger.info("Transfer paid event received", { transferId: (event.data.object as Stripe.Transfer).id });
-        break;
+
 
       default:
         console.log(`Unhandled event type: ${event.type}`);
@@ -160,17 +156,18 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
 }
 
 /**
- * Handle failed transfer (doctor payout failed)
+ * Handle reversed transfer (doctor payout reversed)
+ * This occurs when a previously successful transfer is reversed
+ * (e.g., due to dispute, chargeback, or manual reversal)
  */
-async function handleTransferFailed(transfer: Stripe.Transfer) {
-  logger.error("Transfer failed", {
+async function handleTransferReversed(transfer: Stripe.Transfer) {
+  logger.error("Transfer reversed", {
     transferId: transfer.id,
     amount: transfer.amount,
     destination: transfer.destination,
-    failureCode: transfer.failure_code,
-    failureMessage: transfer.failure_message,
+    reversed: transfer.reversed,
   });
 
-  await payoutService.markPayoutFailed(transfer.id);
+  await payoutService.markPayoutReversed(transfer.id);
 }
 
