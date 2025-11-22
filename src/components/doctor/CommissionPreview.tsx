@@ -3,38 +3,16 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Percent, TrendingUp } from "lucide-react";
-
-interface CommissionPreviewProps {
-  appointmentPrice: number | null;
-  className?: string;
-}
+import type { CommissionPreviewProps } from "@/lib/types";
+import { useCommissionPercentage } from "@/hooks";
 
 export function CommissionPreview({ appointmentPrice, className }: CommissionPreviewProps) {
-  const [commissionPercentage, setCommissionPercentage] = useState<number>(3.0);
+  const { data: commissionPercentage = 3.0 } = useCommissionPercentage();
   const [calculation, setCalculation] = useState<{
     commissionAmount: number;
     doctorPayoutAmount: number;
     commissionPercentageUsed: number;
   } | null>(null);
-
-  useEffect(() => {
-    // Fetch current commission percentage from API
-    const fetchCommission = async () => {
-      try {
-        const response = await fetch("/api/settings/commission");
-        if (response.ok) {
-          const data = await response.json();
-          setCommissionPercentage(data.commissionPercentage);
-        }
-      } catch (error) {
-        console.error("Error fetching commission:", error);
-        // Use default if API fails
-        setCommissionPercentage(3.0);
-      }
-    };
-
-    fetchCommission();
-  }, []);
 
   useEffect(() => {
     if (appointmentPrice !== null && appointmentPrice > 0) {

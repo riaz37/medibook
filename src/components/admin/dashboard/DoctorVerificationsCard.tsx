@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, ArrowRight, Clock } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { useAdminDoctorVerifications, type Verification } from "@/hooks";
+import { useAdminDoctorVerifications } from "@/hooks";
 import { LoadingSpinner } from "@/components/ui/loading-skeleton";
 
 export default function DoctorVerificationsCard() {

@@ -1,6 +1,6 @@
 import { StatCard } from "@/components/ui/stat-card";
 import { Calendar, CheckCircle2, List, AlertCircle } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { getAuthContext } from "@/lib/server/auth-utils";
 import { getDoctorStats } from "@/lib/utils/appointments";
 

@@ -6,11 +6,9 @@ import {
   Calendar,
   Home,
   Settings,
-  Users,
+  Wallet,
   BarChart3,
-  DollarSign,
-  Bell,
-  Stethoscope,
+  CreditCard,
   FileText,
 } from "lucide-react";
 import {
@@ -24,16 +22,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
 import { useUser, UserButton } from "@clerk/nextjs";
 import Image from "next/image";
-import { User } from "lucide-react";
 
 const menuItems = [
   {
-    title: "Main",
+    title: "Overview",
     items: [
       {
         title: "Dashboard",
@@ -41,57 +36,55 @@ const menuItems = [
         icon: Home,
         badge: null,
       },
+    ],
+  },
+  {
+    title: "Appointments",
+    items: [
       {
         title: "Appointments",
         url: "/doctor/appointments",
         icon: Calendar,
         badge: null,
       },
+    ],
+  },
+  {
+    title: "Prescriptions",
+    items: [
       {
-        title: "Settings",
-        url: "/doctor/settings",
-        icon: Settings,
+        title: "Prescriptions",
+        url: "/doctor/prescriptions",
+        icon: FileText,
         badge: null,
       },
     ],
   },
   {
-    title: "Upcoming",
+    title: "Financial",
     items: [
       {
-        title: "Patients",
-        url: "#",
-        icon: Users,
-        badge: "Coming Soon",
-        disabled: true,
+        title: "Billing",
+        url: "/doctor/billing",
+        icon: Wallet,
+        badge: null,
       },
       {
-        title: "Analytics",
-        url: "#",
-        icon: BarChart3,
-        badge: "Coming Soon",
-        disabled: true,
+        title: "Payment Setup",
+        url: "/doctor/settings/payments",
+        icon: CreditCard,
+        badge: null,
       },
+    ],
+  },
+  {
+    title: "Settings",
+    items: [
       {
-        title: "Revenue",
-        url: "#",
-        icon: DollarSign,
-        badge: "Coming Soon",
-        disabled: true,
-      },
-      {
-        title: "Calendar",
-        url: "#",
-        icon: Calendar,
-        badge: "Coming Soon",
-        disabled: true,
-      },
-      {
-        title: "Notifications",
-        url: "#",
-        icon: Bell,
-        badge: "Coming Soon",
-        disabled: true,
+        title: "Settings",
+        url: "/doctor/settings",
+        icon: Settings,
+        badge: null,
       },
     ],
   },
@@ -127,30 +120,7 @@ export function DoctorSidebar() {
               <SidebarMenu>
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isDisabled = "disabled" in item && item.disabled === true;
-                  const isActive = !isDisabled && pathname?.startsWith(item.url);
-
-                  if (isDisabled) {
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          disabled
-                          tooltip={item.title}
-                          className="opacity-50 cursor-not-allowed"
-                        >
-                          <Icon />
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <SidebarMenuBadge>
-                              <Badge variant="secondary" className="text-xs">
-                                {item.badge}
-                              </Badge>
-                            </SidebarMenuBadge>
-                          )}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  }
+                  const isActive = pathname === item.url || pathname?.startsWith(item.url + "/");
 
                   return (
                     <SidebarMenuItem key={item.title}>
@@ -158,13 +128,6 @@ export function DoctorSidebar() {
                         <Link href={item.url}>
                           <Icon />
                           <span>{item.title}</span>
-                          {item.badge && (
-                            <SidebarMenuBadge>
-                              <Badge variant="secondary" className="text-xs">
-                                {item.badge}
-                              </Badge>
-                            </SidebarMenuBadge>
-                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

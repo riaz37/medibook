@@ -10,12 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Save, Calendar } from "lucide-react";
 import { useDoctorConfig, useUpdateDoctorWorkingHours } from "@/hooks";
 import { showSuccess, showError, handleApiError, toastMessages } from "@/lib/utils/toast";
-
-interface WorkingHoursSettingsProps {
-  doctorId: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+import type { WorkingHoursSettingsProps } from "@/lib/types";
 
 const DAYS_OF_WEEK = [
   { value: 0, label: "Sunday" },

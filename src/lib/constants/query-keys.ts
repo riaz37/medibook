@@ -56,6 +56,47 @@ export const queryKeys = {
     current: () => [...queryKeys.users.all, "current"] as const,
     sync: () => [...queryKeys.users.all, "sync"] as const,
   },
+
+  // Payments
+  payments: {
+    all: ["payments"] as const,
+    patient: () => [...queryKeys.payments.all, "patient"] as const,
+    doctor: (doctorId: string) => [...queryKeys.payments.all, "doctor", doctorId] as const,
+    billing: (doctorId: string, month?: number, year?: number) => {
+      const key = [...queryKeys.payments.all, "billing", doctorId] as const;
+      if (month !== undefined && year !== undefined) {
+        return [...key, month, year] as const;
+      }
+      return key;
+    },
+  },
+
+  // Analytics
+  analytics: {
+    all: ["analytics"] as const,
+    trends: (period: string) => [...queryKeys.analytics.all, "trends", period] as const,
+    revenue: (period?: string) => {
+      const key = [...queryKeys.analytics.all, "revenue"] as const;
+      return period ? [...key, period] as const : key;
+    },
+  },
+
+  // Prescriptions
+  prescriptions: {
+    all: ["prescriptions"] as const,
+    lists: () => [...queryKeys.prescriptions.all, "list"] as const,
+    list: (filters?: Record<string, unknown>) => [...queryKeys.prescriptions.lists(), filters] as const,
+    details: () => [...queryKeys.prescriptions.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.prescriptions.details(), id] as const,
+    doctor: (params?: { status?: string; patientId?: string; limit?: number; offset?: number }) => {
+      const key = [...queryKeys.prescriptions.all, "doctor"] as const;
+      return params ? [...key, params] as const : key;
+    },
+    patient: (params?: { status?: string; limit?: number; offset?: number }) => {
+      const key = [...queryKeys.prescriptions.all, "patient"] as const;
+      return params ? [...key, params] as const : key;
+    },
+  },
 } as const;
 
 /**

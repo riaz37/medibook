@@ -2,7 +2,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Calendar, CheckCircle2, List, Mic } from "lucide-react";
 import { appointmentsService } from "@/lib/services";
 import { getAuthContext } from "@/lib/server/auth-utils";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { getUpcomingAppointmentCount } from "@/lib/utils/appointments";
 
 export default async function StatsGrid() {
@@ -20,7 +20,7 @@ export default async function StatsGrid() {
         upcomingCount = await getUpcomingAppointmentCount(user.id);
       }
     } catch (error) {
-      console.error("Error fetching upcoming count:", error);
+      // Error is handled silently for server components - could add error logging service here
     }
   }
 

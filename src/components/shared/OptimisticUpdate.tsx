@@ -1,14 +1,7 @@
 "use client";
 
-import { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
-
-interface OptimisticUpdateProps {
-  isLoading: boolean;
-  children: ReactNode;
-  fallback?: ReactNode;
-  showSpinner?: boolean;
-}
+import type { OptimisticUpdateProps } from "@/lib/types";
 
 /**
  * Optimistic Update Wrapper

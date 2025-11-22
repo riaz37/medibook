@@ -15,16 +15,7 @@ import AvailabilitySettings from "@/components/doctor/AvailabilitySettings";
 import WorkingHoursSettings from "@/components/doctor/WorkingHoursSettings";
 import AppointmentTypesSettings from "@/components/doctor/AppointmentTypesSettings";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-
-interface DoctorDashboardClientProps {
-  doctor: Doctor | null;
-  appointments: (Appointment & { user: Pick<User, "firstName" | "lastName" | "email" | "phone"> })[];
-  stats: {
-    total: number;
-    upcoming: number;
-    completed: number;
-  };
-}
+import type { DoctorDashboardClientProps } from "@/lib/types";
 
 export default function DoctorDashboardClient({
   doctor,

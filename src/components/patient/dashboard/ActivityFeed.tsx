@@ -1,24 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock, User, ArrowRight } from "lucide-react";
 import { getAuthContext } from "@/lib/server/auth-utils";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { format, parseISO, isToday, isAfter, differenceInDays } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { DashboardAppointment } from "@/lib/types";
 
-type Appointment = {
-  id: string;
-  date: string;
-  time: string;
-  status: string;
-  reason?: string;
-  doctorName: string;
-  doctorImageUrl?: string;
-};
-
-function transformAppointment(appointment: any): Appointment {
+function transformAppointment(appointment: any): DashboardAppointment {
   return {
     ...appointment,
     doctorName: appointment.doctor.name,
@@ -29,7 +20,7 @@ function transformAppointment(appointment: any): Appointment {
 
 export default async function ActivityFeed() {
   const context = await getAuthContext();
-  let recentAppointments: Appointment[] = [];
+  let recentAppointments: DashboardAppointment[] = [];
 
   if (context) {
     try {
@@ -50,7 +41,7 @@ export default async function ActivityFeed() {
         recentAppointments = dbAppointments.map(transformAppointment);
       }
     } catch (error) {
-      console.error("Error fetching appointments:", error);
+      // Error is handled silently for server components - could add error logging service here
     }
   }
 

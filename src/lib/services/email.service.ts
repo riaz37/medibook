@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import AppointmentConfirmationEmail from "@/components/emails/AppointmentConfirmationEmail";
 import PaymentLinkEmail from "@/components/emails/PaymentLinkEmail";
 import transporter from "@/lib/nodemailer";

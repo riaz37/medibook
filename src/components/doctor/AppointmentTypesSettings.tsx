@@ -13,12 +13,7 @@ import { useDoctorConfig, useCreateDoctorAppointmentType, useUpdateDoctorAppoint
 import { showSuccess, showError, handleApiError, toastMessages } from "@/lib/utils/toast";
 import { CommissionPreview } from "./CommissionPreview";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-
-interface AppointmentTypesSettingsProps {
-  doctorId: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+import type { AppointmentTypesSettingsProps } from "@/lib/types";
 
 export default function AppointmentTypesSettings({ doctorId, open, onOpenChange }: AppointmentTypesSettingsProps) {
   const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);

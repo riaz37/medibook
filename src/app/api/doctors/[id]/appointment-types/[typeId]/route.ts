@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { updateAppointmentTypeSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";

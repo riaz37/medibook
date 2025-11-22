@@ -3,28 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, ClockIcon, ArrowRight, User, Mail, Phone } from "lucide-react";
 import { getAuthContext } from "@/lib/server/auth-utils";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { format, isAfter, isSameDay, parseISO, differenceInDays, differenceInHours } from "date-fns";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-type Appointment = {
-  id: string;
-  date: Date;
-  time: string;
-  status: string;
-  reason?: string;
-  user: {
-    firstName: string | null;
-    lastName: string | null;
-    email: string;
-    phone: string | null;
-  };
-};
+import type { UpcomingAppointmentData } from "@/lib/types";
 
 async function UpcomingAppointments() {
   const context = await getAuthContext();
-  let appointments: Appointment[] = [];
+  let appointments: UpcomingAppointmentData[] = [];
 
   if (context) {
     try {
@@ -59,7 +46,7 @@ async function UpcomingAppointments() {
         }));
       }
     } catch (error) {
-      console.error("Error fetching upcoming appointments:", error);
+      // Error is handled silently for server components - could add error logging service here
     }
   }
 
@@ -169,6 +156,7 @@ async function UpcomingAppointments() {
                     <p className="font-medium text-sm">{nextAppointment.time}</p>
                     <p className="text-xs text-muted-foreground">Local time</p>
                   </div>
+
                 </div>
               </div>
 
@@ -228,4 +216,5 @@ async function UpcomingAppointments() {
 }
 
 export default UpcomingAppointments;
+
 

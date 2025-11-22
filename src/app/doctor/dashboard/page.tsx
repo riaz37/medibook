@@ -1,15 +1,15 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { DoctorDashboardLayout } from "@/components/doctor/layout/DoctorDashboardLayout";
 import DoctorDashboardHero from "@/components/doctor/dashboard/DoctorDashboardHero";
 import DoctorStatsGrid from "@/components/doctor/dashboard/DoctorStatsGrid";
 import UpcomingAppointments from "@/components/doctor/dashboard/UpcomingAppointments";
-import QuickSettings from "@/components/doctor/dashboard/QuickSettings";
 import ActivityFeed from "@/components/doctor/dashboard/ActivityFeed";
-import { AppointmentTrendsChart } from "@/components/doctor/dashboard/AppointmentTrendsChart";
+import { DoctorAnalyticsSection } from "@/components/doctor/dashboard/DoctorAnalyticsSection";
 import { Suspense } from "react";
 import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
+import { getAuthContext } from "@/lib/server/auth-utils";
+import prisma from "@/lib/prisma";
 
 /**
  * Doctor Dashboard
@@ -74,6 +74,10 @@ async function DoctorDashboardPage() {
     }
   }
 
+  // Get doctorId for analytics
+  const context = await getAuthContext();
+  const doctorId = context?.doctorId || doctor.id;
+
   return (
     <DoctorDashboardLayout>
       <div className="w-full">
@@ -83,17 +87,16 @@ async function DoctorDashboardPage() {
         <Suspense fallback={<StatCardGridSkeleton count={4} />}>
           <DoctorStatsGrid />
         </Suspense>
-        <QuickSettings doctor={doctor} />
         <Suspense fallback={<CardLoading />}>
-          <AppointmentTrendsChart />
+          <DoctorAnalyticsSection doctorId={doctorId} />
         </Suspense>
         <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+          <div>
             <Suspense fallback={<CardLoading />}>
               <UpcomingAppointments />
             </Suspense>
           </div>
-          <div>
+          <div className="lg:col-span-2">
             <Suspense fallback={<CardLoading />}>
               <ActivityFeed />
             </Suspense>

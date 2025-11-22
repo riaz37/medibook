@@ -282,6 +282,35 @@ class ApiClientService extends BaseService {
   }) {
     return this.post("/api/send-appointment-email", data);
   }
+
+  // Payments API - Patient
+  async getPatientPayments() {
+    return this.get("/api/patients/payments");
+  }
+
+  // Payments API - Doctor
+  async getDoctorPayments(doctorId: string) {
+    return this.get(`/api/doctors/${doctorId}/payments`);
+  }
+
+  async getDoctorBilling(doctorId: string, month?: number, year?: number) {
+    const params: Record<string, string | number> = {};
+    if (month) params.month = month;
+    if (year) params.year = year;
+    const queryString = this.buildQueryString(params);
+    return this.get(`/api/doctors/${doctorId}/billing${queryString}`);
+  }
+
+  // Analytics API
+  async getAppointmentTrends(period: string) {
+    return this.get(`/api/appointments/trends?period=${period}`);
+  }
+
+  // Admin Revenue API
+  async getAdminRevenue(period?: string) {
+    const queryString = period ? this.buildQueryString({ period }) : "";
+    return this.get(`/api/admin/revenue${queryString}`);
+  }
 }
 
 // Export singleton instance

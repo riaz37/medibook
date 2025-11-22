@@ -10,14 +10,7 @@ import { useAppointmentBookingStore } from "@/lib/stores/appointment-booking.sto
 import { useRouter } from "next/navigation";
 import { showSuccess, showError } from "@/lib/utils/toast";
 import { format } from "date-fns";
-
-interface PaymentStepProps {
-  selectedDentistId: string;
-  selectedDate: string;
-  selectedTime: string;
-  selectedType: string;
-  onBack: () => void;
-}
+import type { PaymentStepProps } from "@/lib/types";
 
 function PaymentStep({
   selectedDentistId,
@@ -96,8 +89,8 @@ function PaymentStep({
         router.push("/patient/appointments");
       }, 2000);
     } catch (error) {
-      console.error("Error after payment:", error);
-      showError("Payment succeeded but failed to load appointment details. Please check your appointments.");
+      const errorMessage = error instanceof Error ? error.message : "Payment succeeded but failed to load appointment details. Please check your appointments.";
+      showError(errorMessage);
     } finally {
       setIsProcessing(false);
     }

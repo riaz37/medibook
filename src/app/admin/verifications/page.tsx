@@ -9,27 +9,7 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { useAdminDoctorVerifications } from "@/hooks";
-
-type VerificationStatus = "all" | "PENDING" | "APPROVED" | "REJECTED";
-
-interface Verification {
-  id: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  licenseUrl: string | null;
-  certificateUrl: string | null;
-  idDocumentUrl: string | null;
-  submittedAt: Date | null;
-  reviewedAt: Date | null;
-  rejectionReason: string | null;
-  doctor: {
-    id: string;
-    name: string;
-    email: string;
-    speciality: string;
-    imageUrl: string;
-    createdAt: Date;
-  };
-}
+import type { VerificationStatus, VerificationWithDoctor } from "@/lib/types";
 
 function AdminVerificationsPage() {
   const [activeTab, setActiveTab] = useState<VerificationStatus>("all");

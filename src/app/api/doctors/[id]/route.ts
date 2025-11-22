@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Gender } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { updateDoctorSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 

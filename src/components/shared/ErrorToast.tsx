@@ -3,13 +3,7 @@
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, X } from "lucide-react";
-
-interface ErrorToastOptions {
-  message: string;
-  retry?: () => void;
-  dismiss?: () => void;
-  duration?: number;
-}
+import type { ErrorToastOptions } from "@/lib/types";
 
 /**
  * Enhanced error toast with retry action

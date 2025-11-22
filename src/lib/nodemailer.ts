@@ -1,23 +1,28 @@
 import nodemailer from "nodemailer";
 import type { TransportOptions } from "nodemailer";
 
+// Get SMTP configuration
+const smtpPort = parseInt(process.env.SMTP_PORT || "587");
+const isSecure = process.env.SMTP_SECURE === "true" || smtpPort === 465;
+
 // Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+  port: smtpPort,
+  secure: isSecure, // true for 465 (SSL), false for 587 (STARTTLS)
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
   },
   // Connection options for better reliability
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000, // 10 seconds
-  socketTimeout: 10000, // 10 seconds
+  connectionTimeout: 30000, // 30 seconds (increased for better reliability)
+  greetingTimeout: 30000, // 30 seconds
+  socketTimeout: 60000, // 60 seconds
   // Disable pooling for serverless environments (Next.js API routes)
   pool: false,
-  // Enable TLS/STARTTLS
-  requireTLS: true,
+  // For port 465 (SSL), requireTLS should be false
+  // For port 587 (STARTTLS), requireTLS should be true
+  requireTLS: !isSecure, // false for SSL (465), true for STARTTLS (587)
   tls: {
     // Do not fail on invalid certificates
     rejectUnauthorized: false,

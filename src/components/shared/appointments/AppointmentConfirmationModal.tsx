@@ -9,17 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircleIcon, MailIcon, CalendarIcon, ClockIcon, UserIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
-interface AppointmentConfirmationModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  appointmentDetails: {
-    doctorName: string;
-    appointmentDate: string;
-    appointmentTime: string;
-    userEmail: string;
-  };
-}
+import type { AppointmentConfirmationModalProps } from "@/lib/types";
 
 export function AppointmentConfirmationModal({
   open,

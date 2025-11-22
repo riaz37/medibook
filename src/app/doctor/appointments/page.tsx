@@ -18,23 +18,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageLoading } from "@/components/ui/loading-skeleton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useQueryClient } from "@tanstack/react-query";
+import type { DoctorAppointmentListItem } from "@/lib/types";
 
 type AppointmentStatus = "all" | "pending" | "upcoming" | "completed";
-
-interface Appointment {
-  id: string;
-  date: string;
-  time: string;
-  status: string;
-  reason?: string;
-  notes?: string;
-  user: {
-    firstName: string | null;
-    lastName: string | null;
-    email: string;
-    phone: string | null;
-  };
-}
 
 function DoctorAppointmentsPage() {
   const router = useRouter();
@@ -54,7 +40,7 @@ function DoctorAppointmentsPage() {
   const { data: appointmentsData = [], isLoading } = useDoctorAppointments();
   
   // Transform appointments to match our interface
-  const appointments = useMemo(() => {
+  const appointments = useMemo((): DoctorAppointmentListItem[] => {
     return appointmentsData.map((apt: any) => ({
       id: apt.id,
       date: apt.date instanceof Date ? apt.date.toISOString() : apt.date,

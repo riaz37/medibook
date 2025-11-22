@@ -6,18 +6,7 @@ import { useFileUpload } from "@/hooks/use-file-upload";
 import { Upload, X, File } from "lucide-react";
 import { Progress } from "./progress";
 import { cn } from "@/lib/utils";
-
-interface FileUploadProps {
-  onUploadComplete?: (url: string, publicId: string) => void;
-  onUploadError?: (error: Error) => void;
-  folder?: string;
-  maxSize?: number; // in bytes
-  allowedTypes?: string[];
-  accept?: string;
-  label?: string;
-  className?: string;
-  disabled?: boolean;
-}
+import type { FileUploadProps } from "@/lib/types";
 
 export function FileUpload({
   onUploadComplete,

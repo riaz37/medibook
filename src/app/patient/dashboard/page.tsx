@@ -3,10 +3,8 @@ import { redirect } from "next/navigation";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import DashboardHero from "@/components/patient/dashboard/DashboardHero";
 import StatsGrid from "@/components/patient/dashboard/StatsGrid";
-import ActivityFeed from "@/components/patient/dashboard/ActivityFeed";
 import MainActions from "@/components/patient/dashboard/MainActions";
 import NextAppointment from "@/components/patient/dashboard/NextAppointment";
-import DentalHealthOverview from "@/components/patient/dashboard/DentalHealthOverview";
 import { PatientOnboardingTour } from "@/components/patient/dashboard/PatientOnboardingTour";
 
 /**
@@ -48,10 +46,6 @@ async function DashboardPage() {
         <MainActions />
         <div className="grid lg:grid-cols-3 gap-6">
           <NextAppointment />
-          <DentalHealthOverview />
-        </div>
-        <div className="mt-6">
-          <ActivityFeed />
         </div>
       </div>
     </PatientDashboardLayout>

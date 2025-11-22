@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { createStripeConnectAccount, createOnboardingLink } from "@/lib/stripe-connect";
 import { getAuthContext } from "@/lib/server/auth-utils";
 

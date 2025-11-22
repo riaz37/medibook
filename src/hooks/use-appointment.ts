@@ -3,6 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { appointmentsService } from "@/lib/services";
 import { queryKeys } from "@/lib/constants/query-keys";
+import { handleApiError, toastMessages } from "@/lib/utils/toast";
+import { showErrorToast } from "@/components/shared/ErrorToast";
 import type { 
   BookAppointmentInput, 
   UpdateAppointmentStatusInput,
@@ -35,7 +37,10 @@ export function useBookAppointment() {
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.user() });
     },
-    onError: (error) => console.error("Failed to book appointment:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, toastMessages.error.appointmentBookFailed);
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -70,7 +75,10 @@ export function useUpdateAppointmentStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all });
     },
-    onError: (error) => console.error("Failed to update appointment:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, toastMessages.error.appointmentUpdateFailed);
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -84,7 +92,10 @@ export function useRescheduleAppointment() {
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.detail(variables.id) });
     },
-    onError: (error) => console.error("Failed to reschedule appointment:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, toastMessages.error.appointmentUpdateFailed);
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -98,13 +109,19 @@ export function useCancelAppointment() {
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.detail(variables.id) });
     },
-    onError: (error) => console.error("Failed to cancel appointment:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, toastMessages.error.appointmentCancelFailed);
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
 export function useExportAppointmentToICS() {
   return useMutation({
     mutationFn: (id: string) => appointmentsService.exportToICS(id),
-    onError: (error) => console.error("Failed to export appointment:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, "Failed to export appointment");
+      showErrorToast({ message: errorMessage });
+    },
   });
 }

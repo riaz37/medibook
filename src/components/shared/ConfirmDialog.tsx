@@ -11,18 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AlertTriangle } from "lucide-react";
-
-interface ConfirmDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  variant?: "default" | "destructive";
-  onConfirm: () => void;
-  warningText?: string;
-}
+import type { ConfirmDialogProps } from "@/lib/types";
 
 export function ConfirmDialog({
   open,

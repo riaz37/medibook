@@ -15,3 +15,6 @@ export * from "./user.schema";
 // Doctor settings validations
 export * from "./doctor-settings.schema";
 
+// Prescription validations
+export * from "./prescription.schema";
+

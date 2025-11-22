@@ -13,24 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, FileText, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-interface Verification {
-  id: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  licenseUrl: string | null;
-  certificateUrl: string | null;
-  idDocumentUrl: string | null;
-  otherDocuments: string | null;
-  submittedAt: Date | null;
-  reviewedAt: Date | null;
-  rejectionReason: string | null;
-}
-
-interface ViewMyDocumentsDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  doctorId: string;
-}
+import type { ViewMyDocumentsDialogProps } from "@/lib/types";
 
 export default function ViewMyDocumentsDialog({
   isOpen,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { vapiService } from "@/lib/services/vapi.service";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { createLogger } from "@/lib/logger";

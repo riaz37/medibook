@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { getAuthContext } from "@/lib/server/auth-utils";
 import { subDays, format, startOfDay } from "date-fns";
 

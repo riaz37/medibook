@@ -7,10 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CreditCard, ExternalLink, Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { showSuccess, showError } from "@/lib/utils/toast";
 import { useRouter, useSearchParams } from "next/navigation";
-
-interface PaymentSettingsClientProps {
-  doctorId: string;
-}
+import type { PaymentSettingsClientProps } from "@/lib/types";
 
 function PaymentSettingsClient({ doctorId }: PaymentSettingsClientProps) {
   const router = useRouter();

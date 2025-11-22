@@ -7,11 +7,8 @@ import {
   Users,
   CheckCircle2,
   Settings,
+  Wallet,
   BarChart3,
-  User,
-  FileText,
-  Bell,
-  DollarSign,
 } from "lucide-react";
 import {
   Sidebar,
@@ -24,15 +21,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
 import { useUser, UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 
 const menuItems = [
   {
-    title: "Main",
+    title: "Overview",
     items: [
       {
         title: "Dashboard",
@@ -40,6 +35,11 @@ const menuItems = [
         icon: Home,
         badge: null,
       },
+    ],
+  },
+  {
+    title: "Management",
+    items: [
       {
         title: "Doctors",
         url: "/admin/doctors",
@@ -52,51 +52,33 @@ const menuItems = [
         icon: CheckCircle2,
         badge: null,
       },
+    ],
+  },
+  {
+    title: "Financial",
+    items: [
       {
-        title: "Settings",
-        url: "/admin/settings",
-        icon: Settings,
+        title: "Analytics",
+        url: "/admin/analytics",
+        icon: BarChart3,
+        badge: null,
+      },
+      {
+        title: "Payments",
+        url: "/admin/settings/payments",
+        icon: Wallet,
         badge: null,
       },
     ],
   },
   {
-    title: "Upcoming",
+    title: "Settings",
     items: [
       {
-        title: "Analytics",
-        url: "#",
-        icon: BarChart3,
-        badge: "Coming Soon",
-        disabled: true,
-      },
-      {
-        title: "Users",
-        url: "#",
-        icon: User,
-        badge: "Coming Soon",
-        disabled: true,
-      },
-      {
-        title: "Audit Logs",
-        url: "#",
-        icon: FileText,
-        badge: "Coming Soon",
-        disabled: true,
-      },
-      {
-        title: "Notifications",
-        url: "#",
-        icon: Bell,
-        badge: "Coming Soon",
-        disabled: true,
-      },
-      {
-        title: "Revenue",
-        url: "#",
-        icon: DollarSign,
-        badge: "Coming Soon",
-        disabled: true,
+        title: "Settings",
+        url: "/admin/settings",
+        icon: Settings,
+        badge: null,
       },
     ],
   },
@@ -132,30 +114,7 @@ export function AdminSidebar() {
               <SidebarMenu>
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = !item.disabled && (pathname === item.url || pathname?.startsWith(item.url + "/"));
-                  const isDisabled = item.disabled;
-
-                  if (isDisabled) {
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          disabled
-                          tooltip={item.title}
-                          className="opacity-50 cursor-not-allowed"
-                        >
-                          <Icon />
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <SidebarMenuBadge>
-                              <Badge variant="secondary" className="text-xs">
-                                {item.badge}
-                              </Badge>
-                            </SidebarMenuBadge>
-                          )}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  }
+                  const isActive = pathname === item.url || pathname?.startsWith(item.url + "/");
 
                   return (
                     <SidebarMenuItem key={item.title}>
@@ -163,13 +122,6 @@ export function AdminSidebar() {
                         <Link href={item.url}>
                           <Icon />
                           <span>{item.title}</span>
-                          {item.badge && (
-                            <SidebarMenuBadge>
-                              <Badge variant="secondary" className="text-xs">
-                                {item.badge}
-                              </Badge>
-                            </SidebarMenuBadge>
-                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

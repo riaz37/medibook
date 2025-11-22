@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAdminDoctorVerifications, useUpdateVerificationStatus } from "@/hooks";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,59 +12,30 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle2, XCircle, Clock, ExternalLink, FileText } from "lucide-react";
 import { toast } from "sonner";
-
-interface Verification {
-  id: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  licenseUrl: string | null;
-  certificateUrl: string | null;
-  idDocumentUrl: string | null;
-  submittedAt: Date | null;
-  reviewedAt: Date | null;
-  rejectionReason: string | null;
-  doctor: {
-    id: string;
-    name: string;
-    email: string;
-    speciality: string;
-    imageUrl: string;
-    createdAt: Date;
-  };
-}
+import type { VerificationWithDoctor } from "@/lib/types";
+import { LoadingSpinner } from "@/components/ui/loading-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function DoctorVerifications() {
   const queryClient = useQueryClient();
-  const [selectedVerification, setSelectedVerification] = useState<Verification | null>(null);
+  const [selectedVerification, setSelectedVerification] = useState<VerificationWithDoctor | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [action, setAction] = useState<"approve" | "reject" | null>(null);
 
-  const { data: verifications = [], isLoading } = useQuery<Verification[]>({
-    queryKey: ["adminVerifications", "PENDING"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/doctors/verification?status=PENDING");
-      if (!response.ok) throw new Error("Failed to fetch verifications");
-      return response.json();
-    },
-  });
+  const { data: verifications = [], isLoading } = useAdminDoctorVerifications("PENDING");
+
+  const updateVerificationMutation = useUpdateVerificationStatus();
 
   const approveMutation = useMutation({
     mutationFn: async (verificationId: string) => {
-      const response = await fetch(`/api/admin/doctors/verification/${verificationId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "APPROVED" }),
+      return updateVerificationMutation.mutateAsync({
+        verificationId,
+        data: { status: "APPROVED" },
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to approve");
-      }
-      return response.json();
     },
     onSuccess: () => {
       toast.success("Doctor verified successfully");
-      queryClient.invalidateQueries({ queryKey: ["adminVerifications"] });
-      queryClient.invalidateQueries({ queryKey: ["doctors"] });
       setIsDialogOpen(false);
       setSelectedVerification(null);
     },
@@ -74,20 +46,13 @@ export default function DoctorVerifications() {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ verificationId, reason }: { verificationId: string; reason: string }) => {
-      const response = await fetch(`/api/admin/doctors/verification/${verificationId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "REJECTED", rejectionReason: reason }),
+      return updateVerificationMutation.mutateAsync({
+        verificationId,
+        data: { status: "REJECTED", rejectionReason: reason },
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to reject");
-      }
-      return response.json();
     },
     onSuccess: () => {
       toast.success("Verification rejected");
-      queryClient.invalidateQueries({ queryKey: ["adminVerifications"] });
       setIsDialogOpen(false);
       setSelectedVerification(null);
       setRejectionReason("");
@@ -97,13 +62,13 @@ export default function DoctorVerifications() {
     },
   });
 
-  const handleApprove = (verification: Verification) => {
+  const handleApprove = (verification: VerificationWithDoctor) => {
     setSelectedVerification(verification);
     setAction("approve");
     setIsDialogOpen(true);
   };
 
-  const handleReject = (verification: Verification) => {
+  const handleReject = (verification: VerificationWithDoctor) => {
     setSelectedVerification(verification);
     setAction("reject");
     setIsDialogOpen(true);
@@ -135,10 +100,7 @@ export default function DoctorVerifications() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-32">
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Loading verifications...</p>
-            </div>
+            <LoadingSpinner size="md" />
           </div>
         </CardContent>
       </Card>
@@ -153,10 +115,11 @@ export default function DoctorVerifications() {
           <CardDescription>Review and approve doctor documents</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <CheckCircle2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No pending verifications</p>
-          </div>
+          <EmptyState
+            icon={CheckCircle2}
+            title="No pending verifications"
+            description="All doctor verifications have been reviewed. New submissions will appear here."
+          />
         </CardContent>
       </Card>
     );

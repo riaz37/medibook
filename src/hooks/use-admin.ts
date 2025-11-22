@@ -3,31 +3,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminService } from "@/lib/services";
 import { queryKeys } from "@/lib/constants/query-keys";
-
-export interface Verification {
-  id: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  submittedAt: Date | null;
-  reviewedAt: Date | null;
-  rejectionReason: string | null;
-  licenseUrl: string | null;
-  certificateUrl: string | null;
-  idDocumentUrl: string | null;
-  doctor: {
-    id: string;
-    name: string;
-    email: string;
-    speciality: string;
-    imageUrl: string;
-    createdAt: Date;
-  };
-}
+import { handleApiError } from "@/lib/utils/toast";
+import { showErrorToast } from "@/components/shared/ErrorToast";
+import type { VerificationWithDoctor } from "@/lib/types";
 
 export function useAdminDoctorVerifications(status?: "PENDING" | "APPROVED" | "REJECTED") {
-  return useQuery<Verification[]>({
+  return useQuery<VerificationWithDoctor[]>({
     queryKey: queryKeys.admin.verifications(status),
     queryFn: async () => {
-      return (await adminService.getDoctorVerifications(status)) as Verification[];
+      return (await adminService.getDoctorVerifications(status)) as VerificationWithDoctor[];
     },
   });
 }
@@ -44,7 +28,10 @@ export function useUpdateVerificationStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
     },
-    onError: (error) => console.error("Failed to update verification status:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, "Failed to update verification status");
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 

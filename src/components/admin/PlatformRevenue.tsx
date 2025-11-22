@@ -1,29 +1,33 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useAdminRevenue } from "@/hooks";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { DollarSign, TrendingUp, Loader2 } from "lucide-react";
+import { DollarSign, TrendingUp } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-skeleton";
+import { showErrorToast } from "@/components/shared/ErrorToast";
+import { handleApiError } from "@/lib/utils/toast";
+import { useEffect } from "react";
 import { StatCard } from "@/components/ui/stat-card";
+import type { AdminRevenueData } from "@/lib/types";
 
 export function PlatformRevenue() {
-  const { data: revenue, isLoading } = useQuery({
-    queryKey: ["platform-revenue"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/revenue");
-      if (!response.ok) {
-        throw new Error("Failed to fetch revenue");
-      }
-      return response.json();
-    },
-  });
+  const { data: revenueResponse, isLoading, isError, error } = useAdminRevenue();
+  const revenue = revenueResponse as AdminRevenueData | undefined;
+
+  useEffect(() => {
+    if (isError && error) {
+      const errorMessage = handleApiError(error, "Failed to load revenue data");
+      showErrorToast({ message: errorMessage, retry: () => window.location.reload() });
+    }
+  }, [isError, error]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
@@ -53,64 +57,64 @@ export function PlatformRevenue() {
       </div>
 
       {/* Recent Payments */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Payments</CardTitle>
-          <CardDescription>Platform commission from appointments</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!revenue?.recentPayments || revenue.recentPayments.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No payments yet
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Doctor</TableHead>
-                  <TableHead>Appointment</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Commission</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {revenue.recentPayments.map((payment: any) => (
-                  <TableRow key={payment.id}>
-                    <TableCell>
-                      {format(new Date(payment.createdAt), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>{payment.doctor?.name || "N/A"}</TableCell>
-                    <TableCell>
-                      {payment.appointment?.appointmentType?.name || "Appointment"}
-                    </TableCell>
-                    <TableCell>
-                      ${Number(payment.appointmentPrice).toFixed(2)}
-                    </TableCell>
-                    <TableCell className="font-medium text-primary">
-                      ${Number(payment.commissionAmount).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          payment.status === "COMPLETED"
-                            ? "default"
-                            : payment.status === "PENDING"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
-                        {payment.status}
-                      </Badge>
-                    </TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Payments</CardTitle>
+            <CardDescription>Platform commission from appointments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!revenue?.recentPayments || revenue.recentPayments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No payments yet
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Doctor</TableHead>
+                    <TableHead>Appointment</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Commission</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {revenue.recentPayments.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell>
+                        {format(new Date(payment.createdAt), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell>{payment.doctor?.name || "N/A"}</TableCell>
+                      <TableCell>
+                        {payment.appointment?.appointmentType?.name || "Appointment"}
+                      </TableCell>
+                      <TableCell>
+                        ${Number(payment.appointmentPrice).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="font-medium text-primary">
+                        ${Number(payment.commissionAmount).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            payment.status === "COMPLETED"
+                              ? "default"
+                              : payment.status === "PENDING"
+                              ? "secondary"
+                              : "outline"
+                          }
+                        >
+                          {payment.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
     </div>
   );
 }

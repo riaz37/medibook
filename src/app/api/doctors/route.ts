@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Gender } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { generateAvatar } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { createDoctorSchema } from "@/lib/validations";

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { paymentService } from "./payment.service";
 import { RefundType, RefundStatus } from "@prisma/client";

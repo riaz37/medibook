@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { paymentService } from "@/lib/services/payment.service";
 import { commissionService } from "@/lib/services/commission.service";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 
 /**
  * POST /api/payments/create-intent

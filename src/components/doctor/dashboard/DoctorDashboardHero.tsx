@@ -1,9 +1,9 @@
 import Image from "next/image";
 import { currentUser } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, SettingsIcon, CheckCircle2, Clock } from "lucide-react";
+import { CalendarIcon, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { getAuthContext } from "@/lib/server/auth-utils";
 
 export default async function DoctorDashboardHero() {
@@ -42,12 +42,16 @@ export default async function DoctorDashboardHero() {
           {isVerified ? (
             <>
               <CheckCircle2 className="size-3 text-primary" />
-              <span className="text-sm font-medium text-primary">Verified Doctor</span>
+              <span className="text-sm font-medium text-primary">
+                Verified Doctor
+              </span>
             </>
           ) : (
             <>
               <Clock className="size-3 text-yellow-600" />
-              <span className="text-sm font-medium text-yellow-600">Verification Pending</span>
+              <span className="text-sm font-medium text-yellow-600">
+                Verification Pending
+              </span>
             </>
           )}
         </div>
@@ -57,7 +61,8 @@ export default async function DoctorDashboardHero() {
             {getGreeting()}, {doctor?.name || user?.firstName}!
           </h1>
           <p className="text-muted-foreground text-sm md:text-base">
-            Manage your appointments, patients, and practice settings. Stay on top of your schedule and provide the best care.
+            Manage your appointments, patients, and practice settings. Stay on
+            top of your schedule and provide the best care.
           </p>
         </div>
 
@@ -68,19 +73,18 @@ export default async function DoctorDashboardHero() {
               View Appointments
             </Button>
           </Link>
-          <Link href="/doctor/settings">
-            <Button size="lg" variant="outline">
-              <SettingsIcon className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
-          </Link>
         </div>
       </div>
 
       <div className="hidden lg:flex items-center justify-center size-24 md:size-32 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full mt-4 md:mt-0 md:ml-8">
-        <Image src="/logo.png" alt="Medibook" width={64} height={64} className="w-16 h-16" />
+        <Image
+          src="/logo.png"
+          alt="Medibook"
+          width={64}
+          height={64}
+          className="w-16 h-16"
+        />
       </div>
     </div>
   );
 }
-

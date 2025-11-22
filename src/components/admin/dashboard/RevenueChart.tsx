@@ -1,7 +1,9 @@
 "use client";
 
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useEffect } from "react";
+import { useAdminRevenue } from "@/hooks";
+import { showErrorToast } from "@/components/shared/ErrorToast";
+import { handleApiError } from "@/lib/utils/toast";
 import {
   ChartContainer,
   ChartTooltip,
@@ -12,30 +14,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import { DollarSign, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const chartConfig = {
   revenue: {
     label: "Revenue",
-    color: "hsl(var(--chart-1))",
+    color: "var(--primary)",
   },
   commission: {
     label: "Commission",
-    color: "hsl(var(--chart-2))",
+    color: "var(--secondary)",
   },
 } satisfies import("@/components/ui/chart").ChartConfig;
 
-async function fetchRevenueTrends(period: string) {
-  const response = await fetch(`/api/admin/revenue?period=${period}`);
-  if (!response.ok) throw new Error("Failed to fetch revenue");
-  return response.json();
-}
-
 export function RevenueChart() {
   const [period, setPeriod] = React.useState("30");
-  const { data, isLoading } = useQuery({
-    queryKey: ["revenueTrends", period],
-    queryFn: () => fetchRevenueTrends(period),
-  });
+  const { data, isLoading, isError, error } = useAdminRevenue(period);
+
+  useEffect(() => {
+    if (isError && error) {
+      const errorMessage = handleApiError(error, "Failed to load revenue data");
+      showErrorToast({ message: errorMessage, retry: () => window.location.reload() });
+    }
+  }, [isError, error]);
 
   if (isLoading) {
     return (
@@ -51,7 +52,7 @@ export function RevenueChart() {
     );
   }
 
-  if (!data?.data || data.data.length === 0) {
+  if (isError) {
     return (
       <Card>
         <CardHeader>
@@ -59,8 +60,40 @@ export function RevenueChart() {
             <DollarSign className="h-5 w-5" />
             Revenue Trends
           </CardTitle>
-          <CardDescription>No revenue data available yet</CardDescription>
+          <CardDescription>Platform revenue analytics</CardDescription>
         </CardHeader>
+        <CardContent>
+          <EmptyState
+            icon={DollarSign}
+            title="Failed to load revenue data"
+            description="Please try refreshing the page or contact support if the issue persists."
+            action={{
+              label: "Refresh",
+              onClick: () => window.location.reload(),
+            }}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data || typeof data !== "object" || !("data" in data) || !Array.isArray((data as { data: unknown[] }).data) || (data as { data: unknown[] }).data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Revenue Trends
+          </CardTitle>
+          <CardDescription>Platform revenue analytics</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmptyState
+            icon={DollarSign}
+            title="No revenue data yet"
+            description="Revenue trends will appear here once transactions are processed."
+          />
+        </CardContent>
       </Card>
     );
   }
@@ -90,7 +123,7 @@ export function RevenueChart() {
           <TabsContent value={period}>
             <ChartContainer config={chartConfig} className="h-64 w-full">
               <BarChart
-                data={data.data}
+                data={(data && typeof data === "object" && "data" in data && Array.isArray((data as { data: any[] }).data)) ? (data as { data: any[] }).data : []}
                 margin={{
                   left: 12,
                   right: 12,

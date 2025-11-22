@@ -2,25 +2,14 @@ import { format, isAfter, isSameDay, parseISO, isPast, differenceInDays, differe
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CalendarIcon, ClockIcon, ArrowRight } from "lucide-react";
 import { getAuthContext } from "@/lib/server/auth-utils";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { NextAppointmentData } from "@/lib/types";
 
-type Appointment = {
-  id: string;
-  date: string;
-  time: string;
-  status: string;
-  reason?: string;
-  doctorName: string;
-  doctorImageUrl?: string;
-  patientName: string;
-  patientEmail: string;
-};
-
-function transformAppointment(appointment: any): Appointment {
+function transformAppointment(appointment: any): NextAppointmentData {
   return {
     ...appointment,
     patientName: `${appointment.user.firstName || ""} ${appointment.user.lastName || ""}`.trim(),
@@ -34,7 +23,7 @@ function transformAppointment(appointment: any): Appointment {
 async function NextAppointment() {
   // Middleware ensures user is authenticated
   const context = await getAuthContext();
-  let appointments: Appointment[] = [];
+  let appointments: NextAppointmentData[] = [];
 
   if (context) {
     try {
@@ -56,7 +45,7 @@ async function NextAppointment() {
         appointments = dbAppointments.map(transformAppointment);
       }
     } catch (error) {
-      console.error("Error fetching appointments:", error);
+      // Error is handled silently for server components - could add error logging service here
     }
   }
 

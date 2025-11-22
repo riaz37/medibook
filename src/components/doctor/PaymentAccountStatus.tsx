@@ -1,29 +1,16 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, AlertCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-
-interface PaymentAccountStatusProps {
-  doctorId: string;
-}
+import type { PaymentAccountStatusProps } from "@/lib/types";
+import { useDoctorPaymentAccountStatus } from "@/hooks";
 
 export function PaymentAccountStatus({ doctorId }: PaymentAccountStatusProps) {
   const router = useRouter();
-
-  const { data: accountStatus, isLoading } = useQuery({
-    queryKey: ["payment-account", doctorId],
-    queryFn: async () => {
-      const response = await fetch(`/api/doctors/${doctorId}/payment-setup`);
-      if (!response.ok) {
-        return { exists: false };
-      }
-      return response.json();
-    },
-  });
+  const { data: accountStatus, isLoading } = useDoctorPaymentAccountStatus(doctorId);
 
   if (isLoading) {
     return (

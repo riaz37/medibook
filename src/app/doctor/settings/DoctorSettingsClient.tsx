@@ -17,32 +17,7 @@ import { Gender } from "@prisma/client";
 import { FileUpload } from "@/components/ui/file-upload";
 import { doctorsService } from "@/lib/services";
 import { useSubmitDoctorVerification, useUpdateDoctor } from "@/hooks";
-
-interface Doctor {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  speciality: string;
-  bio: string | null;
-  gender: Gender;
-  isVerified: boolean;
-}
-
-interface Verification {
-  id: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  licenseUrl: string | null;
-  certificateUrl: string | null;
-  idDocumentUrl: string | null;
-  submittedAt: Date | null;
-  rejectionReason: string | null;
-}
-
-interface DoctorSettingsClientProps {
-  doctor: Doctor;
-  verification: Verification | null;
-}
+import type { DoctorSettingsClientProps, DoctorSettingsData, DoctorVerificationData } from "@/lib/types";
 
 const SPECIALITIES = [
   "General Practice",
@@ -62,6 +37,9 @@ const SPECIALITIES = [
 ];
 
 export default function DoctorSettingsClient({ doctor, verification }: DoctorSettingsClientProps) {
+  // Type assertions for compatibility
+  const doctorData = doctor as DoctorSettingsData;
+  const verificationData = verification as DoctorVerificationData | null;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmittingDocs, setIsSubmittingDocs] = useState(false);
@@ -77,22 +55,22 @@ export default function DoctorSettingsClient({ doctor, verification }: DoctorSet
   }, [searchParams]);
   
   const [formData, setFormData] = useState({
-    name: doctor.name,
-    phone: doctor.phone,
-    speciality: doctor.speciality,
-    bio: doctor.bio || "",
-    gender: doctor.gender,
+    name: doctorData.name,
+    phone: doctorData.phone,
+    speciality: doctorData.speciality,
+    bio: doctorData.bio || "",
+    gender: doctorData.gender,
   });
 
   const [documents, setDocuments] = useState({
-    licenseUrl: verification?.licenseUrl || "",
-    certificateUrl: verification?.certificateUrl || "",
-    idDocumentUrl: verification?.idDocumentUrl || "",
+    licenseUrl: verificationData?.licenseUrl || "",
+    certificateUrl: verificationData?.certificateUrl || "",
+    idDocumentUrl: verificationData?.idDocumentUrl || "",
   });
 
   const profileComplete = formData.name && formData.phone && formData.speciality && formData.gender;
-  const documentsSubmitted = verification?.status === "PENDING" || verification?.status === "APPROVED";
-  const canUpdateDocuments = verification?.status === "REJECTED" || verification?.status === "PENDING" || !verification;
+  const documentsSubmitted = verificationData?.status === "PENDING" || verificationData?.status === "APPROVED";
+  const canUpdateDocuments = verificationData?.status === "REJECTED" || verificationData?.status === "PENDING" || !verificationData;
   const [isEditingDocuments, setIsEditingDocuments] = useState(false);
 
   const updateDoctorMutation = useUpdateDoctor();

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDoctorConfig, useUpdateDoctorConfig } from "@/hooks";
 import { useDoctorSettingsStore } from "@/lib/stores/doctor-settings.store";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,12 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Save, Clock } from "lucide-react";
 import { showSuccess, showError, handleApiError, toastMessages } from "@/lib/utils/toast";
-
-interface AvailabilitySettingsProps {
-  doctorId: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+import type { AvailabilitySettingsProps } from "@/lib/types";
 
 const TIME_SLOTS = [
   "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
@@ -29,15 +25,7 @@ export default function AvailabilitySettings({ doctorId, open, onOpenChange }: A
   const queryClient = useQueryClient();
   const { availability, setAvailability, initializeFromConfig, isLoading: storeLoading } = useDoctorSettingsStore();
 
-  const { data: config, isLoading: queryLoading } = useQuery({
-    queryKey: ["doctorConfig", doctorId],
-    queryFn: async () => {
-      const response = await fetch(`/api/doctors/${doctorId}/config`);
-      if (!response.ok) throw new Error("Failed to fetch config");
-      return response.json();
-    },
-    enabled: open,
-  });
+  const { data: config, isLoading: queryLoading } = useDoctorConfig(open ? doctorId : null);
 
   useEffect(() => {
     if (config && open) {
@@ -54,22 +42,22 @@ export default function AvailabilitySettings({ doctorId, open, onOpenChange }: A
     }
   }, [config, open, initializeFromConfig]);
 
+  const updateConfigMutation = useUpdateDoctorConfig();
+  
   const updateAvailabilityMutation = useMutation({
     mutationFn: async (data: typeof availability) => {
-      const response = await fetch(`/api/doctors/${doctorId}/config`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      return updateConfigMutation.mutateAsync({
+        doctorId,
+        data: {
+          slotDuration: data.slotDuration,
+          bookingAdvanceDays: data.bookingAdvanceDays,
+          minBookingHours: data.minBookingHours,
+          timeSlots: data.timeSlots,
+        },
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update availability");
-      }
-      return response.json();
     },
     onSuccess: () => {
       showSuccess(toastMessages.success.settingsSaved);
-      queryClient.invalidateQueries({ queryKey: ["doctorConfig", doctorId] });
       onOpenChange(false);
     },
     onError: (error: Error) => {

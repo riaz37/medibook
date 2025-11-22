@@ -5,12 +5,11 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
-
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -27,6 +26,7 @@ model User {
   // relationships
   appointments  Appointment[]
   doctorProfile Doctor? // If user is a doctor, link to their doctor profile
+  prescriptions Prescription[] // Prescriptions issued to this patient
 
   @@map("users")
 }
@@ -54,6 +54,7 @@ model Doctor {
   verification     DoctorVerification?
   paymentAccount   DoctorPaymentAccount? // Stripe Connect account
   payments         AppointmentPayment[] // Payment records
+  prescriptions    Prescription[] // Prescriptions issued by this doctor
 
   @@map("doctors")
 }
@@ -128,9 +129,10 @@ model Appointment {
   doctorId String
 
   // relationships
-  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  doctor  Doctor              @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  payment AppointmentPayment? // Payment record for this appointment
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor       Doctor              @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  payment      AppointmentPayment? // Payment record for this appointment
+  prescription Prescription? // Prescription linked to this appointment
 
   @@map("appointments")
 }
@@ -331,4 +333,135 @@ enum StripeAccountStatus {
   RESTRICTED // Account restricted (needs verification)
   ACTIVE // Account active and ready
   REJECTED // Account rejected
+}
+
+// Prescription System Models
+
+model Prescription {
+  id           String             @id @default(cuid())
+  appointmentId String?            @unique // Link to appointment (optional for standalone prescriptions)
+  appointment  Appointment?       @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  
+  doctorId     String
+  doctor       Doctor             @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  
+  patientId    String
+  patient      User               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  status       PrescriptionStatus @default(ACTIVE)
+  issueDate    DateTime           @default(now())
+  expiryDate   DateTime? // Optional expiry date
+  notes        String? // Additional notes from doctor
+  
+  // Relationships
+  items        PrescriptionItem[]
+  audits       PrescriptionAudit[]
+  
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  
+  @@index([doctorId, createdAt])
+  @@index([patientId, createdAt])
+  @@index([status, createdAt])
+  @@index([appointmentId])
+  @@map("prescriptions")
+}
+
+model PrescriptionItem {
+  id                String      @id @default(cuid())
+  prescriptionId   String
+  prescription      Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  
+  medicationId      String? // Link to medication database (optional)
+  medication        Medication? @relation(fields: [medicationId], references: [id], onDelete: SetNull)
+  
+  medicationName    String // Medication name (stored for reference even if medication is deleted)
+  dosage            String // e.g., "500mg", "10ml"
+  frequency         String // e.g., "Twice daily", "Every 8 hours"
+  duration          String // e.g., "7 days", "2 weeks"
+  instructions      String? // Additional instructions
+  quantity          Int? // Number of units/pills
+  
+  refillsAllowed    Int         @default(0) // Number of refills allowed
+  refillsRemaining  Int         @default(0) // Number of refills remaining
+  
+  // Relationships
+  refills           PrescriptionRefill[]
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@index([prescriptionId])
+  @@index([medicationId])
+  @@map("prescription_items")
+}
+
+model Medication {
+  id           String   @id @default(cuid())
+  name         String   // Brand name
+  genericName  String?  // Generic name
+  dosageForms  String   // JSON array: ["tablet", "capsule", "liquid"]
+  strengths    String   // JSON array: ["100mg", "250mg", "500mg"]
+  description  String?  // Medication description
+  isActive     Boolean  @default(true)
+  
+  // Relationships
+  prescriptionItems PrescriptionItem[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([name])
+  @@index([genericName])
+  @@index([isActive])
+  @@map("medications")
+}
+
+model PrescriptionRefill {
+  id                String      @id @default(cuid())
+  prescriptionItemId String
+  prescriptionItem  PrescriptionItem @relation(fields: [prescriptionItemId], references: [id], onDelete: Cascade)
+  
+  requestedAt       DateTime    @default(now())
+  requestedBy       String      // Patient user ID
+  approvedAt        DateTime?
+  approvedBy        String?     // Doctor user ID
+  status            RefillStatus @default(PENDING)
+  notes             String?     // Notes from patient or doctor
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@index([prescriptionItemId])
+  @@index([status, requestedAt])
+  @@map("prescription_refills")
+}
+
+model PrescriptionAudit {
+  id            String      @id @default(cuid())
+  prescriptionId String
+  prescription  Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  
+  action        String      // e.g., "CREATED", "UPDATED", "CANCELLED", "ITEM_ADDED", "ITEM_REMOVED"
+  changedBy     String      // User ID who made the change
+  changes       String?     // JSON object describing what changed
+  timestamp     DateTime    @default(now())
+  
+  @@index([prescriptionId, timestamp])
+  @@index([changedBy, timestamp])
+  @@map("prescription_audits")
+}
+
+enum PrescriptionStatus {
+  ACTIVE    // Prescription is active
+  EXPIRED   // Prescription has expired
+  CANCELLED // Prescription was cancelled
+  COMPLETED // All medications completed, no refills remaining
+}
+
+enum RefillStatus {
+  PENDING   // Refill request pending doctor approval
+  APPROVED  // Refill approved by doctor
+  REJECTED  // Refill rejected by doctor
+  COMPLETED // Refill has been fulfilled
 }

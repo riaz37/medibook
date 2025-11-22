@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, CheckCircle2, Clock, ArrowRight, UserPlus } from "lucide-react";
 import { getAuthContext } from "@/lib/server/auth-utils";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { format, differenceInDays } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";

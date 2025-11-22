@@ -7,11 +7,7 @@ import { useRouter } from "next/navigation";
 import AvailabilitySettings from "@/components/doctor/AvailabilitySettings";
 import WorkingHoursSettings from "@/components/doctor/WorkingHoursSettings";
 import AppointmentTypesSettings from "@/components/doctor/AppointmentTypesSettings";
-import type { Doctor } from "@prisma/client";
-
-interface QuickSettingsProps {
-  doctor: Doctor | null;
-}
+import type { QuickSettingsProps } from "@/lib/types";
 
 export default function QuickSettings({ doctor }: QuickSettingsProps) {
   const router = useRouter();

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { paymentService } from "@/lib/services/payment.service";
 import { emailService } from "@/lib/services/email.service";
 import { format } from "date-fns";

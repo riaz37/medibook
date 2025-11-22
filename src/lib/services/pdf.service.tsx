@@ -1,8 +1,9 @@
 import React from "react";
-import { pdf } from "@react-pdf/renderer";
+import { renderToStream } from "@react-pdf/renderer";
 import { format } from "date-fns";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import AppointmentSummaryPdf from "@/components/pdf/AppointmentSummaryPdf";
+import { PrescriptionPdf } from "@/components/pdf/PrescriptionPdf";
 
 class PdfService {
   async generateAppointmentSummary(appointmentId: string) {
@@ -60,39 +61,25 @@ class PdfService {
       />
     );
 
-    const pdfBuffer = await pdf(pdfDocument).toBuffer();
+    // Use renderToStream() for Node.js server-side rendering (per react-pdf docs)
+    const pdfStream = await renderToStream(pdfDocument);
 
-    // Convert to Node.js Buffer - @react-pdf/renderer returns a Buffer or Uint8Array in Node.js
-    let buffer: Buffer;
-    if (Buffer.isBuffer(pdfBuffer)) {
-      buffer = pdfBuffer;
-    } else if (pdfBuffer instanceof Uint8Array) {
-      buffer = Buffer.from(pdfBuffer);
-    } else {
-      // Fallback: handle ReadableStream (shouldn't happen in Node.js, but handle for type safety)
-      const stream = pdfBuffer as unknown as ReadableStream<Uint8Array>;
-      const reader = stream.getReader();
-      const chunks: Uint8Array[] = [];
-      
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) chunks.push(value);
-        }
-      } finally {
-        reader.releaseLock();
-      }
-      
-      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-      const merged = new Uint8Array(totalLength);
-      let offset = 0;
-      for (const chunk of chunks) {
-        merged.set(chunk, offset);
-        offset += chunk.length;
-      }
-      buffer = Buffer.from(merged);
-    }
+    // Convert Node.js Stream to Buffer
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+
+      pdfStream.on("data", (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+
+      pdfStream.on("end", () => {
+        resolve(Buffer.concat(chunks));
+      });
+
+      pdfStream.on("error", (error: Error) => {
+        reject(error);
+      });
+    });
 
     return {
       buffer,
@@ -102,4 +89,99 @@ class PdfService {
 }
 
 export const pdfService = new PdfService();
+
+/**
+ * Generate a PDF buffer for a prescription
+ * @param prescription - Prescription object with all related data (doctor, patient, items, etc.)
+ * @returns Promise<Buffer> - PDF buffer
+ */
+export async function generatePrescriptionPDF(prescription: {
+  id: string;
+  doctor: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    speciality: string | null;
+  };
+  patient: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+    phone: string | null;
+  };
+  issueDate: Date;
+  expiryDate: Date | null;
+  status: string;
+  notes: string | null;
+  items: Array<{
+    medication: {
+      name: string;
+    } | null;
+    medicationName: string;
+    dosage: string;
+    frequency: string;
+    duration: string;
+    instructions: string | null;
+    quantity: number | null;
+    refillsAllowed: number;
+    refillsRemaining: number;
+  }>;
+}): Promise<Buffer> {
+  const patientName = `${prescription.patient.firstName || ""} ${
+    prescription.patient.lastName || ""
+  }`.trim();
+
+  const pdfDocument = (
+    <PrescriptionPdf
+      prescriptionId={prescription.id}
+      doctorName={prescription.doctor.name}
+      doctorSpeciality={prescription.doctor.speciality}
+      doctorEmail={prescription.doctor.email}
+      doctorPhone={prescription.doctor.phone}
+      patientName={patientName}
+      patientEmail={prescription.patient.email}
+      issueDate={format(prescription.issueDate, "PPP")}
+      expiryDate={
+        prescription.expiryDate
+          ? format(prescription.expiryDate, "PPP")
+          : null
+      }
+      status={prescription.status}
+      notes={prescription.notes}
+      items={prescription.items.map((item) => ({
+        medicationName: item.medication?.name || item.medicationName,
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration: item.duration,
+        instructions: item.instructions,
+        quantity: item.quantity,
+        refillsAllowed: item.refillsAllowed,
+        refillsRemaining: item.refillsRemaining,
+      }))}
+      generatedAt={format(new Date(), "PPPpp")}
+    />
+  );
+
+  // Use renderToStream() for Node.js server-side rendering
+  const pdfStream = await renderToStream(pdfDocument);
+
+  // Convert Node.js Stream to Buffer
+  const buffer = await new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+
+    pdfStream.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+
+    pdfStream.on("end", () => {
+      resolve(Buffer.concat(chunks));
+    });
+
+    pdfStream.on("error", (error: Error) => {
+      reject(error);
+    });
+  });
+
+  return buffer;
+}
 

@@ -1,19 +1,7 @@
-import { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-
-interface EmptyStateProps {
-  icon?: LucideIcon;
-  title: string;
-  description: string;
-  action?: {
-    label: string;
-    href?: string;
-    onClick?: () => void;
-  };
-  className?: string;
-}
+import type { EmptyStateProps } from "@/lib/types";
 
 export function EmptyState({
   icon: Icon,

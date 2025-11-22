@@ -1,12 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Calendar, UserCheck, Clock } from "lucide-react";
-
-interface AdminStatsProps {
-  totalDoctors: number;
-  activeDoctors: number;
-  totalAppointments: number;
-  completedAppointments: number;
-}
+import type { AdminStatsProps } from "@/lib/types";
 
 function AdminStats({
   activeDoctors,

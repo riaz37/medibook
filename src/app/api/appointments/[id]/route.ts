@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AppointmentStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { updateAppointmentStatusSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { requireAppointmentAccess } from "@/lib/server/auth-utils";

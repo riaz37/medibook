@@ -3,7 +3,7 @@
  * Shared functions for appointment-related calculations
  */
 
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { isAfter, isSameDay } from "date-fns";
 
 /**

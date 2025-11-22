@@ -11,8 +11,11 @@ export * from "./appointments.service";
 export * from "./users.service";
 export * from "./admin.service";
 export * from "./upload.service";
-export * from "./vapi.service";
-export * from "./pdf.service";
+// vapi.service is server-only (uses Prisma) - import directly from the file in server components/API routes
+// export * from "./vapi.service";
+// pdf.service is server-only (uses Prisma) - import directly from the file in server components/API routes
+// export * from "./pdf.service";
+export * from "./prescriptions.service";
 
 // Export service instances
 export { apiClient } from "./api-client.service";
@@ -21,8 +24,11 @@ export { appointmentsService } from "./appointments.service";
 export { usersService } from "./users.service";
 export { adminService } from "./admin.service";
 export { uploadService } from "./upload.service";
-export { vapiService } from "./vapi.service";
-export { pdfService } from "./pdf.service";
+// vapiService is server-only (uses Prisma) - import directly from "@/lib/services/vapi.service" in server components/API routes
+// export { vapiService } from "./vapi.service";
+// pdfService is server-only (uses Prisma) - import directly from "@/lib/services/pdf.service" in server components/API routes
+// export { pdfService } from "./pdf.service";
+export { prescriptionsService } from "./prescriptions.service";
 
 // Re-export types for convenience
 export type {

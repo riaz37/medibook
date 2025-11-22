@@ -3,6 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { doctorsService } from "@/lib/services";
 import { queryKeys } from "@/lib/constants/query-keys";
+import { handleApiError, toastMessages } from "@/lib/utils/toast";
+import { showErrorToast } from "@/components/shared/ErrorToast";
 import type { CreateDoctorInput, UpdateDoctorInput } from "@/lib/types";
 import type { DoctorAppointmentType } from "@/lib/types/doctor-config";
 
@@ -36,7 +38,10 @@ export function useCreateDoctor() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.all });
     },
-    onError: (error) => console.error("Error while creating a doctor:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, "Failed to create doctor");
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -49,7 +54,10 @@ export function useUpdateDoctor() {
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.detail(data.id) });
     },
-    onError: (error) => console.error("Failed to update doctor:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, "Failed to update doctor");
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -69,7 +77,10 @@ export function useSubmitDoctorVerification() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.verification(variables.doctorId) });
     },
-    onError: (error) => console.error("Failed to submit verification:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, toastMessages.error.documentUploadFailed);
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -82,7 +93,10 @@ export function useUpdateDoctorConfig() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.config(variables.doctorId) });
     },
-    onError: (error) => console.error("Failed to update config:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, toastMessages.error.settingsSaveFailed);
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -96,7 +110,10 @@ export function useUpdateDoctorWorkingHours() {
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.workingHours(variables.doctorId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.config(variables.doctorId) });
     },
-    onError: (error) => console.error("Failed to update working hours:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, toastMessages.error.settingsSaveFailed);
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -110,7 +127,10 @@ export function useCreateDoctorAppointmentType() {
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.appointmentTypes(variables.doctorId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.config(variables.doctorId) });
     },
-    onError: (error) => console.error("Failed to create appointment type:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, toastMessages.error.settingsSaveFailed);
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -124,7 +144,10 @@ export function useUpdateDoctorAppointmentType() {
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.appointmentTypes(variables.doctorId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.config(variables.doctorId) });
     },
-    onError: (error) => console.error("Failed to update appointment type:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, toastMessages.error.settingsSaveFailed);
+      showErrorToast({ message: errorMessage });
+    },
   });
 }
 
@@ -138,6 +161,9 @@ export function useDeleteDoctorAppointmentType() {
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.appointmentTypes(variables.doctorId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.doctors.config(variables.doctorId) });
     },
-    onError: (error) => console.error("Failed to delete appointment type:", error),
+    onError: (error) => {
+      const errorMessage = handleApiError(error, "Failed to delete appointment type");
+      showErrorToast({ message: errorMessage });
+    },
   });
 }

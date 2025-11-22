@@ -5,21 +5,11 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
 } from "@react-pdf/renderer";
 
-Font.register({
-  family: "Inter",
-  fonts: [
-    {
-      src: "https://fonts.gstatic.com/s/inter/v12/UcCtgynZ0p9fr3dK-1Of.ttf",
-    },
-    {
-      src: "https://fonts.gstatic.com/s/inter/v12/UcCtgynZ0p9fr3cK-1Of.ttf",
-      fontWeight: 600,
-    },
-  ],
-});
+// Use built-in Helvetica font (no registration needed, always available)
+// This avoids "Unknown font format" errors from URL-based font loading
+const fontFamily = "Helvetica";
 
 export interface AppointmentSummaryPdfProps {
   appointmentId: string;
@@ -42,7 +32,7 @@ export interface AppointmentSummaryPdfProps {
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: "Inter",
+    fontFamily: fontFamily,
     padding: 32,
     fontSize: 11,
     lineHeight: 1.5,

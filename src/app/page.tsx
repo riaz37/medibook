@@ -4,6 +4,7 @@ import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import HowItWorks from "@/components/landing/HowItWorks";
 import WhatToAsk from "@/components/landing/WhatToAsk";
+import Pricing from "@/components/landing/Pricing";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
@@ -43,6 +44,7 @@ export default async function Home() {
       <Hero />
       <HowItWorks />
       <WhatToAsk />
+      <Pricing />
       <CTA />
       <Footer />
     </div>

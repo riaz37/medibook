@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { BaseService, ApiException } from "./base.service";
 
 /**

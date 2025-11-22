@@ -13,13 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, FileText, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/ui/loading-skeleton";
-
-interface ViewDoctorDocumentsDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  doctorId: string;
-  doctorName: string;
-}
+import type { ViewDoctorDocumentsDialogProps } from "@/lib/types";
 
 export default function ViewDoctorDocumentsDialog({
   isOpen,

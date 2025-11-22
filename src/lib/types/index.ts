@@ -173,7 +173,11 @@ export type { Gender } from "@prisma/client";
 // Verification Types
 // ============================================================================
 
-export type { DoctorVerification } from "./verification";
+export type { 
+  DoctorVerification,
+  VerificationWithDoctor,
+  VerificationStatus,
+} from "./verification";
 
 // ============================================================================
 // Doctor Configuration Types
@@ -185,4 +189,102 @@ export type {
   DoctorAppointmentType,
   DoctorConfig,
 } from "./doctor-config";
+
+// ============================================================================
+// Payment Types
+// ============================================================================
+
+export type {
+  Payment,
+  BillingData,
+} from "./payments";
+
+// ============================================================================
+// Appointment Component Types
+// ============================================================================
+
+export type {
+  DashboardAppointment,
+  NextAppointmentData,
+  DoctorAppointmentListItem,
+  UpcomingAppointmentData,
+} from "./appointments";
+
+// ============================================================================
+// Analytics Types
+// ============================================================================
+
+export type {
+  DoctorAnalyticsClientProps,
+  AdminRevenueData,
+  AdminRevenueTrendsData,
+} from "./analytics";
+
+// ============================================================================
+// UI Component Types
+// ============================================================================
+
+export type {
+  DataTableProps,
+  Column,
+  PageHeaderProps,
+  FormFieldEnhancedProps,
+  EmptyStateProps,
+  FileUploadProps,
+  StatCardProps,
+  ConfirmDialogProps,
+  AddDoctorDialogProps,
+  EditDoctorDialogProps,
+  AppointmentConfirmationModalProps,
+  ViewDoctorDocumentsDialogProps,
+  ViewMyDocumentsDialogProps,
+} from "./ui";
+
+// ============================================================================
+// Form Types
+// ============================================================================
+
+export type {
+  TimeSelectionStepProps,
+  DoctorSelectionStepProps,
+  PaymentStepProps,
+  PaymentCheckoutProps,
+  BookingConfirmationStepProps,
+} from "./forms";
+
+// ============================================================================
+// Settings Types
+// ============================================================================
+
+export type {
+  DoctorSettingsData,
+  DoctorVerificationData,
+  DoctorSettingsClientProps,
+  AppointmentTypesSettingsProps,
+  WorkingHoursSettingsProps,
+  AvailabilitySettingsProps,
+  PaymentSettingsClientProps,
+} from "./settings";
+
+// ============================================================================
+// Dashboard Types
+// ============================================================================
+
+export type {
+  TourStep,
+  OnboardingTourProps,
+  OptimisticUpdateProps,
+  ErrorToastOptions,
+  NotificationCenterProps,
+  CommissionPreviewProps,
+  PaymentHistoryProps,
+  PaymentAccountStatusProps,
+  QuickSettingsProps,
+  AppointmentSearchProps,
+  AdminStatsProps,
+  PatientDashboardLayoutProps,
+  DoctorDashboardLayoutProps,
+  AdminDashboardLayoutProps,
+  DoctorDashboardClientProps,
+} from "./dashboard";
 

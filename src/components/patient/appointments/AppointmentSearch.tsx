@@ -3,12 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface AppointmentSearchProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}
+import type { AppointmentSearchProps } from "@/lib/types";
 
 export default function AppointmentSearch({
   value,

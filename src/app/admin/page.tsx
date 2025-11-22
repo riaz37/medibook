@@ -6,7 +6,6 @@ import AdminStatsGrid from "@/components/admin/dashboard/AdminStatsGrid";
 import DoctorVerificationsCard from "@/components/admin/dashboard/DoctorVerificationsCard";
 import RecentActivity from "@/components/admin/dashboard/RecentActivity";
 import QuickActions from "@/components/admin/dashboard/QuickActions";
-import DoctorsManagement from "@/components/admin/DoctorsManagement";
 import RecentAppointments from "@/components/admin/RecentAppointments";
 import { RevenueChart } from "@/components/admin/dashboard/RevenueChart";
 import { Suspense } from "react";
@@ -56,18 +55,15 @@ async function AdminPage() {
         <div className="grid lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
             <Suspense fallback={<CardLoading />}>
-              <DoctorVerificationsCard />
+              <RecentActivity />
             </Suspense>
           </div>
           <div>
             <Suspense fallback={<CardLoading />}>
-              <RecentActivity />
+              <DoctorVerificationsCard />
             </Suspense>
           </div>
         </div>
-        <Suspense fallback={<CardLoading />}>
-          <DoctorsManagement />
-        </Suspense>
         <Suspense fallback={<CardLoading />}>
           <RecentAppointments />
         </Suspense>

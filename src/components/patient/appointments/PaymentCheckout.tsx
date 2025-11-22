@@ -19,15 +19,7 @@ if (!stripePublishableKey) {
 }
 
 const stripePromise = loadStripe(stripePublishableKey);
-
-interface PaymentCheckoutProps {
-  appointmentId: string;
-  appointmentPrice: number;
-  doctorId: string;
-  doctorName: string;
-  onSuccess: () => void;
-  onError: (error: string) => void;
-}
+import type { PaymentCheckoutProps } from "@/lib/types";
 
 function PaymentForm({
   appointmentId,

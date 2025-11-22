@@ -1,5 +1,3 @@
-"use server";
-
 /**
  * Server-only Authorization Utilities
  * Helper functions for role-based access control in API routes and server components
@@ -7,7 +5,7 @@
  */
 
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { getRole, getDoctorId, hasAnyRole } from "@/lib/server/roles";
@@ -33,7 +31,7 @@ export async function getAuthContext(
 ): Promise<AuthContext | null> {
   try {
     const { userId: clerkUserId, sessionClaims } = await auth();
-    
+
     if (!clerkUserId) {
       return null;
     }
@@ -81,7 +79,7 @@ export async function getAuthContext(
  */
 export async function requireAuth(): Promise<{ context: AuthContext } | { response: NextResponse }> {
   const context = await getAuthContext();
-  
+
   if (!context) {
     return {
       response: NextResponse.json(
@@ -101,7 +99,7 @@ export async function requireRole(
   requiredRole: "patient" | "doctor" | "admin"
 ): Promise<{ context: AuthContext } | { response: NextResponse }> {
   const authResult = await requireAuth();
-  
+
   if ("response" in authResult) {
     return authResult;
   }
@@ -132,7 +130,7 @@ export async function requireAnyRole(
   requiredRoles: ("patient" | "doctor" | "admin")[]
 ): Promise<{ context: AuthContext } | { response: NextResponse }> {
   const authResult = await requireAuth();
-  
+
   if ("response" in authResult) {
     return authResult;
   }
@@ -163,7 +161,7 @@ export async function requireDoctorOwnership(
   doctorId: string
 ): Promise<{ context: AuthContext } | { response: NextResponse }> {
   const authResult = await requireAnyRole(["doctor", "admin"]);
-  
+
   if ("response" in authResult) {
     return authResult;
   }
@@ -197,7 +195,7 @@ export async function requireAppointmentAccess(
 ): Promise<{ context: AuthContext } | { response: NextResponse }> {
   // Get auth context with DB user for ownership check
   const context = await getAuthContext(true);
-  
+
   if (!context || !context.dbUser) {
     return {
       response: NextResponse.json(

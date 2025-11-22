@@ -10,18 +10,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import type { FieldError } from "react-hook-form";
-
-interface FormFieldEnhancedProps {
-  label: string | React.ReactNode;
-  required?: boolean;
-  description?: string;
-  error?: FieldError;
-  touched?: boolean;
-  isValid?: boolean;
-  children: React.ReactNode;
-  className?: string;
-}
+import type { FormFieldEnhancedProps } from "@/lib/types";
 
 /**
  * Enhanced form field with visual feedback

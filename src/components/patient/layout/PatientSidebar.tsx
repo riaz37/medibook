@@ -6,9 +6,9 @@ import {
   Home,
   Calendar,
   Mic,
-  FileText,
-  Settings,
   User,
+  CreditCard,
+  FileText,
 } from "lucide-react";
 import {
   Sidebar,
@@ -21,15 +21,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
 import { useUser, UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 
 const menuItems = [
   {
-    title: "Main",
+    title: "Overview",
     items: [
       {
         title: "Dashboard",
@@ -37,6 +35,11 @@ const menuItems = [
         icon: Home,
         badge: null,
       },
+    ],
+  },
+  {
+    title: "Appointments",
+    items: [
       {
         title: "Appointments",
         url: "/patient/appointments",
@@ -52,14 +55,24 @@ const menuItems = [
     ],
   },
   {
-    title: "Upcoming",
+    title: "Medical",
     items: [
       {
-        title: "Health Records",
-        url: "#",
+        title: "Prescriptions",
+        url: "/patient/prescriptions",
         icon: FileText,
-        badge: "Coming Soon",
-        disabled: true,
+        badge: null,
+      },
+    ],
+  },
+  {
+    title: "Account",
+    items: [
+      {
+        title: "Payments",
+        url: "/patient/payments",
+        icon: CreditCard,
+        badge: null,
       },
       {
         title: "Profile",
@@ -102,29 +115,6 @@ export function PatientSidebar() {
                 {group.items.map((item) => {
                   const isActive = pathname === item.url || pathname?.startsWith(item.url + "/");
                   const Icon = item.icon;
-                  const isDisabled = "disabled" in item && item.disabled === true;
-
-                  if (isDisabled) {
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          disabled
-                          tooltip={item.title}
-                          className="opacity-50 cursor-not-allowed"
-                        >
-                          <Icon />
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <SidebarMenuBadge>
-                              <Badge variant="secondary" className="text-xs">
-                                {item.badge}
-                              </Badge>
-                            </SidebarMenuBadge>
-                          )}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  }
 
                   return (
                     <SidebarMenuItem key={item.title}>
@@ -136,13 +126,6 @@ export function PatientSidebar() {
                         <Link href={item.url}>
                           <Icon />
                           <span>{item.title}</span>
-                          {item.badge && (
-                            <SidebarMenuBadge>
-                              <Badge variant="secondary" className="text-xs">
-                                {item.badge}
-                              </Badge>
-                            </SidebarMenuBadge>
-                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -5,21 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ChevronRight, ChevronLeft, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface TourStep {
-  id: string;
-  title: string;
-  description: string;
-  target?: string; // CSS selector for element to highlight
-  position?: "top" | "bottom" | "left" | "right" | "center";
-}
-
-interface OnboardingTourProps {
-  tourId: string;
-  steps: TourStep[];
-  onComplete?: () => void;
-  onSkip?: () => void;
-}
+import type { OnboardingTourProps, TourStep } from "@/lib/types";
 
 const TOUR_STORAGE_KEY = "onboarding_tours_completed";
 

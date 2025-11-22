@@ -4,17 +4,7 @@ import { ChevronLeftIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DoctorInfo from "@/components/shared/appointments/DoctorInfo";
 import type { DoctorAppointmentType } from "@/lib/types/doctor-config";
-
-interface BookingConfirmationStepProps {
-  selectedDentistId: string;
-  selectedDate: string;
-  selectedTime: string;
-  selectedType: string;
-  isBooking: boolean;
-  onBack: () => void;
-  onConfirm: () => void;
-  onModify: () => void;
-}
+import type { BookingConfirmationStepProps } from "@/lib/types";
 
 function BookingConfirmationStep({
   selectedDentistId,

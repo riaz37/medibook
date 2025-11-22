@@ -15,11 +15,7 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Button } from "../ui/button";
 import { formatPhoneNumber } from "@/lib/utils";
-
-interface AddDoctorDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+import type { AddDoctorDialogProps } from "@/lib/types";
 
 function AddDoctorDialog({ isOpen, onClose }: AddDoctorDialogProps) {
   const [newDoctor, setNewDoctor] = useState({

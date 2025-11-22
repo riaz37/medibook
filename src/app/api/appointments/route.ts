@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { AppointmentStatus } from "@prisma/client";
 import { bookAppointmentSchema, appointmentQuerySchema } from "@/lib/validations";
 import { validateRequest, validateQuery } from "@/lib/utils/validation";

@@ -1,7 +1,9 @@
 "use client";
 
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useEffect } from "react";
+import { useAppointmentTrends } from "@/hooks";
+import { showErrorToast } from "@/components/shared/ErrorToast";
+import { handleApiError } from "@/lib/utils/toast";
 import {
   ChartContainer,
   ChartTooltip,
@@ -12,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { TrendingUp, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const chartConfig = {
   total: {
@@ -28,18 +31,16 @@ const chartConfig = {
   },
 } satisfies import("@/components/ui/chart").ChartConfig;
 
-async function fetchTrends(period: string) {
-  const response = await fetch(`/api/appointments/trends?period=${period}`);
-  if (!response.ok) throw new Error("Failed to fetch trends");
-  return response.json();
-}
-
 export function AppointmentTrendsChart() {
   const [period, setPeriod] = React.useState("7");
-  const { data, isLoading } = useQuery({
-    queryKey: ["appointmentTrends", period],
-    queryFn: () => fetchTrends(period),
-  });
+  const { data, isLoading, isError, error } = useAppointmentTrends(period);
+
+  useEffect(() => {
+    if (isError && error) {
+      const errorMessage = handleApiError(error, "Failed to load appointment trends");
+      showErrorToast({ message: errorMessage, retry: () => window.location.reload() });
+    }
+  }, [isError, error]);
 
   if (isLoading) {
     return (
@@ -55,7 +56,7 @@ export function AppointmentTrendsChart() {
     );
   }
 
-  if (!data?.data) {
+  if (isError) {
     return (
       <Card>
         <CardHeader>
@@ -63,8 +64,40 @@ export function AppointmentTrendsChart() {
             <TrendingUp className="h-5 w-5" />
             Appointment Trends
           </CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardDescription>Your appointment analytics</CardDescription>
         </CardHeader>
+        <CardContent>
+          <EmptyState
+            icon={TrendingUp}
+            title="Failed to load trends"
+            description="Please try refreshing the page or contact support if the issue persists."
+            action={{
+              label: "Refresh",
+              onClick: () => window.location.reload(),
+            }}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data || typeof data !== "object" || !("data" in data) || !Array.isArray((data as { data: unknown[] }).data) || (data as { data: unknown[] }).data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Appointment Trends
+          </CardTitle>
+          <CardDescription>Your appointment analytics</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmptyState
+            icon={TrendingUp}
+            title="No appointment data yet"
+            description="Appointment trends will appear here once you have appointments scheduled."
+          />
+        </CardContent>
       </Card>
     );
   }
@@ -94,7 +127,7 @@ export function AppointmentTrendsChart() {
           <TabsContent value={period}>
             <ChartContainer config={chartConfig} className="h-64 w-full">
               <AreaChart
-                data={data.data}
+                data={(data as { data: unknown[] })?.data || []}
                 margin={{
                   left: 12,
                   right: 12,

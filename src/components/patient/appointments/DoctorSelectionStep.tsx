@@ -8,12 +8,7 @@ import { DoctorCardsLoading } from "@/components/shared/appointments/DoctorCards
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { useMemo, useState } from "react";
-
-interface DoctorSelectionStepProps {
-  selectedDentistId: string | null;
-  onSelectDentist: (dentistId: string) => void;
-  onContinue: () => void;
-}
+import type { DoctorSelectionStepProps } from "@/lib/types";
 
 function DoctorSelectionStep({
   onContinue,
