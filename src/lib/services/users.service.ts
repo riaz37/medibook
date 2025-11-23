@@ -16,14 +16,6 @@ class UsersService extends BaseService {
    * For client-side, use syncUserClient()
    */
   async syncUser(): Promise<User | null> {
-    // In server components, import syncUserDirect from @/lib/server/users directly
-    // This method is kept for backward compatibility but should use syncUserDirect in server components
-    if (typeof window === "undefined") {
-      // Server-side: dynamically import to avoid bundling server code in client
-      const { syncUserDirect } = await import("@/lib/server/users");
-      return syncUserDirect();
-    }
-    // Client-side fallback (shouldn't happen, but handle gracefully)
     return this.syncUserClient();
   }
 
