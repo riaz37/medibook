@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { appointmentsServerService } from "@/lib/services/server";
-import { AppointmentStatus } from "@prisma/client";
 import { bookAppointmentSchema, appointmentQuerySchema } from "@/lib/validations";
 import { validateRequest, validateQuery } from "@/lib/utils/validation";
 import AppointmentConfirmationEmail from "@/components/emails/AppointmentConfirmationEmail";
@@ -245,10 +244,20 @@ export async function POST(request: NextRequest) {
     // If payment is required, email will be sent after payment is confirmed via webhook
     if (!requiresPayment) {
       try {
+        // Fetch doctor name separately to ensure type safety
+        const doctor = await prisma.doctor.findUnique({
+          where: { id: doctorId },
+          select: { name: true },
+        });
+
+        if (!doctor) {
+          throw new Error("Doctor not found");
+        }
+
         const appointmentDateFormatted = format(new Date(date), "EEEE, MMMM d, yyyy");
         const emailHtml = await render(
           AppointmentConfirmationEmail({
-            doctorName: appointment.doctor.name,
+            doctorName: doctor.name,
             appointmentDate: appointmentDateFormatted,
             appointmentTime: time,
             appointmentType: appointmentType?.name || reason || "Appointment",

@@ -1,6 +1,6 @@
 import { useUpdateDoctor } from "@/hooks/use-doctors";
 import { formatPhoneNumber } from "@/lib/utils";
-import { Gender } from "@/generated/prisma/client";
+import type { Gender } from "@/lib/types";
 import type { Doctor } from "@/lib/types";
 import { useState } from "react";
 import {

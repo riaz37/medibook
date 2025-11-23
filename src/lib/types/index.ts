@@ -3,7 +3,35 @@
  * All shared types and interfaces for the application
  */
 
-import { Gender } from "@/generated/prisma/client";
+// ============================================================================
+// Enums (defined locally to avoid importing Prisma Client in client bundle)
+// ============================================================================
+
+/**
+ * Gender enum - defined locally to avoid Prisma Client in client bundle
+ * Must match the enum in prisma/schema.prisma
+ */
+export type Gender = "MALE" | "FEMALE";
+
+/**
+ * UserRole type - defined locally to avoid importing Prisma Client in client bundle
+ * Must match the enum in prisma/schema.prisma
+ */
+export type UserRoleType = "PATIENT" | "DOCTOR" | "ADMIN";
+
+/**
+ * UserRole enum values - for use as object properties
+ * This allows both type checking and runtime access (e.g., UserRole.PATIENT)
+ */
+export const UserRole = {
+  PATIENT: "PATIENT" as const,
+  DOCTOR: "DOCTOR" as const,
+  ADMIN: "ADMIN" as const,
+} as const;
+
+// Export type alias for convenience
+export type UserRole = UserRoleType;
+
 
 // ============================================================================
 // Appointment Types
@@ -119,7 +147,7 @@ export interface User {
   firstName?: string | null;
   lastName?: string | null;
   phone?: string | null;
-  role?: "PATIENT" | "DOCTOR" | "ADMIN";
+  role?: UserRole;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -164,10 +192,9 @@ export interface AppointmentConfirmationEmailData {
 }
 
 // ============================================================================
-// Re-export Prisma types for convenience
+// Note: Gender is defined locally above to avoid Prisma Client in client bundle
+// Server-side code can still import from @/generated/prisma/client if needed
 // ============================================================================
-
-export type { Gender } from "@/generated/prisma/client";
 
 // ============================================================================
 // Verification Types

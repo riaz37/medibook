@@ -3,7 +3,7 @@
  * Types for settings pages and components
  */
 
-import { Gender } from "@prisma/client";
+import type { Gender } from "./index";
 
 /**
  * Doctor settings data structure

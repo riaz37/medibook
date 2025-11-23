@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AppointmentStatus } from "@prisma/client";
 import { appointmentsServerService } from "@/lib/services/server";
 import { updateAppointmentStatusSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { requireAppointmentAccess } from "@/lib/server/auth-utils";
-import prisma from "@/lib/prisma";
+import { AppointmentStatus } from "@/generated/prisma/enums";
 
 // GET /api/appointments/[id] - Get appointment by ID
 export async function GET(

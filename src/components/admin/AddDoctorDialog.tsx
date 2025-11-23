@@ -1,6 +1,6 @@
 "use client"
 import { useCreateDoctor } from "@/hooks/use-doctors";
-import { Gender } from "@/generated/prisma/client";
+import type { Gender } from "@/lib/types";
 import { useState } from "react";
 import {
   Dialog,
