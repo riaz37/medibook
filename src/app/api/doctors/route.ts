@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Gender } from "@prisma/client";
-import prisma from "@/lib/prisma";
+import { doctorsServerService } from "@/lib/services/server";
 import { generateAvatar } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { createDoctorSchema } from "@/lib/validations";
@@ -9,19 +9,11 @@ import { validateRequest } from "@/lib/utils/validation";
 // GET /api/doctors - Get all doctors (public, but filtered for doctors)
 export async function GET(request: NextRequest) {
   try {
-    const doctors = await prisma.doctor.findMany({
-      where: {
-        isVerified: true, // Only show verified doctors to public
-      },
-      include: {
-        _count: { select: { appointments: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const doctors = await doctorsServerService.getAvailable();
 
-    const doctorsWithCount = doctors.map((doctor) => ({
+    const doctorsWithCount = doctors.map((doctor: any) => ({
       ...doctor,
-      appointmentCount: doctor._count.appointments,
+      appointmentCount: doctor._count?.appointments || 0,
     }));
 
     return NextResponse.json(doctorsWithCount);
@@ -51,16 +43,14 @@ export async function POST(request: NextRequest) {
 
     const { name, email, phone, speciality, gender, bio } = validation.data;
 
-    const doctor = await prisma.doctor.create({
-      data: {
-        name,
-        email,
-        phone,
-        speciality,
-        gender: gender as Gender,
-        bio,
-        imageUrl: generateAvatar(name, gender as Gender),
-      },
+    const doctor = await doctorsServerService.create({
+      name,
+      email,
+      phone,
+      speciality,
+      gender: gender as Gender,
+      bio: bio || undefined,
+      imageUrl: generateAvatar(name, gender as Gender),
     });
 
     revalidatePath("/admin");

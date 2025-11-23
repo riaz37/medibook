@@ -1,7 +1,7 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 
 /**
  * Clerk Webhook Handler
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
   // Handle the webhook
   const eventType = evt.type;
-  
+
   // Type guard for user events
   if (evt.type !== "user.created" && evt.type !== "user.updated" && evt.type !== "user.deleted") {
     console.log(`Unhandled webhook event type: ${eventType}`);
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 
   const userData = evt.data;
   const id = userData.id as string; // Type assertion: user events always have id
-  
+
   // Extract user data (only available on user.created and user.updated)
   const email_addresses = "email_addresses" in userData ? userData.email_addresses : undefined;
   const first_name = "first_name" in userData ? userData.first_name : undefined;
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         // Format: ADMIN_EMAILS=admin1@example.com,admin2@example.com
         const adminEmails = process.env.ADMIN_EMAILS?.split(",").map(e => e.trim().toLowerCase()) || [];
         const isAdminEmail = adminEmails.includes(userEmail.toLowerCase());
-        
+
         // Determine role: admin if email matches, otherwise default to PATIENT
         const defaultRole = isAdminEmail ? "ADMIN" : "PATIENT";
         const roleForMetadata = isAdminEmail ? "admin" : "patient";

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prescriptionsServerService } from "@/lib/services/server";
 import { requireAnyRole } from "@/lib/server/auth-utils";
 
 /**
@@ -31,59 +31,39 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    // Build where clause
-    const where: {
-      doctorId: string;
-      status?: string;
-      patientId?: string;
-    } = {
-      doctorId,
-    };
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (patientId) {
-      where.patientId = patientId;
-    }
-
-    // Get prescriptions
-    const [prescriptions, total] = await Promise.all([
-      prisma.prescription.findMany({
-        where,
-        include: {
-          patient: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
+    // Get prescriptions using service
+    const { prescriptions, total } = await prescriptionsServerService.getByDoctor(doctorId, {
+      status: status as any,
+      patientId: patientId || undefined,
+      limit,
+      offset,
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
           },
-          appointment: {
-            select: {
-              id: true,
-              date: true,
-              time: true,
-            },
+        },
+        appointment: {
+          select: {
+            id: true,
+            date: true,
+            time: true,
           },
-          items: {
-            include: {
-              medication: true,
-              refills: {
-                where: { status: "PENDING" },
-                take: 1,
-              },
+        },
+        items: {
+          include: {
+            medication: true,
+            refills: {
+              where: { status: "PENDING" },
+              take: 1,
             },
           },
         },
-        orderBy: { createdAt: "desc" },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.prescription.count({ where }),
-    ]);
+      },
+    });
 
     return NextResponse.json({
       prescriptions,

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { refundService } from "@/lib/services/refund.service";
-import { prisma } from "@/lib/prisma";
+import { appointmentsServerService } from "@/lib/services/server";
 import { getAuthContext } from "@/lib/server/auth-utils";
+import prisma from "@/lib/prisma";
 
 /**
  * POST /api/appointments/[id]/cancel
@@ -26,13 +27,10 @@ export async function POST(
     }
 
     // Get appointment
-    const appointment = await prisma.appointment.findUnique({
-      where: { id },
-      include: {
-        payment: true,
-        user: true,
-        doctor: true,
-      },
+    const appointment = await appointmentsServerService.findUnique(id, {
+      payment: true,
+      user: true,
+      doctor: true,
     });
 
     if (!appointment) {
@@ -43,11 +41,17 @@ export async function POST(
     }
 
     // Check authorization
-    if (context.role === "patient" && appointment.userId !== context.userId) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+    if (context.role === "patient") {
+      const dbUser = await prisma.user.findUnique({
+        where: { clerkId: context.clerkUserId },
+        select: { id: true },
+      });
+      if (dbUser && appointment.userId !== dbUser.id) {
+        return NextResponse.json(
+          { error: "Forbidden" },
+          { status: 403 }
+        );
+      }
     }
 
     if (context.role === "doctor" && appointment.doctorId !== context.doctorId) {
@@ -57,17 +61,9 @@ export async function POST(
       );
     }
 
-    // Check if already cancelled
-    if (appointment.status === "CANCELLED") {
-      return NextResponse.json(
-        { error: "Appointment already cancelled" },
-        { status: 400 }
-      );
-    }
-
     // Process refund if payment exists
     let refundResult = null;
-    if (appointment.payment && appointment.payment.patientPaid) {
+    if ((appointment as any).payment && (appointment as any).payment.patientPaid) {
       try {
         refundResult = await refundService.handleCancellation(
           id,
@@ -79,14 +75,8 @@ export async function POST(
       }
     }
 
-    // Update appointment status
-    await prisma.appointment.update({
-      where: { id },
-      data: {
-        status: "CANCELLED",
-        notes: reason ? `Cancelled: ${reason}` : "Cancelled",
-      },
-    });
+    // Cancel appointment using service
+    await appointmentsServerService.cancel(id, reason);
 
     return NextResponse.json({
       success: true,

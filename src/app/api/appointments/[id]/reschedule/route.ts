@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { appointmentsServerService } from "@/lib/services/server";
 import { requireAppointmentAccess } from "@/lib/server/auth-utils";
 import { z } from "zod";
 
@@ -34,105 +34,18 @@ export async function POST(
 
     const { date, time } = validation.data;
 
-    // Get the appointment to check if it can be rescheduled
-    const appointment = await prisma.appointment.findUnique({
-      where: { id },
-      include: {
-        doctor: {
-          include: {
-            availability: true,
-          },
-        },
-      },
-    });
+    // Reschedule the appointment using service (includes all business logic validation)
+    const rescheduledAppointment = await appointmentsServerService.reschedule(id, { date, time });
 
-    if (!appointment) {
-      return NextResponse.json(
-        { error: "Appointment not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check if appointment can be rescheduled (not completed or cancelled)
-    if (appointment.status === "COMPLETED") {
-      return NextResponse.json(
-        { error: "Cannot reschedule a completed appointment" },
-        { status: 400 }
-      );
-    }
-
-    if (appointment.status === "CANCELLED") {
-      return NextResponse.json(
-        { error: "Cannot reschedule a cancelled appointment" },
-        { status: 400 }
-      );
-    }
-
-    // Check cancellation window (minimum hours before appointment)
-    const appointmentDateTime = new Date(`${appointment.date.toISOString().split("T")[0]}T${appointment.time}`);
-    const now = new Date();
-    const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    const minBookingHours = appointment.doctor.availability?.minBookingHours || 24;
-    if (hoursUntilAppointment < minBookingHours) {
-      return NextResponse.json(
-        { 
-          error: `Cannot reschedule appointment. Please reschedule at least ${minBookingHours} hours before the appointment time.` 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if new time slot is available
-    const newDate = new Date(date);
-    const bookedSlots = await prisma.appointment.findMany({
-      where: {
-        doctorId: appointment.doctorId,
-        date: newDate,
-        time,
-        status: {
-          not: "CANCELLED",
-        },
-        id: {
-          not: id, // Exclude current appointment
-        },
-      },
-    });
-
-    if (bookedSlots.length > 0) {
-      return NextResponse.json(
-        { error: "This time slot is already booked. Please choose another time." },
-        { status: 400 }
-      );
-    }
-
-    // Reschedule the appointment
-    const rescheduledAppointment = await prisma.appointment.update({
-      where: { id },
-      data: {
-        date: newDate,
-        time,
-        status: "PENDING", // Reset to pending for doctor confirmation
-      },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-        doctor: { select: { name: true, imageUrl: true } },
-      },
-    });
-
+    // Transform response
+    const appointment = rescheduledAppointment as any;
     return NextResponse.json({
-      ...rescheduledAppointment,
-      patientName: `${rescheduledAppointment.user.firstName || ""} ${rescheduledAppointment.user.lastName || ""}`.trim(),
-      patientEmail: rescheduledAppointment.user.email,
-      doctorName: rescheduledAppointment.doctor.name,
-      doctorImageUrl: rescheduledAppointment.doctor.imageUrl || "",
-      date: rescheduledAppointment.date.toISOString().split("T")[0],
+      ...appointment,
+      patientName: `${appointment.user?.firstName || ""} ${appointment.user?.lastName || ""}`.trim(),
+      patientEmail: appointment.user?.email,
+      doctorName: appointment.doctor?.name,
+      doctorImageUrl: appointment.doctor?.imageUrl || "",
+      date: appointment.date?.toISOString().split("T")[0],
     });
   } catch (error) {
     console.error("Error rescheduling appointment:", error);

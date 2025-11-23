@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prescriptionsServerService } from "@/lib/services/server";
 import { updatePrescriptionSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { requirePrescriptionAccess } from "@/lib/server/prescription-utils";
-import {
-  createPrescriptionAudit,
-  updatePrescriptionStatus,
-} from "@/lib/server/prescription-utils";
 
 /**
  * GET /api/prescriptions/[id] - Get prescription details
@@ -25,52 +21,7 @@ export async function GET(
     }
 
     // Get prescription with all details
-    const prescription = await prisma.prescription.findUnique({
-      where: { id },
-      include: {
-        doctor: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            speciality: true,
-            imageUrl: true,
-            bio: true,
-          },
-        },
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-          },
-        },
-        appointment: {
-          select: {
-            id: true,
-            date: true,
-            time: true,
-            reason: true,
-            status: true,
-          },
-        },
-        items: {
-          include: {
-            medication: true,
-            refills: {
-              orderBy: { requestedAt: "desc" },
-            },
-          },
-        },
-        audits: {
-          orderBy: { timestamp: "desc" },
-          take: 10,
-        },
-      },
-    });
+    const prescription = await prescriptionsServerService.findUnique(id);
 
     if (!prescription) {
       return NextResponse.json(
@@ -123,96 +74,17 @@ export async function PUT(
       return validation.response;
     }
 
-    const { status, expiryDate, notes, items } = validation.data;
+    const { status, expiryDate, notes } = validation.data;
 
-    // Get current prescription
-    const currentPrescription = await prisma.prescription.findUnique({
-      where: { id },
-      include: { items: true },
-    });
-
-    if (!currentPrescription) {
-      return NextResponse.json(
-        { error: "Prescription not found" },
-        { status: 404 }
-      );
-    }
-
-    // Prepare update data
-    const updateData: {
-      status?: string;
-      expiryDate?: Date | null;
-      notes?: string | null;
-    } = {};
-
-    if (status !== undefined) {
-      updateData.status = status;
-    }
-    if (expiryDate !== undefined) {
-      updateData.expiryDate = expiryDate ? new Date(expiryDate) : null;
-    }
-    if (notes !== undefined) {
-      updateData.notes = notes;
-    }
-
-    // Update prescription
-    const updatedPrescription = await prisma.prescription.update({
-      where: { id },
-      data: updateData,
-      include: {
-        doctor: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            speciality: true,
-            imageUrl: true,
-          },
-        },
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-        appointment: {
-          select: {
-            id: true,
-            date: true,
-            time: true,
-            reason: true,
-          },
-        },
-        items: {
-          include: {
-            medication: true,
-            refills: {
-              orderBy: { requestedAt: "desc" },
-            },
-          },
-        },
-      },
-    });
-
-    // Update status if needed
-    if (status) {
-      await updatePrescriptionStatus(id, status as any);
-    }
-
-    // Create audit log
-    const changes: Record<string, unknown> = {};
-    if (status !== undefined) changes.status = status;
-    if (expiryDate !== undefined) changes.expiryDate = expiryDate;
-    if (notes !== undefined) changes.notes = notes;
-    if (items !== undefined) changes.items = "updated";
-
-    await createPrescriptionAudit(
+    // Update prescription (service handles status logic and audit)
+    const updatedPrescription = await prescriptionsServerService.update(
       id,
-      "UPDATED",
-      context.userId,
-      Object.keys(changes).length > 0 ? changes : undefined
+      {
+        status: status as any,
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        notes: notes || null,
+      },
+      context.userId
     );
 
     return NextResponse.json(updatedPrescription);

@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prescriptionsServerService } from "@/lib/services/server";
 import { createPrescriptionSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { requireAnyRole } from "@/lib/server/auth-utils";
-import {
-  validatePrescriptionData,
-  createPrescriptionAudit,
-} from "@/lib/server/prescription-utils";
 
 /**
  * POST /api/prescriptions - Create prescription (doctor only)
@@ -39,88 +35,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate prescription data (appointment, patient, doctor)
-    const dataValidation = await validatePrescriptionData({
+    // Create prescription with items (service handles validation and audit)
+    const prescription = await prescriptionsServerService.create({
       appointmentId: appointmentId || null,
-      patientId,
       doctorId,
+      patientId,
+      status: "ACTIVE",
+      expiryDate: expiryDate ? new Date(expiryDate) : null,
+      notes: notes || null,
+      changedBy: context.userId, // Pass userId for audit
+      items: items.map((item) => ({
+        medicationId: item.medicationId || null,
+        medicationName: item.medicationName,
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration: item.duration,
+        instructions: item.instructions || null,
+        quantity: item.quantity || null,
+        refillsAllowed: item.refillsAllowed,
+      })),
     });
-
-    if (!dataValidation.valid) {
-      return NextResponse.json(
-        { error: dataValidation.error },
-        { status: dataValidation.status }
-      );
-    }
-
-    // Create prescription with items
-    const prescription = await prisma.prescription.create({
-      data: {
-        appointmentId: appointmentId || null,
-        doctorId,
-        patientId,
-        status: "ACTIVE",
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
-        notes: notes || null,
-        items: {
-          create: items.map((item) => ({
-            medicationId: item.medicationId || null,
-            medicationName: item.medicationName,
-            dosage: item.dosage,
-            frequency: item.frequency,
-            duration: item.duration,
-            instructions: item.instructions || null,
-            quantity: item.quantity || null,
-            refillsAllowed: item.refillsAllowed,
-            refillsRemaining: item.refillsAllowed,
-          })),
-        },
-      },
-      include: {
-        doctor: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            speciality: true,
-            imageUrl: true,
-          },
-        },
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-        appointment: {
-          select: {
-            id: true,
-            date: true,
-            time: true,
-            reason: true,
-          },
-        },
-        items: {
-          include: {
-            medication: true,
-          },
-        },
-      },
-    });
-
-    // Create audit log
-    await createPrescriptionAudit(
-      prescription.id,
-      "CREATED",
-      context.userId,
-      {
-        appointmentId,
-        patientId,
-        itemCount: items.length,
-      }
-    );
 
     return NextResponse.json(prescription, { status: 201 });
   } catch (error) {

@@ -1,5 +1,7 @@
 import prisma from "@/lib/prisma";
 import AppointmentConfirmationEmail from "@/components/emails/AppointmentConfirmationEmail";
+import AppointmentCancellationEmail from "@/components/emails/AppointmentCancellationEmail";
+import AppointmentRescheduleEmail from "@/components/emails/AppointmentRescheduleEmail";
 import PaymentLinkEmail from "@/components/emails/PaymentLinkEmail";
 import transporter from "@/lib/nodemailer";
 import { pdfService } from "@/lib/services/pdf.service";
@@ -62,8 +64,8 @@ export class EmailService {
           price: appointmentType?.price
             ? `$${appointmentType.price.toString()}`
             : appointment.payment
-            ? `$${appointment.payment.appointmentPrice.toString()}`
-            : "N/A",
+              ? `$${appointment.payment.appointmentPrice.toString()}`
+              : "N/A",
         })
       );
 
@@ -133,8 +135,8 @@ export class EmailService {
       const price = appointment.payment
         ? `$${appointment.payment.appointmentPrice.toFixed(2)}`
         : appointmentType?.price
-        ? `$${Number(appointmentType.price).toFixed(2)}`
-        : "N/A";
+          ? `$${Number(appointmentType.price).toFixed(2)}`
+          : "N/A";
 
       const emailHtml = await render(
         PaymentLinkEmail({
@@ -162,6 +164,90 @@ export class EmailService {
     } catch (error) {
       console.error("Failed to send payment link email:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Send appointment cancellation email
+   */
+  async sendAppointmentCancellation(appointmentId: string, reason?: string) {
+    try {
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: {
+          user: { select: { email: true } },
+          doctor: { select: { name: true } },
+        },
+      });
+
+      if (!appointment || !appointment.user.email) return;
+
+      const appointmentDateFormatted = format(appointment.date, "EEEE, MMMM d, yyyy");
+      const emailHtml = await render(
+        AppointmentCancellationEmail({
+          doctorName: appointment.doctor.name,
+          appointmentDate: appointmentDateFormatted,
+          appointmentTime: appointment.time,
+          reason,
+        })
+      );
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `Medibook <${process.env.SMTP_USER}>`,
+        to: appointment.user.email,
+        subject: "Appointment Cancelled - Medibook",
+        html: emailHtml,
+      });
+
+      console.log("Cancellation email sent for:", appointmentId);
+    } catch (error) {
+      console.error("Failed to send cancellation email:", error);
+      // Don't throw, just log
+    }
+  }
+
+  /**
+   * Send appointment reschedule email
+   */
+  async sendAppointmentReschedule(
+    appointmentId: string,
+    oldDate: Date,
+    oldTime: string
+  ) {
+    try {
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: {
+          user: { select: { email: true } },
+          doctor: { select: { name: true } },
+        },
+      });
+
+      if (!appointment || !appointment.user.email) return;
+
+      const appointmentDateFormatted = format(appointment.date, "EEEE, MMMM d, yyyy");
+      const oldDateFormatted = format(oldDate, "EEEE, MMMM d, yyyy");
+
+      const emailHtml = await render(
+        AppointmentRescheduleEmail({
+          doctorName: appointment.doctor.name,
+          appointmentDate: appointmentDateFormatted,
+          appointmentTime: appointment.time,
+          oldDate: oldDateFormatted,
+          oldTime: oldTime,
+        })
+      );
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `Medibook <${process.env.SMTP_USER}>`,
+        to: appointment.user.email,
+        subject: "Appointment Rescheduled - Medibook",
+        html: emailHtml,
+      });
+
+      console.log("Reschedule email sent for:", appointmentId);
+    } catch (error) {
+      console.error("Failed to send reschedule email:", error);
     }
   }
 }

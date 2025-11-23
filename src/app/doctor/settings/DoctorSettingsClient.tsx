@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, CheckCircle2, XCircle, Clock, FileText, Eye, User, Save, X, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import ViewMyDocumentsDialog from "@/components/doctor/ViewMyDocumentsDialog";
-import { Gender } from "@prisma/client";
+import { Gender } from "@/generated/prisma/client";
 import { FileUpload } from "@/components/ui/file-upload";
 import { doctorsService } from "@/lib/services";
 import { useSubmitDoctorVerification, useUpdateDoctor } from "@/hooks";

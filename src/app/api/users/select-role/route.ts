@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { usersServerService, doctorsServerService } from "@/lib/services/server";
 import { UserRole } from "@prisma/client";
 import { selectRoleSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
@@ -29,52 +29,43 @@ export async function POST(request: NextRequest) {
     const client = await clerkClient();
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { clerkId: user.id },
-      include: { doctorProfile: true },
+    const existingUser = await usersServerService.findUniqueByClerkId(user.id, {
+      doctorProfile: true,
     });
 
     let doctorId: string | null = null;
 
     if (existingUser) {
       // Update role in database
-      const updatedUser = await prisma.user.update({
-        where: { id: existingUser.id },
-        data: { role: role as UserRole },
-        include: { doctorProfile: true },
-      });
+      const updatedUser = await usersServerService.updateRole(existingUser.id, role as UserRole);
+      const userWithProfile = await usersServerService.findUniqueWithDoctorProfile(updatedUser.id);
 
       // If role is DOCTOR, create or link doctor profile
-      if (role === UserRole.DOCTOR && !updatedUser.doctorProfile) {
+      if (role === UserRole.DOCTOR && !(userWithProfile as any)?.doctorProfile) {
+        const email = user.emailAddresses[0]?.emailAddress || "";
+        
         // Check if doctor profile already exists with this email
-        const existingDoctor = await prisma.doctor.findUnique({
-          where: { email: user.emailAddresses[0]?.emailAddress },
-        });
+        const existingDoctor = await doctorsServerService.findUniqueByEmail(email);
 
         if (existingDoctor) {
           // Link existing doctor profile to user
-          await prisma.doctor.update({
-            where: { id: existingDoctor.id },
-            data: { userId: updatedUser.id },
-          });
+          await doctorsServerService.update(existingDoctor.id, { userId: updatedUser.id });
           doctorId = existingDoctor.id;
         } else {
           // Create new doctor profile
-          const newDoctor = await prisma.doctor.create({
-            data: {
-              userId: updatedUser.id,
-              name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.emailAddresses[0]?.emailAddress || "Doctor",
-              email: user.emailAddresses[0]?.emailAddress || "",
-              phone: user.phoneNumbers[0]?.phoneNumber || "",
-              speciality: "", // Will be set during profile completion
-              gender: "MALE", // Will be set during profile completion
-              imageUrl: user.imageUrl || "",
-            },
+          const newDoctor = await doctorsServerService.create({
+            userId: updatedUser.id,
+            name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || email || "Doctor",
+            email,
+            phone: user.phoneNumbers[0]?.phoneNumber || "",
+            speciality: "", // Will be set during profile completion
+            gender: "MALE", // Will be set during profile completion
+            imageUrl: user.imageUrl || "",
           });
           doctorId = newDoctor.id;
         }
-      } else if (updatedUser.doctorProfile) {
-        doctorId = updatedUser.doctorProfile.id;
+      } else if ((userWithProfile as any)?.doctorProfile) {
+        doctorId = (userWithProfile as any).doctorProfile.id;
       }
 
       // Update Clerk metadata with role and doctorId
@@ -89,29 +80,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new user with selected role
-    const dbUser = await prisma.user.create({
-      data: {
-        clerkId: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.emailAddresses[0]?.emailAddress,
-        phone: user.phoneNumbers[0]?.phoneNumber,
-        role: role as UserRole,
-      },
+    const email = user.emailAddresses[0]?.emailAddress || "";
+    const dbUser = await usersServerService.syncFromClerk(user.id, {
+      email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phoneNumbers[0]?.phoneNumber,
+      role: role as UserRole,
     });
 
     // If role is DOCTOR, create doctor profile
     if (role === UserRole.DOCTOR) {
-      const newDoctor = await prisma.doctor.create({
-        data: {
-          userId: dbUser.id,
-          name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.emailAddresses[0]?.emailAddress || "Doctor",
-          email: user.emailAddresses[0]?.emailAddress || "",
-          phone: user.phoneNumbers[0]?.phoneNumber || "",
-          speciality: "", // Will be set during profile completion
-          gender: "MALE", // Will be set during profile completion
-          imageUrl: user.imageUrl || "",
-        },
+      const newDoctor = await doctorsServerService.create({
+        userId: dbUser.id,
+        name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || email || "Doctor",
+        email,
+        phone: user.phoneNumbers[0]?.phoneNumber || "",
+        speciality: "", // Will be set during profile completion
+        gender: "MALE", // Will be set during profile completion
+        imageUrl: user.imageUrl || "",
       });
       doctorId = newDoctor.id;
     }

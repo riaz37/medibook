@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 
 /**
  * GET /api/admin/doctors/verification - Get all pending verifications (admin only)
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
     const verifications = await prisma.doctorVerification.findMany({
       where: status
         ? {
-            status: status as "PENDING" | "APPROVED" | "REJECTED",
-          }
+          status: status as "PENDING" | "APPROVED" | "REJECTED",
+        }
         : undefined,
       include: {
         doctor: {

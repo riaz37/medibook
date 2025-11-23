@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { appointmentsServerService, usersServerService } from "@/lib/services/server";
 
 function transformAppointment(appointment: any) {
   return {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     // Otherwise, use authenticated user
     let user;
     if (userId) {
-      user = await prisma.user.findUnique({ where: { id: userId } });
+      user = await usersServerService.findUnique(userId);
       if (!user) {
         return NextResponse.json(
           { error: "User not found. Please ensure your account is properly set up." },
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         );
       }
       // Get DB user ID from Clerk user ID
-      user = await prisma.user.findUnique({ where: { clerkId: context.clerkUserId } });
+      user = await usersServerService.findUniqueByClerkId(context.clerkUserId);
       if (!user) {
         return NextResponse.json(
           { error: "User not found. Please ensure your account is properly set up." },
@@ -50,13 +50,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const appointments = await prisma.appointment.findMany({
-      where: { userId: user.id },
+    const appointments = await appointmentsServerService.getByUser(user.id, {
       include: {
         user: { select: { firstName: true, lastName: true, email: true } },
         doctor: { select: { name: true, imageUrl: true } },
       },
-      orderBy: [{ date: "asc" }, { time: "asc" }],
     });
 
     const transformedAppointments = appointments.map(transformAppointment);

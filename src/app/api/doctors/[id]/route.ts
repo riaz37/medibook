@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Gender } from "@prisma/client";
-import prisma from "@/lib/prisma";
+import { doctorsServerService } from "@/lib/services/server";
 import { updateDoctorSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 
@@ -42,43 +42,13 @@ export async function PUT(
 
     const { name, email, phone, speciality, gender, bio } = validation.data;
 
-    const currentDoctor = await prisma.doctor.findUnique({
-      where: { id },
-      select: { email: true },
-    });
-
-    if (!currentDoctor) {
-      return NextResponse.json(
-        { error: "Doctor not found" },
-        { status: 404 }
-      );
-    }
-
-    // if email is changing, check if the new email already exists
-    if (email && email !== currentDoctor.email) {
-      const existingDoctor = await prisma.doctor.findUnique({
-        where: { email },
-      });
-
-      if (existingDoctor) {
-        return NextResponse.json(
-          { error: "A doctor with this email already exists" },
-          { status: 409 }
-        );
-      }
-    }
-
-    const updateData: any = {};
-    if (name !== undefined) updateData.name = name;
-    if (email !== undefined) updateData.email = email;
-    if (phone !== undefined) updateData.phone = phone;
-    if (speciality !== undefined) updateData.speciality = speciality;
-    if (gender !== undefined) updateData.gender = gender as Gender;
-    if (bio !== undefined) updateData.bio = bio;
-
-    const doctor = await prisma.doctor.update({
-      where: { id },
-      data: updateData,
+    const doctor = await doctorsServerService.update(id, {
+      name,
+      email,
+      phone,
+      speciality,
+      gender: gender as Gender,
+      bio: bio || undefined,
     });
 
     return NextResponse.json(doctor);

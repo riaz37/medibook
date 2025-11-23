@@ -1,33 +1,39 @@
 import { StatCard } from "@/components/ui/stat-card";
 import { Users, UserCheck, Calendar, CheckCircle2 } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import prisma from "@/lib/prisma";
+import { unstable_cache } from "next/cache";
 
-async function getAdminStats() {
-  try {
-    const doctors = await prisma.doctor.findMany({
-      select: { id: true, isVerified: true },
-    });
+const getAdminStats = unstable_cache(
+  async () => {
+    try {
+      // Use Promise.all for parallel execution and database aggregations
+      const [totalDoctors, verifiedDoctors, totalAppointments, completedAppointments] =
+        await Promise.all([
+          prisma.doctor.count(),
+          prisma.doctor.count({ where: { isVerified: true } }),
+          prisma.appointment.count(),
+          prisma.appointment.count({ where: { status: "COMPLETED" } }),
+        ]);
 
-    const appointments = await prisma.appointment.findMany({
-      select: { status: true },
-    });
-
-    return {
-      totalDoctors: doctors.length,
-      verifiedDoctors: doctors.filter((d) => d.isVerified).length,
-      totalAppointments: appointments.length,
-      completedAppointments: appointments.filter((a) => a.status === "COMPLETED").length,
-    };
-  } catch {
-    return {
-      totalDoctors: 0,
-      verifiedDoctors: 0,
-      totalAppointments: 0,
-      completedAppointments: 0,
-    };
-  }
-}
+      return {
+        totalDoctors,
+        verifiedDoctors,
+        totalAppointments,
+        completedAppointments,
+      };
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      return {
+        totalDoctors: 0,
+        verifiedDoctors: 0,
+        totalAppointments: 0,
+        completedAppointments: 0,
+      };
+    }
+  },
+  ["admin-stats"],
+  { revalidate: 60, tags: ["admin-stats"] }
+);
 
 export default async function AdminStatsGrid() {
   const stats = await getAdminStats();

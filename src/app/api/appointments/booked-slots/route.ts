@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { AppointmentStatus } from "@prisma/client";
+import { appointmentsServerService, doctorsServerService } from "@/lib/services/server";
 
 // GET /api/appointments/booked-slots - Get booked time slots for a doctor on a date
 export async function GET(request: NextRequest) {
@@ -18,30 +17,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify doctor exists and is verified
-    const doctor = await prisma.doctor.findUnique({
-      where: { id: doctorId },
-      select: { isVerified: true },
-    });
-
-    if (!doctor || !doctor.isVerified) {
+    const isVerified = await doctorsServerService.isVerified(doctorId);
+    if (!isVerified) {
       return NextResponse.json(
         { error: "Doctor not found or not verified" },
         { status: 404 }
       );
     }
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        doctorId,
-        date: new Date(date),
-        status: {
-          in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED], // Include PENDING as it blocks slots
-        },
-      },
-      select: { time: true, duration: true },
-    });
-
-    const bookedSlots = appointments.map((appointment) => appointment.time);
+    // Get booked slots using service
+    const bookedSlots = await appointmentsServerService.getBookedSlots(doctorId, date);
 
     return NextResponse.json(bookedSlots);
   } catch (error) {

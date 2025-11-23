@@ -3,7 +3,7 @@
  * All shared types and interfaces for the application
  */
 
-import { Gender } from "@prisma/client";
+import { Gender } from "@/generated/prisma/client";
 
 // ============================================================================
 // Appointment Types
@@ -167,13 +167,13 @@ export interface AppointmentConfirmationEmailData {
 // Re-export Prisma types for convenience
 // ============================================================================
 
-export type { Gender } from "@prisma/client";
+export type { Gender } from "@/generated/prisma/client";
 
 // ============================================================================
 // Verification Types
 // ============================================================================
 
-export type { 
+export type {
   DoctorVerification,
   VerificationWithDoctor,
   VerificationStatus,

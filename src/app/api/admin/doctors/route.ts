@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { doctorsServerService } from "@/lib/services/server";
 import { getAuthContext } from "@/lib/server/auth-utils";
 
 /**
@@ -12,16 +12,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const doctors = await prisma.doctor.findMany({
-      include: {
-        _count: { select: { appointments: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const doctors = await doctorsServerService.getAllForAdmin();
 
-    const doctorsWithCount = doctors.map((doctor) => ({
+    const doctorsWithCount = doctors.map((doctor: any) => ({
       ...doctor,
-      appointmentCount: doctor._count.appointments,
+      appointmentCount: doctor._count?.appointments || 0,
     }));
 
     return NextResponse.json(doctorsWithCount);

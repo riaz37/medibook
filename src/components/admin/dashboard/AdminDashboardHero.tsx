@@ -3,19 +3,24 @@ import { currentUser } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { SettingsIcon, UsersIcon, CheckCircle2Icon } from "lucide-react";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
+import { unstable_cache } from "next/cache";
 
-async function getPendingVerifications() {
-  try {
-    const verifications = await (prisma as any).doctorVerification?.findMany({
-      where: { status: "PENDING" },
-      select: { id: true },
-    }).catch(() => []);
-    return verifications?.length || 0;
-  } catch {
-    return 0;
-  }
-}
+const getPendingVerifications = unstable_cache(
+  async () => {
+    try {
+      const count = await prisma.doctorVerification.count({
+        where: { status: "PENDING" },
+      });
+      return count;
+    } catch (error) {
+      console.error("Error fetching pending verifications:", error);
+      return 0;
+    }
+  },
+  ["pending-verifications"],
+  { revalidate: 60, tags: ["pending-verifications", "admin-stats"] }
+);
 
 export default async function AdminDashboardHero() {
   const user = await currentUser();

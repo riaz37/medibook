@@ -4,6 +4,9 @@ import { medicationSearchSchema } from "@/lib/validations";
 import { validateQuery } from "@/lib/utils/validation";
 import { requireAuth } from "@/lib/server/auth-utils";
 
+// Cache for 10 minutes (medications don't change frequently)
+export const revalidate = 600;
+
 /**
  * GET /api/medications/search - Search medication database
  */
@@ -81,6 +84,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       medications: formattedMedications,
       count: formattedMedications.length,
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',
+      },
     });
   } catch (error) {
     console.error("Error searching medications:", error);

@@ -16,7 +16,9 @@
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
     "db:format": "prisma format",
-    "db:validate": "prisma validate"
+    "db:validate": "prisma validate",
+    "warm-cache": "tsx scripts/warm-cache.ts",
+    "warm-cache:critical": "tsx scripts/warm-cache.ts --critical"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.32.2",
@@ -65,6 +67,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
+    "ioredis": "^5.8.2",
     "lucide-react": "^0.544.0",
     "next": "15.5.0",
     "next-themes": "^0.4.6",

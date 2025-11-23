@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { appointmentsServerService, usersServerService } from "@/lib/services/server";
 
 // GET /api/appointments/stats - Get user appointment statistics
 export async function GET(request: NextRequest) {
@@ -16,38 +16,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter based on role
-    let whereClause: any = {};
+    let appointments;
     if (context.role === "patient") {
       // Get DB user ID for patient
-      const dbUser = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-        select: { id: true },
-      });
-      if (dbUser) {
-        whereClause.userId = dbUser.id;
-      } else {
+      const dbUser = await usersServerService.findUniqueByClerkId(context.clerkUserId);
+      if (!dbUser) {
         return NextResponse.json(
           { error: "User not found" },
           { status: 404 }
         );
       }
+      appointments = await appointmentsServerService.getByUser(dbUser.id);
     } else if (context.role === "doctor" && context.doctorId) {
-      whereClause.doctorId = context.doctorId;
+      appointments = await appointmentsServerService.getByDoctor(context.doctorId);
+    } else {
+      // Admin sees all
+      appointments = await appointmentsServerService.findMany();
     }
-    // Admin sees all (no filter)
 
-    // these calls will run in parallel, instead of waiting each other
-    const [totalCount, completedCount] = await Promise.all([
-      prisma.appointment.count({
-        where: whereClause,
-      }),
-      prisma.appointment.count({
-        where: {
-          ...whereClause,
-          status: "COMPLETED",
-        },
-      }),
-    ]);
+    // Calculate stats
+    const totalCount = appointments.length;
+    const completedCount = appointments.filter(
+      (apt: any) => apt.status === "COMPLETED"
+    ).length;
 
     return NextResponse.json({
       totalAppointments: totalCount,

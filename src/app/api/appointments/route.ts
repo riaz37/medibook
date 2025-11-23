@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
+import { appointmentsServerService } from "@/lib/services/server";
 import { AppointmentStatus } from "@prisma/client";
 import { bookAppointmentSchema, appointmentQuerySchema } from "@/lib/validations";
 import { validateRequest, validateQuery } from "@/lib/utils/validation";
@@ -9,6 +9,7 @@ import transporter from "@/lib/nodemailer";
 import { render } from "@react-email/render";
 import { format } from "date-fns";
 import type nodemailer from "nodemailer";
+import prisma from "@/lib/prisma";
 
 function transformAppointment(appointment: any) {
   return {
@@ -57,6 +58,7 @@ export async function GET(request: NextRequest) {
     let whereClause: any = {};
 
     // Filter based on role
+    let appointments;
     if (context.role === "patient") {
       // Patients can only see their own appointments - need DB user ID
       const dbUser = await prisma.user.findUnique({
@@ -64,7 +66,20 @@ export async function GET(request: NextRequest) {
         select: { id: true },
       });
       if (dbUser) {
-        whereClause.userId = dbUser.id;
+        appointments = await appointmentsServerService.getByUser(dbUser.id, {
+          status: queryValidation.data.status as any,
+          date: queryValidation.data.date,
+          include: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            doctor: { select: { name: true, imageUrl: true } },
+          },
+        });
       } else {
         return NextResponse.json(
           { error: "User not found" },
@@ -74,7 +89,20 @@ export async function GET(request: NextRequest) {
     } else if (context.role === "doctor") {
       // Doctors can see their own appointments
       if (context.doctorId) {
-        whereClause.doctorId = context.doctorId;
+        appointments = await appointmentsServerService.getByDoctor(context.doctorId, {
+          status: queryValidation.data.status as any,
+          date: queryValidation.data.date,
+          include: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            doctor: { select: { name: true, imageUrl: true } },
+          },
+        });
       } else {
         return NextResponse.json(
           { error: "Doctor profile not found" },
@@ -83,25 +111,27 @@ export async function GET(request: NextRequest) {
       }
     } else if (context.role === "admin") {
       // Admins can see all appointments, optionally filtered by doctorId
-      if (doctorId) {
-        whereClause.doctorId = doctorId;
-      }
-    }
-
-    const appointments = await prisma.appointment.findMany({
-      where: whereClause,
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
+      appointments = await appointmentsServerService.findMany({
+        doctorId: doctorId,
+        status: queryValidation.data.status as any,
+        date: queryValidation.data.date,
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
+          doctor: { select: { name: true, imageUrl: true } },
         },
-        doctor: { select: { name: true, imageUrl: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+      });
+    } else {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
     const transformedAppointments = appointments.map(transformAppointment);
 
@@ -131,7 +161,8 @@ export async function POST(request: NextRequest) {
     // If userId is provided directly (e.g., from VAPI), use it; otherwise get from Clerk auth
     let user;
     if (userId) {
-      user = await prisma.user.findUnique({ where: { id: userId } });
+      const { usersServerService } = await import("@/lib/services/server");
+      user = await usersServerService.findUnique(userId);
       if (!user) {
         return NextResponse.json(
           { error: "User not found. Please ensure your account is properly set up." },
@@ -141,7 +172,8 @@ export async function POST(request: NextRequest) {
     } else {
       // Middleware ensures user is authenticated
       const { userId: clerkUserId } = await auth();
-      user = await prisma.user.findUnique({ where: { clerkId: clerkUserId || undefined } });
+      const { usersServerService } = await import("@/lib/services/server");
+      user = await usersServerService.findUniqueByClerkId(clerkUserId || "");
       if (!user) {
         return NextResponse.json(
           { error: "User not found. Please ensure your account is properly set up." },
@@ -183,27 +215,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const appointment = await prisma.appointment.create({
-      data: {
-        userId: user.id,
-        doctorId,
-        date: new Date(date),
-        time,
-        duration,
-        reason: reason || "General consultation",
-        status: "PENDING" as any, // Changed from CONFIRMED to PENDING - Run `npx prisma generate` to fix type
-        appointmentTypeId: (appointmentTypeId || undefined) as any, // Run `npx prisma generate` to fix type
-      },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-        doctor: { select: { name: true, imageUrl: true } },
-      },
+    const appointment = await appointmentsServerService.create({
+      userId: user.id,
+      doctorId,
+      date: new Date(date),
+      time,
+      duration,
+      reason: reason || "General consultation",
+      status: "PENDING" as any,
+      appointmentTypeId: appointmentTypeId || undefined,
     });
 
     // Get appointment type details

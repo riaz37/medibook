@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePrescriptionAccess } from "@/lib/server/prescription-utils";
-import prisma from "@/lib/prisma";
+import { prescriptionsServerService } from "@/lib/services/server";
 import { generatePrescriptionPDF } from "@/lib/services/pdf.service";
 
 /**
@@ -20,40 +20,37 @@ export async function GET(
     }
 
     // Get prescription with all details
-    const prescription = await prisma.prescription.findUnique({
-      where: { id },
-      include: {
-        doctor: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            speciality: true,
-            imageUrl: true,
-          },
+    const prescription = await prescriptionsServerService.findUnique(id, {
+      doctor: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          speciality: true,
+          imageUrl: true,
         },
-        patient: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-          },
+      },
+      patient: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
         },
-        appointment: {
-          select: {
-            id: true,
-            date: true,
-            time: true,
-            reason: true,
-          },
+      },
+      appointment: {
+        select: {
+          id: true,
+          date: true,
+          time: true,
+          reason: true,
         },
-        items: {
-          include: {
-            medication: true,
-          },
+      },
+      items: {
+        include: {
+          medication: true,
         },
       },
     });
@@ -65,8 +62,8 @@ export async function GET(
       );
     }
 
-    // Generate PDF
-    const pdfBuffer = await generatePrescriptionPDF(prescription);
+    // Generate PDF (prescription is guaranteed to have all required fields from service)
+    const pdfBuffer = await generatePrescriptionPDF(prescription as any);
 
     // Return PDF as response
     return new NextResponse(pdfBuffer, {

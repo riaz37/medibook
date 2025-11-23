@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { usersServerService } from "@/lib/services/server";
 import { updateUserProfileSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { getAuthContext } from "@/lib/server/auth-utils";
@@ -18,8 +18,7 @@ export async function GET() {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId: context.clerkUserId },
+    const user = await usersServerService.findUniqueByClerkId(context.clerkUserId, {
       select: {
         id: true,
         email: true,
@@ -29,7 +28,7 @@ export async function GET() {
         createdAt: true,
         updatedAt: true,
       },
-    });
+    } as any);
 
     if (!user) {
       return NextResponse.json(
@@ -72,22 +71,20 @@ export async function PUT(request: NextRequest) {
 
     const { firstName, lastName, phone } = validation.data;
 
+    // Get user ID first
+    const user = await usersServerService.findUniqueByClerkId(context.clerkUserId);
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
     // Update user profile
-    const updatedUser = await prisma.user.update({
-      where: { clerkId: context.clerkUserId },
-      data: {
-        ...(firstName !== undefined && { firstName }),
-        ...(lastName !== undefined && { lastName }),
-        ...(phone !== undefined && { phone }),
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        updatedAt: true,
-      },
+    const updatedUser = await usersServerService.update(user.id, {
+      firstName: firstName !== undefined ? firstName : undefined,
+      lastName: lastName !== undefined ? lastName : undefined,
+      phone: phone !== undefined ? phone : undefined,
     });
 
     return NextResponse.json(updatedUser);

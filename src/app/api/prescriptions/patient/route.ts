@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prescriptionsServerService, usersServerService } from "@/lib/services/server";
 import { requireAnyRole } from "@/lib/server/auth-utils";
 
 /**
@@ -17,11 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     // Get patient ID from DB user
-    const dbUser = await prisma.user.findUnique({
-      where: { clerkId: context.userId },
-      select: { id: true },
-    });
-
+    const dbUser = await usersServerService.findUniqueByClerkId(context.userId);
     if (!dbUser) {
       return NextResponse.json(
         { error: "User not found" },
@@ -34,54 +30,38 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    // Build where clause
-    const where: {
-      patientId: string;
-      status?: string;
-    } = {
-      patientId: dbUser.id,
-    };
-
-    if (status) {
-      where.status = status;
-    }
-
-    // Get prescriptions
-    const [prescriptions, total] = await Promise.all([
-      prisma.prescription.findMany({
-        where,
-        include: {
-          doctor: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              speciality: true,
-              imageUrl: true,
-            },
+    // Get prescriptions using service
+    const { prescriptions, total } = await prescriptionsServerService.getByPatient(dbUser.id, {
+      status: status as any,
+      limit,
+      offset,
+      include: {
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            speciality: true,
+            imageUrl: true,
           },
-          appointment: {
-            select: {
-              id: true,
-              date: true,
-              time: true,
-            },
+        },
+        appointment: {
+          select: {
+            id: true,
+            date: true,
+            time: true,
           },
-          items: {
-            include: {
-              medication: true,
-              refills: {
-                orderBy: { requestedAt: "desc" },
-              },
+        },
+        items: {
+          include: {
+            medication: true,
+            refills: {
+              orderBy: { requestedAt: "desc" },
             },
           },
         },
-        orderBy: { createdAt: "desc" },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.prescription.count({ where }),
-    ]);
+      },
+    });
 
     return NextResponse.json({
       prescriptions,

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthContext } from "@/lib/server/auth-utils";
 import { subDays, format, startOfDay } from "date-fns";
+import { cacheService, CacheTTL } from "@/lib/services/server/cache.service";
+
+export const revalidate = 300; // 5 minutes
 
 /**
  * GET /api/admin/revenue
@@ -20,12 +23,12 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const period = searchParams.get("period");
-    
+
     // If period is specified, return trends data
     if (period) {
       const days = parseInt(period);
       const startDate = startOfDay(subDays(new Date(), days));
-      
+
       const payments = await prisma.appointmentPayment.findMany({
         where: {
           status: "COMPLETED",
@@ -45,7 +48,7 @@ export async function GET(request: NextRequest) {
 
       // Group by date
       const trends: Record<string, { date: string; revenue: number; commission: number }> = {};
-      
+
       // Initialize all dates in range
       for (let i = 0; i < days; i++) {
         const date = subDays(new Date(), days - 1 - i);
@@ -149,36 +152,48 @@ export async function GET(request: NextRequest) {
       take: 50,
     });
 
-    // Fetch appointment types separately
-    const paymentsWithTypes = await Promise.all(
-      recentPayments.map(async (payment) => {
-        let appointmentType = null;
-        if (payment.appointment?.appointmentTypeId) {
-          appointmentType = await prisma.doctorAppointmentType.findUnique({
-            where: { id: payment.appointment.appointmentTypeId },
-            select: {
-              id: true,
-              name: true,
-            },
-          });
-        }
-        return {
-          ...payment,
-          appointment: payment.appointment
-            ? {
-                ...payment.appointment,
-                appointmentType,
-              }
-            : null,
-        };
-      })
+    // Fetch all unique appointment types in one query
+    const appointmentTypeIds = Array.from(
+      new Set(
+        recentPayments
+          .map((p) => p.appointment?.appointmentTypeId)
+          .filter((id): id is string => !!id)
+      )
     );
 
+    const appointmentTypes = await prisma.doctorAppointmentType.findMany({
+      where: {
+        id: { in: appointmentTypeIds },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    const appointmentTypeMap = new Map(appointmentTypes.map((t) => [t.id, t]));
+
+    const paymentsWithTypes = recentPayments.map((payment) => {
+      let appointmentType = null;
+      if (payment.appointment?.appointmentTypeId) {
+        appointmentType = appointmentTypeMap.get(payment.appointment.appointmentTypeId) || null;
+      }
+      return {
+        ...payment,
+        appointment: payment.appointment
+          ? {
+            ...payment.appointment,
+            appointmentType,
+          }
+          : null,
+      };
+    });
+
     // Calculate net revenue (completed commissions minus refunded commissions)
-    const totalRevenue = Number(totalRevenueResult._sum.commissionAmount || 0) - 
-                         Number(refundedCommissionResult._sum.commissionAmount || 0);
-    const monthlyRevenue = Number(monthlyRevenueResult._sum.commissionAmount || 0) - 
-                           Number(monthlyRefundedResult._sum.commissionAmount || 0);
+    const totalRevenue = Number(totalRevenueResult._sum.commissionAmount || 0) -
+      Number(refundedCommissionResult._sum.commissionAmount || 0);
+    const monthlyRevenue = Number(monthlyRevenueResult._sum.commissionAmount || 0) -
+      Number(monthlyRefundedResult._sum.commissionAmount || 0);
 
     return NextResponse.json({
       totalRevenue: Math.max(0, totalRevenue), // Ensure non-negative

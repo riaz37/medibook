@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { doctorsServerService } from "@/lib/services/server";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { availableSlotsQuerySchema } from "@/lib/validations";
 import { validateQuery } from "@/lib/utils/validation";
@@ -25,12 +25,8 @@ export async function GET(
     const { date: validatedDate } = queryValidation.data;
 
     // Verify doctor exists and is verified
-    const doctor = await prisma.doctor.findUnique({
-      where: { id },
-      select: { isVerified: true },
-    });
-
-    if (!doctor || !doctor.isVerified) {
+    const isVerified = await doctorsServerService.isVerified(id);
+    if (!isVerified) {
       return NextResponse.json(
         { error: "Doctor not found or not verified" },
         { status: 404 }

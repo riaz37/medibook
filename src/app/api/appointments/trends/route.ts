@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthContext } from "@/lib/server/auth-utils";
 import { subDays, format, startOfDay } from "date-fns";
+import { Prisma } from "@/generated/prisma/client";
+
+export const revalidate = 300; // 5 minutes
 
 // GET /api/appointments/trends - Get appointment trends for charts
 export async function GET(request: NextRequest) {
   try {
     const context = await getAuthContext();
-    
+
     if (!context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -33,28 +36,26 @@ export async function GET(request: NextRequest) {
     }
 
     const startDate = startOfDay(subDays(new Date(), days));
-    
-    // Get appointments grouped by date
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        ...whereClause,
-        createdAt: {
-          gte: startDate,
-        },
-      },
-      select: {
-        createdAt: true,
-        status: true,
-        date: true,
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-    });
+
+    // Use raw SQL for efficient database-level aggregation
+    const userId = whereClause.userId;
+    const doctorId = whereClause.doctorId;
+
+    const rawStats = await prisma.$queryRaw<Array<{ date_key: string; status: string; count: number }>>`
+      SELECT
+        TO_CHAR("createdAt", 'YYYY-MM-DD') as date_key,
+        "status",
+        COUNT(*)::int as count
+      FROM "Appointment"
+      WHERE "createdAt" >= ${startDate}
+      ${userId ? Prisma.sql`AND "userId" = ${userId}` : Prisma.empty}
+      ${doctorId ? Prisma.sql`AND "doctorId" = ${doctorId}` : Prisma.empty}
+      GROUP BY TO_CHAR("createdAt", 'YYYY-MM-DD'), "status"
+    `;
 
     // Group by date
     const trends: Record<string, { date: string; total: number; confirmed: number; completed: number }> = {};
-    
+
     // Initialize all dates in range
     for (let i = 0; i < days; i++) {
       const date = subDays(new Date(), days - 1 - i);
@@ -67,16 +68,16 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Count appointments by date
-    appointments.forEach((apt) => {
-      const dateKey = format(apt.createdAt, "yyyy-MM-dd");
+    // Fill with data from DB
+    rawStats.forEach((stat) => {
+      const dateKey = stat.date_key;
       if (trends[dateKey]) {
-        trends[dateKey].total++;
-        if (apt.status === "CONFIRMED") {
-          trends[dateKey].confirmed++;
+        trends[dateKey].total += stat.count;
+        if (stat.status === "CONFIRMED") {
+          trends[dateKey].confirmed += stat.count;
         }
-        if (apt.status === "COMPLETED") {
-          trends[dateKey].completed++;
+        if (stat.status === "COMPLETED") {
+          trends[dateKey].completed += stat.count;
         }
       }
     });

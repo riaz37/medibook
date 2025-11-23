@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Clock, CheckCircle2, AlertCircle, Phone, Mail, Settings, CalendarDays, Stethoscope } from "lucide-react";
 import { format } from "date-fns";
-import type { Doctor, Appointment, User } from "@prisma/client";
+import type { Doctor, Appointment, User } from "@/generated/prisma/client";
 import { toast } from "sonner";
 import { appointmentsService } from "@/lib/services";
 import AvailabilitySettings from "@/components/doctor/AvailabilitySettings";

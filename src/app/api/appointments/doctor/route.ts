@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/server/auth-utils";
-import { prisma } from "@/lib/prisma";
+import { appointmentsServerService, usersServerService } from "@/lib/services/server";
 
 // GET /api/appointments/doctor - Get doctor's appointments
 export async function GET(request: NextRequest) {
@@ -14,20 +14,25 @@ export async function GET(request: NextRequest) {
     }
 
     // Get DB user from Clerk user ID
-    const user = await prisma.user.findUnique({
-      where: { clerkId: context.clerkUserId },
-      include: { doctorProfile: true },
-    });
+    const dbUser = await usersServerService.findUniqueByClerkId(context.clerkUserId);
 
-    if (!user || !user.doctorProfile) {
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    const user = await usersServerService.findUniqueWithDoctorProfile(dbUser.id);
+
+    if (!user || !(user as any)?.doctorProfile) {
       return NextResponse.json(
         { error: "Doctor profile not found" },
         { status: 404 }
       );
     }
 
-    const appointments = await prisma.appointment.findMany({
-      where: { doctorId: user.doctorProfile.id },
+    const appointments = await appointmentsServerService.getByDoctor((user as any).doctorProfile.id, {
       include: {
         user: {
           select: {
@@ -38,7 +43,6 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: [{ date: "asc" }, { time: "asc" }],
     });
 
     return NextResponse.json(appointments);
