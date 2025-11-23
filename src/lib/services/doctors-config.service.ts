@@ -3,9 +3,10 @@
  * Handles doctor-specific settings: availability, appointment types, working hours
  */
 
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { BaseService, ApiException } from "./base.service";
-import { AppointmentStatus } from "@prisma/client";
+import { AppointmentStatus } from "@/generated/prisma/enums";
+
 
 class DoctorsConfigService extends BaseService {
   /**
@@ -242,14 +243,14 @@ class DoctorsConfigService extends BaseService {
     try {
       const availability = await this.getAvailability(doctorId);
       const workingHours = await this.getWorkingHours(doctorId);
-      
+
       // Get day of week (0 = Sunday, 1 = Monday, etc.)
       const dateObj = new Date(date);
       const dayOfWeek = dateObj.getDay();
-      
+
       // Check if doctor works on this day
       const daySchedule = workingHours.find((wh: { dayOfWeek: number }) => wh.dayOfWeek === dayOfWeek);
-      
+
       if (!daySchedule || !daySchedule.isWorking) {
         return []; // Doctor doesn't work on this day
       }
@@ -273,7 +274,7 @@ class DoctorsConfigService extends BaseService {
       const slots: string[] = [];
       const [startHour, startMin] = daySchedule.startTime.split(":").map(Number);
       const [endHour, endMin] = daySchedule.endTime.split(":").map(Number);
-      
+
       const startMinutes = startHour * 60 + startMin;
       const endMinutes = endHour * 60 + endMin;
       const slotDuration = availability.slotDuration;
@@ -283,7 +284,7 @@ class DoctorsConfigService extends BaseService {
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         const timeSlot = `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
-        
+
         // Check if slot is in doctor's available time slots
         if (availability.timeSlots.length === 0 || availability.timeSlots.includes(timeSlot)) {
           // Check if slot is not booked
@@ -293,11 +294,11 @@ class DoctorsConfigService extends BaseService {
             const aptEnd = aptStart + apt.duration;
             const slotStart = minutes;
             const slotEnd = minutes + slotDuration;
-            
+
             // Check for overlap
             return (slotStart >= aptStart && slotStart < aptEnd) ||
-                   (slotEnd > aptStart && slotEnd <= aptEnd) ||
-                   (slotStart <= aptStart && slotEnd >= aptEnd);
+              (slotEnd > aptStart && slotEnd <= aptEnd) ||
+              (slotStart <= aptStart && slotEnd >= aptEnd);
           });
 
           if (!isBooked) {

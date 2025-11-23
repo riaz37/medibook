@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { updateVerificationStatusSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 
@@ -13,25 +13,25 @@ export async function PUT(
   try {
     // Await params (Next.js 15 requirement)
     const { id } = await params;
-    
+
     // Middleware ensures user is admin for /api/admin/* routes
     const { getAuthContext } = await import("@/lib/server/auth-utils");
     const context = await getAuthContext(true); // Include DB user for reviewedBy field
-    
+
     if (!context) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
-    
+
     if (!context.dbUser) {
       return NextResponse.json(
         { error: "User not found in database" },
         { status: 404 }
       );
     }
-    
+
     // Ensure user is admin
     if (context.role !== "admin") {
       return NextResponse.json(

@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { DoctorDashboardLayout } from "@/components/doctor/layout/DoctorDashboardLayout";
 import DoctorSettingsClient from "./DoctorSettingsClient";
 

@@ -6,7 +6,7 @@
  */
 
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import type { User } from "@/lib/types";
 
 /**
@@ -80,7 +80,7 @@ export async function syncUserDirect(): Promise<User | null> {
     return dbUser as User;
   } catch (error) {
     console.error("Error syncing user:", error);
-    
+
     // Handle unique constraint on email (if clerkId doesn't exist but email does)
     if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
       try {
@@ -93,18 +93,18 @@ export async function syncUserDirect(): Promise<User | null> {
               where: { email },
               include: { doctorProfile: true },
             });
-            
+
             if (existingUser && existingUser.clerkId !== user.id) {
               const updated = await prisma.user.update({
                 where: { id: existingUser.id },
                 data: { clerkId: user.id },
                 include: { doctorProfile: true },
               });
-              return updated.role 
+              return updated.role
                 ? (updated as User)
                 : ({ ...updated, needsRoleSelection: true } as User & { needsRoleSelection: boolean });
             }
-            
+
             if (existingUser) {
               return existingUser.role
                 ? (existingUser as User)
@@ -116,7 +116,7 @@ export async function syncUserDirect(): Promise<User | null> {
         console.error("Error retrying user sync:", retryError);
       }
     }
-    
+
     return null;
   }
 }

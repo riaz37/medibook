@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { doctorAvailabilitySchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
@@ -13,11 +13,11 @@ export async function GET(
   try {
     // Await params (Next.js 15 requirement)
     const { id } = await params;
-    
+
     // Middleware ensures user is authenticated
     const { getAuthContext } = await import("@/lib/server/auth-utils");
     const context = await getAuthContext();
-    
+
     if (!context) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -66,11 +66,11 @@ export async function PUT(
   try {
     // Await params (Next.js 15 requirement)
     const { id } = await params;
-    
+
     // Middleware ensures user is authenticated and has doctor/admin role
     const { getAuthContext } = await import("@/lib/server/auth-utils");
     const context = await getAuthContext();
-    
+
     if (!context || (context.role !== "admin" && context.doctorId !== id)) {
       return NextResponse.json(
         { error: "Forbidden: You can only update your own configuration" },

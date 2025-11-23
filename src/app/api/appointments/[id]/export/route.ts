@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { requireAppointmentAccess } from "@/lib/server/auth-utils";
 import { generateICS } from "@/lib/utils/ics-generator";
 
@@ -61,7 +61,7 @@ export async function GET(
     const [hours, minutes] = appointment.time.split(":").map(Number);
     const startDate = new Date(appointment.date);
     startDate.setHours(hours, minutes, 0, 0);
-    
+
     const endDate = new Date(startDate);
     endDate.setMinutes(endDate.getMinutes() + appointment.duration);
 
