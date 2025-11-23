@@ -8,7 +8,7 @@ import { UserRole } from "@/generated/prisma/client";
 import { User, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
-import { usersService } from "@/lib/services";
+import { usersService } from "@/lib/services/users.service";
 
 export default function SelectRoleClient() {
   const router = useRouter();
