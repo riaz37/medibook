@@ -50,7 +50,7 @@ export function CreatePrescriptionForm({
   const searchMedications = useSearchMedications();
 
   const form = useForm<CreatePrescriptionInput>({
-    resolver: zodResolver(createPrescriptionSchema),
+    resolver: zodResolver(createPrescriptionSchema) as any,
     defaultValues: {
       appointmentId: appointmentId || null,
       patientId: initialPatientId || "",
@@ -135,7 +135,7 @@ export function CreatePrescriptionForm({
           </CardHeader>
           <CardContent className="space-y-6">
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="patientId"
               render={({ field }) => (
                 <FormItem>
@@ -195,7 +195,7 @@ export function CreatePrescriptionForm({
 
                     <div className="relative">
                       <FormField
-                        control={form.control}
+                        control={form.control as any}
                         name={`items.${index}.medicationName`}
                         render={({ field }) => (
                           <FormItem>
@@ -248,7 +248,7 @@ export function CreatePrescriptionForm({
 
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
-                        control={form.control}
+                        control={form.control as any}
                         name={`items.${index}.dosage`}
                         render={({ field }) => (
                           <FormItem>
@@ -262,7 +262,7 @@ export function CreatePrescriptionForm({
                       />
 
                       <FormField
-                        control={form.control}
+                        control={form.control as any}
                         name={`items.${index}.frequency`}
                         render={({ field }) => (
                           <FormItem>
@@ -278,7 +278,7 @@ export function CreatePrescriptionForm({
 
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
-                        control={form.control}
+                        control={form.control as any}
                         name={`items.${index}.duration`}
                         render={({ field }) => (
                           <FormItem>
@@ -292,7 +292,7 @@ export function CreatePrescriptionForm({
                       />
 
                       <FormField
-                        control={form.control}
+                        control={form.control as any}
                         name={`items.${index}.quantity`}
                         render={({ field }) => (
                           <FormItem>
@@ -313,7 +313,7 @@ export function CreatePrescriptionForm({
                     </div>
 
                     <FormField
-                      control={form.control}
+                      control={form.control as any}
                       name={`items.${index}.refillsAllowed`}
                       render={({ field }) => (
                         <FormItem>
@@ -335,7 +335,7 @@ export function CreatePrescriptionForm({
                     />
 
                     <FormField
-                      control={form.control}
+                      control={form.control as any}
                       name={`items.${index}.instructions`}
                       render={({ field }) => (
                         <FormItem>
@@ -358,7 +358,7 @@ export function CreatePrescriptionForm({
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name="expiryDate"
                 render={({ field }) => (
                   <FormItem>
@@ -379,7 +379,7 @@ export function CreatePrescriptionForm({
             </div>
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="notes"
               render={({ field }) => (
                 <FormItem>

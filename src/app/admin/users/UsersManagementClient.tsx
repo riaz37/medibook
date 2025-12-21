@@ -21,7 +21,7 @@ import { User, Mail, Search, Edit, History } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityListSkeleton } from "@/components/ui/loading-skeleton";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/generated/prisma/client";
 
 interface UserWithRole {
   id: string;

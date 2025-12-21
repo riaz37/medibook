@@ -71,10 +71,10 @@ export function PrescriptionDetails({ prescriptionId }: PrescriptionDetailsProps
   };
 
   const pendingRefills = prescription.items
-    .flatMap((item) =>
+    .flatMap((item: typeof prescription.items[0]) =>
       item.refills
-        .filter((refill) => refill.status === "PENDING")
-        .map((refill) => ({ item, refill }))
+        .filter((refill: typeof item.refills[0]) => refill.status === "PENDING")
+        .map((refill: typeof item.refills[0]) => ({ item, refill }))
     );
 
   return (
@@ -113,7 +113,7 @@ export function PrescriptionDetails({ prescriptionId }: PrescriptionDetailsProps
               <CardTitle>Prescription Details</CardTitle>
               <CardDescription>Prescription ID: {prescription.id}</CardDescription>
             </div>
-            <Badge variant="outline" className={statusColors[prescription.status]}>
+            <Badge variant="outline" className={statusColors[prescription.status as keyof typeof statusColors]}>
               {prescription.status}
             </Badge>
           </div>
@@ -153,8 +153,8 @@ export function PrescriptionDetails({ prescriptionId }: PrescriptionDetailsProps
           <div>
             <h3 className="font-semibold mb-4">Medications</h3>
             <div className="space-y-4">
-              {prescription.items.map((item, index) => {
-                const pendingRefill = item.refills.find((r) => r.status === "PENDING");
+              {prescription.items.map((item: typeof prescription.items[0], index: number) => {
+                const pendingRefill = item.refills.find((r: typeof item.refills[0]) => r.status === "PENDING");
                 return (
                   <Card key={item.id} className="p-4">
                     <div className="space-y-2">

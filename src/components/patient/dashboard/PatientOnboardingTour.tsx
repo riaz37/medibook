@@ -1,6 +1,7 @@
 "use client";
 
-import { OnboardingTour } from "@/components/shared/OnboardingTour";
+// TODO: Create OnboardingTour component or remove this import
+// import { OnboardingTour } from "@/components/shared/OnboardingTour";
 
 const PATIENT_TOUR_STEPS = [
   {
@@ -45,13 +46,15 @@ const PATIENT_TOUR_STEPS = [
 ];
 
 export function PatientOnboardingTour() {
-  return (
-    <OnboardingTour
-      tourId="patient-dashboard"
-      steps={PATIENT_TOUR_STEPS}
-      onComplete={() => {
-        console.log("Patient onboarding tour completed");
-      }}
-    />
-  );
+  // TODO: Implement OnboardingTour component
+  return null;
+  // return (
+  //   <OnboardingTour
+  //     tourId="patient-dashboard"
+  //     steps={PATIENT_TOUR_STEPS}
+  //     onComplete={() => {
+  //       console.log("Patient onboarding tour completed");
+  //     }}
+  //   />
+  // );
 }

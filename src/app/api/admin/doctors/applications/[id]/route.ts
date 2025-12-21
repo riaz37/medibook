@@ -12,7 +12,7 @@ import { UserRole } from "@/generated/prisma/client";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Require admin role
@@ -22,7 +22,7 @@ export async function POST(
     }
 
     const { userId: adminUserId } = authResult;
-    const applicationId = params.id;
+    const { id: applicationId } = await params;
 
     // Get application
     const application = await prisma.doctorApplication.findUnique({

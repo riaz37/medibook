@@ -8,7 +8,7 @@ import ActivityFeed from "@/components/doctor/dashboard/ActivityFeed";
 import { DoctorAnalyticsSection } from "@/components/doctor/dashboard/DoctorAnalyticsSection";
 import { Suspense } from "react";
 import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
-import { getUserRoleFromSession } from "@/lib/server/rbac";
+import { getUserRoleFromSession, getAuthContext } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
 
 /**

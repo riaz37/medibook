@@ -78,6 +78,17 @@ class UsersService extends BaseService {
   }
 
   /**
+   * Select role (for new users during signup)
+   */
+  async selectRole(role: "PATIENT" | "DOCTOR" | "ADMIN"): Promise<User> {
+    try {
+      return (await apiClient.setSignupIntent({ role })) as User;
+    } catch (error) {
+      throw this.handleError(error, "Failed to select role");
+    }
+  }
+
+  /**
    * Handle and transform errors
    */
   private handleError(error: unknown, defaultMessage: string): ApiException {

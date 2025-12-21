@@ -106,7 +106,7 @@ export function PatientPrescriptionList() {
                           <h3 className="font-semibold text-lg">
                             Dr. {prescription.doctor.name}
                           </h3>
-                          <Badge variant="outline" className={statusColors[prescription.status]}>
+                          <Badge variant="outline" className={statusColors[prescription.status as keyof typeof statusColors]}>
                             {prescription.status}
                           </Badge>
                         </div>

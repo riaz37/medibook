@@ -3,6 +3,9 @@ import { getAuthContext } from "@/lib/server/rbac";
 import { redirect } from "next/navigation";
 import CacheDashboardClient from "./CacheDashboardClient";
 
+// Mark page as dynamic (uses auth which requires headers)
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Cache Management | MediBook Admin",
   description: "Monitor and manage application cache",

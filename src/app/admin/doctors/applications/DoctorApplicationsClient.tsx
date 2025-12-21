@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityListSkeleton } from "@/components/ui/loading-skeleton";
 import type { DoctorApplication } from "@/lib/types/rbac";
-import { ApplicationStatus } from "@prisma/client";
+import { ApplicationStatus } from "@/generated/prisma/client";
 
 interface ApplicationWithUser extends DoctorApplication {
   user: {

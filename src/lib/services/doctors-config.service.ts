@@ -5,7 +5,8 @@
 
 import prisma from "@/lib/prisma";
 import { BaseService, ApiException } from "./base.service";
-import { AppointmentStatus } from "@/generated/prisma/enums";
+import { ApplicationStatus, AppointmentStatus } from "@/generated/prisma";
+
 
 
 class DoctorsConfigService extends BaseService {

@@ -53,13 +53,13 @@ async function NextAppointment() {
 
   // Calculate stats
   const today = new Date();
-  const upcomingAppointments = appointments?.filter((appointment: Appointment) => {
+  const upcomingAppointments = appointments?.filter((appointment: NextAppointmentData) => {
     const appointmentDate = parseISO(appointment.date);
     const isUpcoming = isSameDay(appointmentDate, today) || isAfter(appointmentDate, today);
     return isUpcoming && (appointment.status === "CONFIRMED" || appointment.status === "PENDING");
   }) || [];
 
-  const completedAppointments = appointments?.filter((appointment: Appointment) => {
+  const completedAppointments = appointments?.filter((appointment: NextAppointmentData) => {
     const appointmentDate = parseISO(appointment.date);
     const isAppointmentPast = isPast(appointmentDate) && !isSameDay(appointmentDate, today);
     return appointment.status === "COMPLETED" || (isAppointmentPast && appointment.status === "CONFIRMED");

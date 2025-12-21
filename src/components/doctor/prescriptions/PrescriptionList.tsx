@@ -108,8 +108,8 @@ export function PrescriptionList() {
             <div className="space-y-4">
               {filteredPrescriptions.map((prescription) => {
                 const patientName = `${prescription.patient.firstName || ""} ${prescription.patient.lastName || ""}`.trim() || prescription.patient.email;
-                const hasPendingRefills = prescription.items.some((item) =>
-                  item.refills.some((refill) => refill.status === "PENDING")
+                const hasPendingRefills = prescription.items.some((item: typeof prescription.items[0]) =>
+                  item.refills.some((refill: typeof item.refills[0]) => refill.status === "PENDING")
                 );
 
                 return (
@@ -119,7 +119,7 @@ export function PrescriptionList() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="font-semibold text-lg">{patientName}</h3>
-                            <Badge variant="outline" className={statusColors[prescription.status]}>
+                            <Badge variant="outline" className={statusColors[prescription.status as keyof typeof statusColors]}>
                               {prescription.status}
                             </Badge>
                             {hasPendingRefills && (

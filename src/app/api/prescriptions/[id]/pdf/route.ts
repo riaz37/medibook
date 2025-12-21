@@ -66,7 +66,7 @@ export async function GET(
     const pdfBuffer = await generatePrescriptionPDF(prescription as any);
 
     // Return PDF as response
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="prescription-${id}.pdf"`,

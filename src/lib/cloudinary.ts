@@ -1,7 +1,9 @@
 import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 
+let isConfigured = false;
+
 /**
- * Configure Cloudinary
+ * Configure Cloudinary (lazy initialization)
  * 
  * Supports two configuration methods (in order of preference):
  * 1. CLOUDINARY_URL - Single environment variable (recommended)
@@ -14,27 +16,60 @@ import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
  * @see https://next.cloudinary.dev/ for Next.js best practices
  * @see https://cloudinary.com/documentation/node_integration#configuration
  */
-if (process.env.CLOUDINARY_URL) {
-  // Preferred method: Use CLOUDINARY_URL
-  cloudinary.config();
-} else {
-  // Fallback: Use individual environment variables
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-  if (!cloudName || !apiKey || !apiSecret) {
-    throw new Error(
-      "Cloudinary configuration missing. Please set either CLOUDINARY_URL or " +
-      "CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET"
-    );
+function configureCloudinary() {
+  if (isConfigured) {
+    return;
   }
 
-  cloudinary.config({
-    cloud_name: cloudName,
-    api_key: apiKey,
-    api_secret: apiSecret,
-  });
+  if (process.env.CLOUDINARY_URL) {
+    // Validate CLOUDINARY_URL format
+    const url = process.env.CLOUDINARY_URL;
+    if (!url.startsWith("cloudinary://")) {
+      // During build time, don't throw - just log and skip configuration
+      if (process.env.NODE_ENV === "production" || process.env.NEXT_PHASE === "phase-production-build") {
+        console.warn(
+          "Invalid CLOUDINARY_URL format. URL should begin with 'cloudinary://'. " +
+          "Skipping Cloudinary configuration during build."
+        );
+        return;
+      }
+      throw new Error(
+        `Invalid CLOUDINARY_URL protocol. URL should begin with 'cloudinary://'. ` +
+        `Current value starts with: ${url.substring(0, 20)}...`
+      );
+    }
+    // Preferred method: Use CLOUDINARY_URL
+    cloudinary.config();
+  } else {
+    // Fallback: Use individual environment variables
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      // During build time, don't throw - just log and skip configuration
+      if (process.env.NODE_ENV === "production" || process.env.NEXT_PHASE === "phase-production-build") {
+        console.warn(
+          "Cloudinary configuration missing. Please set either CLOUDINARY_URL or " +
+          "CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET. " +
+          "Skipping Cloudinary configuration during build."
+        );
+        return;
+      }
+      throw new Error(
+        "Cloudinary configuration missing. Please set either CLOUDINARY_URL or " +
+        "CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET"
+      );
+    }
+
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+    });
+  }
+
+  isConfigured = true;
 }
 
 export { cloudinary };
@@ -51,6 +86,9 @@ export async function uploadToCloudinary(
   folder: string = "medibook",
   publicId?: string
 ): Promise<{ secure_url: string; public_id: string }> {
+  // Configure Cloudinary lazily (only when actually needed)
+  configureCloudinary();
+  
   try {
     const uploadOptions: any = {
       folder,
@@ -106,6 +144,9 @@ export async function uploadToCloudinary(
 export async function deleteFromCloudinary(
   publicId: string
 ): Promise<{ result: string }> {
+  // Configure Cloudinary lazily (only when actually needed)
+  configureCloudinary();
+  
   try {
     const result = await cloudinary.uploader.destroy(publicId);
     return result;

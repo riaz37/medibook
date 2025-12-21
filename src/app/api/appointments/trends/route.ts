@@ -4,6 +4,8 @@ import { requireAuth } from "@/lib/server/rbac";
 import { subDays, format, startOfDay } from "date-fns";
 import { Prisma } from "@/generated/prisma/client";
 
+// Mark route as dynamic (uses auth which requires headers)
+export const dynamic = "force-dynamic";
 export const revalidate = 300; // 5 minutes
 
 // GET /api/appointments/trends - Get appointment trends for charts

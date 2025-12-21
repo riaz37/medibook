@@ -78,9 +78,9 @@ export async function PUT(request: NextRequest) {
 
     // Update user profile
     const updatedUser = await usersServerService.update(user.id, {
-      firstName: firstName !== undefined ? firstName : undefined,
-      lastName: lastName !== undefined ? lastName : undefined,
-      phone: phone !== undefined ? phone : undefined,
+      firstName: firstName !== undefined && firstName !== null ? firstName : undefined,
+      lastName: lastName !== undefined && lastName !== null ? lastName : undefined,
+      phone: phone !== undefined && phone !== null ? phone : undefined,
     });
 
     return NextResponse.json(updatedUser);

@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/server/rbac";
 import { subDays, format, startOfDay } from "date-fns";
 import { cacheService, CacheTTL } from "@/lib/services/server/cache.service";
 
+// Mark route as dynamic (uses auth which requires headers)
+export const dynamic = "force-dynamic";
 export const revalidate = 300; // 5 minutes
 
 /**

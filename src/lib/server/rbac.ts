@@ -35,6 +35,18 @@ export interface AuthContext {
 }
 
 /**
+ * Simple role check (Clerk docs pattern)
+ * Checks role from session claims only - fast, no database fallback
+ * Use this for simple role checks when you know the role is in session claims
+ * 
+ * For cases needing database fallback, use getUserRoleFromSession() instead
+ */
+export async function checkRole(role: Role): Promise<boolean> {
+  const { sessionClaims } = await auth();
+  return sessionClaims?.metadata?.role === role;
+}
+
+/**
  * Get user role from Clerk session claims
  * Falls back to database if role is missing in session claims (database is source of truth)
  * Returns null if user is not authenticated or has no role

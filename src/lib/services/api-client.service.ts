@@ -213,6 +213,12 @@ class ApiClientService extends BaseService {
     return this.put("/api/users/profile", data);
   }
 
+  async setSignupIntent(data: {
+    role: "PATIENT" | "DOCTOR" | "ADMIN";
+  }) {
+    return this.post("/api/users/set-signup-intent", data);
+  }
+
   // Admin API
   async getAdminDoctorVerifications(status?: "PENDING" | "APPROVED" | "REJECTED") {
     const queryString = status ? this.buildQueryString({ status }) : "";

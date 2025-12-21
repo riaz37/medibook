@@ -18,7 +18,29 @@ import { Button } from "../ui/button";
 import type { EditDoctorDialogProps } from "@/lib/types";
 
 function EditDoctorDialog({ doctor, isOpen, onClose }: EditDoctorDialogProps) {
-  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(doctor);
+  const [editingDoctor, setEditingDoctor] = useState<Partial<Doctor> & {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    speciality: string;
+    gender: Gender;
+  } | null>(
+    doctor
+      ? {
+          id: doctor.id,
+          name: doctor.name,
+          email: doctor.email,
+          phone: doctor.phone,
+          speciality: doctor.speciality,
+          gender: doctor.gender as Gender,
+          imageUrl: "",
+          isVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      : null
+  );
 
   const updateDoctorMutation = useUpdateDoctor();
 

@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { commissionService } from "./commission.service";
-import { RefundType } from "@prisma/client";
+import { RefundType } from "@/generated/prisma/client";
 
 /**
  * Payment Service

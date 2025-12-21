@@ -50,10 +50,8 @@ export default function QuickSettings({ doctor }: QuickSettingsProps) {
           return (
             <Card
               key={setting.title}
-              className={`cursor-pointer hover:shadow-md transition-shadow ${
-                setting.disabled ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              onClick={setting.disabled ? undefined : setting.onClick}
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={setting.onClick}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{setting.title}</CardTitle>

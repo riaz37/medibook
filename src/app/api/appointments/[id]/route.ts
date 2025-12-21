@@ -3,7 +3,7 @@ import { appointmentsServerService } from "@/lib/services/server";
 import { updateAppointmentStatusSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { requireAppointmentAccess } from "@/lib/server/rbac";
-import { AppointmentStatus } from "@/generated/prisma/enums";
+import { AppointmentStatus } from "@/generated/prisma/client";
 
 // GET /api/appointments/[id] - Get appointment by ID
 export async function GET(

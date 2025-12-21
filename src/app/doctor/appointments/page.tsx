@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DoctorDashboardLayout } from "@/components/doctor/layout/DoctorDashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,7 @@ import type { DoctorAppointmentListItem } from "@/lib/types";
 
 type AppointmentStatus = "all" | "pending" | "upcoming" | "completed";
 
-function DoctorAppointmentsPage() {
+function DoctorAppointmentsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useUser();
@@ -432,6 +432,14 @@ function DoctorAppointmentsPage() {
         }}
       />
     </DoctorDashboardLayout>
+  );
+}
+
+function DoctorAppointmentsPage() {
+  return (
+    <Suspense fallback={<PageLoading message="Loading appointments..." />}>
+      <DoctorAppointmentsContent />
+    </Suspense>
   );
 }
 

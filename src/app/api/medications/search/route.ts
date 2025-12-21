@@ -4,6 +4,8 @@ import { medicationSearchSchema } from "@/lib/validations";
 import { validateQuery } from "@/lib/utils/validation";
 import { requireAuth } from "@/lib/server/rbac";
 
+// Mark route as dynamic (uses auth which requires headers)
+export const dynamic = "force-dynamic";
 // Cache for 10 minutes (medications don't change frequently)
 export const revalidate = 600;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import AppointmentsTabs from "@/components/patient/appointments/AppointmentsTabs";
@@ -15,8 +15,9 @@ import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
 import { useRole } from "@/lib/hooks/use-role";
 import { useEffect } from "react";
+import { PageLoading } from "@/components/ui/loading-skeleton";
 
-function AppointmentsPage() {
+function AppointmentsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoaded } = useUser();
@@ -122,9 +123,11 @@ function AppointmentsPage() {
         onError: (error) => {
           // Rollback optimistic update on error
           queryClient.setQueryData(["getUserAppointments"], previousAppointments);
-          toast.error("Failed to cancel appointment", undefined, () => {
-            // Retry on error toast click
-            handleCancel(id);
+          toast.error("Failed to cancel appointment", {
+            action: {
+              label: "Retry",
+              onClick: () => handleCancel(id),
+            },
           });
           console.error("Error cancelling appointment:", error);
         },
@@ -138,7 +141,7 @@ function AppointmentsPage() {
   };
 
   // Don't render if user is a doctor (will redirect)
-  if (userRole === "DOCTOR") {
+  if (role === "doctor") {
     return null;
   }
 
@@ -203,6 +206,14 @@ function AppointmentsPage() {
         </AppointmentsTabs>
       </div>
     </PatientDashboardLayout>
+  );
+}
+
+function AppointmentsPage() {
+  return (
+    <Suspense fallback={<PageLoading message="Loading appointments..." />}>
+      <AppointmentsPageContent />
+    </Suspense>
   );
 }
 

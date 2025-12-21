@@ -13,7 +13,7 @@ import { validateRoleTransition, roleToUserRole } from "@/lib/server/rbac";
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Require admin role
@@ -23,7 +23,7 @@ export async function PUT(
     }
 
     const { userId: adminUserId, role: adminRole } = authResult;
-    const userId = params.id;
+    const { id: userId } = await params;
 
     // Get user
     const user = await prisma.user.findUnique({

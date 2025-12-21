@@ -112,7 +112,7 @@ export function PatientPrescriptionDetails({ prescriptionId }: PrescriptionDetai
               <CardTitle>Prescription Details</CardTitle>
               <p className="text-sm text-muted-foreground">Prescription ID: {prescription.id}</p>
             </div>
-            <Badge variant="outline" className={statusColors[prescription.status]}>
+            <Badge variant="outline" className={statusColors[prescription.status as keyof typeof statusColors]}>
               {prescription.status}
             </Badge>
           </div>
@@ -148,9 +148,9 @@ export function PatientPrescriptionDetails({ prescriptionId }: PrescriptionDetai
           <div>
             <h3 className="font-semibold mb-4">Medications</h3>
             <div className="space-y-4">
-              {prescription.items.map((item, index) => {
+              {prescription.items.map((item: typeof prescription.items[0], index: number) => {
                 const canRequestRefill = item.refillsRemaining > 0 && prescription.status === "ACTIVE";
-                const hasPendingRefill = item.refills.some((r) => r.status === "PENDING");
+                const hasPendingRefill = item.refills.some((r: typeof item.refills[0]) => r.status === "PENDING");
 
                 return (
                   <Card key={item.id} className="p-4">

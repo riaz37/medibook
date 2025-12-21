@@ -6,7 +6,7 @@ import type {
   PrescriptionAudit,
   PrescriptionStatus,
   RefillStatus,
-} from "@prisma/client";
+} from "@/generated/prisma/client";
 
 /**
  * Prescription with related data

@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         duration: item.duration,
         instructions: item.instructions || null,
         quantity: item.quantity || null,
-        refillsAllowed: item.refillsAllowed,
+        refillsAllowed: item.refillsAllowed ?? 0,
       })),
     });
 

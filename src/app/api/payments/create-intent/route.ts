@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       where: { id: appointmentId },
       include: { 
         doctor: true,
-        patient: {
+        user: {
           select: { clerkId: true },
         },
       },
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         select: { id: true },
       });
 
-      if (!dbUser || appointment.patientId !== dbUser.id) {
+      if (!dbUser || appointment.userId !== dbUser.id) {
         return NextResponse.json(
           { error: "Forbidden: You can only create payment intents for your own appointments" },
           { status: 403 }
