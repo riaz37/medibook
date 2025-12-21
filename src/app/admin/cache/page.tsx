@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { getAuthContext } from "@/lib/server/rbac";
 import { redirect } from "next/navigation";
 import CacheDashboardClient from "./CacheDashboardClient";
 

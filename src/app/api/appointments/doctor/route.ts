@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import { appointmentsServerService, usersServerService } from "@/lib/services/server";
 
 // GET /api/appointments/doctor - Get doctor's appointments
 export async function GET(request: NextRequest) {
   try {
-    const context = await getAuthContext();
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     // Get DB user from Clerk user ID
     const dbUser = await usersServerService.findUniqueByClerkId(context.clerkUserId);

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prescriptionsServerService } from "@/lib/services/server";
 import { createPrescriptionSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
-import { requireAnyRole } from "@/lib/server/auth-utils";
+import { requireAnyRole } from "@/lib/server/rbac";
 
 /**
  * POST /api/prescriptions - Create prescription (doctor only)

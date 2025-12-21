@@ -10,24 +10,25 @@ import RecentAppointments from "@/components/admin/RecentAppointments";
 import { RevenueChart } from "@/components/admin/dashboard/RevenueChart";
 import { Suspense } from "react";
 import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
+import { getUserRoleFromSession } from "@/lib/server/rbac";
 
 /**
  * Admin Dashboard
  * 
  * Optimized for scalability:
- * - Uses session claims for role checking (no DB query)
+ * - Uses getUserRoleFromSession() which has database fallback
  * - Middleware already handles admin route protection
  */
 async function AdminPage() {
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
 
   // User is not logged in
   if (!userId) {
     redirect("/");
   }
 
-  // Get role from session claims (more scalable than DB query)
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+  // Get role from session claims with database fallback
+  const role = await getUserRoleFromSession();
 
   // If user doesn't have ADMIN role, redirect
   if (role !== "admin") {

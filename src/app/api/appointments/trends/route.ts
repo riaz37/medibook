@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import { subDays, format, startOfDay } from "date-fns";
 import { Prisma } from "@/generated/prisma/client";
 
@@ -9,11 +9,12 @@ export const revalidate = 300; // 5 minutes
 // GET /api/appointments/trends - Get appointment trends for charts
 export async function GET(request: NextRequest) {
   try {
-    const context = await getAuthContext();
-
-    if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     const searchParams = request.nextUrl.searchParams;
     const period = searchParams.get("period") || "7"; // 7, 30, or 90 days

@@ -13,31 +13,24 @@ import { useAppointmentBookingStore } from "@/lib/stores/appointment-booking.sto
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { usersService } from "@/lib/services";
+import { useRole } from "@/lib/hooks/use-role";
 import { useUser } from "@clerk/nextjs";
 import { showError, handleApiError, toastMessages } from "@/lib/utils/toast";
 
 function BookAppointmentPage() {
   const router = useRouter();
-  const { user, isLoaded } = useUser();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { isLoaded } = useUser();
+  const role = useRole();
 
   // Redirect doctors away from appointments page
   useEffect(() => {
-    if (isLoaded && user) {
-      usersService.syncUserClient().then((syncedUser) => {
-        if (syncedUser?.role) {
-          setUserRole(syncedUser.role);
-          if (syncedUser.role === "DOCTOR") {
-            router.push("/doctor/dashboard");
-          }
-        }
-      });
+    if (isLoaded && role === "doctor") {
+      router.push("/doctor/dashboard");
     }
-  }, [isLoaded, user, router]);
+  }, [isLoaded, role, router]);
 
   // Don't render if user is a doctor (will redirect)
-  if (userRole === "DOCTOR") {
+  if (role === "doctor") {
     return null;
   }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Gender } from "@prisma/client";
+import { Gender } from "@/generated/prisma/client";
 import { doctorsServerService } from "@/lib/services/server";
 import { updateDoctorSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
@@ -13,16 +13,13 @@ export async function PUT(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
     
-    // Middleware ensures user is authenticated and has doctor/admin role for /api/doctors/* routes
-    const { getAuthContext } = await import("@/lib/server/auth-utils");
-    const context = await getAuthContext();
-    
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const { requireAuth } = await import("@/lib/server/rbac");
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
     
     // Check if user is admin or owns this doctor profile
     if (context.role !== "admin" && context.doctorId !== id) {

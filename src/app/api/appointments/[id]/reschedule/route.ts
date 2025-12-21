@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appointmentsServerService } from "@/lib/services/server";
-import { requireAppointmentAccess } from "@/lib/server/auth-utils";
+import { requireAppointmentAccess } from "@/lib/server/rbac";
 import { z } from "zod";
 
 const rescheduleSchema = z.object({

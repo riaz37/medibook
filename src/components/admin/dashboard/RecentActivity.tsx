@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, CheckCircle2, Clock, ArrowRight, UserPlus } from "lucide-react";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
 import { format, differenceInDays } from "date-fns";
 import Link from "next/link";
@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 async function RecentActivity() {
-  const context = await getAuthContext();
+  const authResult = await requireAuth();
   let recentActivities: any[] = [];
 
-  if (context) {
+  if ("response" in authResult) {
+    // If auth fails, return empty state (component will show "No recent activity")
+  } else {
+    const { context } = authResult;
     try {
       // Get recent verifications
       const verifications = await (prisma as any).doctorVerification?.findMany({

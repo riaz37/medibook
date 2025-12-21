@@ -201,10 +201,6 @@ class ApiClientService extends BaseService {
     return this.post("/api/users/sync");
   }
 
-  async selectUserRole(role: "PATIENT" | "DOCTOR" | "ADMIN") {
-    return this.post("/api/users/select-role", { role });
-  }
-
   async getUserProfile() {
     return this.get("/api/users/profile");
   }

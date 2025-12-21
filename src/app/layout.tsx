@@ -58,6 +58,7 @@ export default function RootLayout({
               }}
             >
               <Toaster />
+              <UserSync />
               {children}
             </ClerkProvider>
           </TanStackProvider>

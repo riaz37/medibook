@@ -2,44 +2,51 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usersService } from "@/lib/services";
+import { useRole } from "@/lib/hooks/use-role";
 
 function UserSync() {
   const { isSignedIn, isLoaded } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const hasSynced = useRef(false);
+  const role = useRole();
 
   useEffect(() => {
     const handleUserSync = async () => {
+      // Only sync once per session
+      if (hasSynced.current) {
+        return;
+      }
+
       if (isLoaded && isSignedIn) {
         try {
-          const user = await usersService.syncUserClient();
-          
-          // Check if user needs to select role
-          if (user && (user as any).needsRoleSelection && pathname !== "/select-role") {
-            router.push("/select-role");
-            return;
-          }
-
-          // Redirect based on role if on wrong page
-          if (user && user.role && pathname !== "/select-role") {
-            if (user.role === "DOCTOR" && !pathname.startsWith("/doctor")) {
-              router.push("/doctor/dashboard");
-            } else if (user.role === "ADMIN" && !pathname.startsWith("/admin")) {
-              router.push("/admin");
-            } else if (user.role === "PATIENT" && (pathname.startsWith("/doctor") || pathname.startsWith("/admin"))) {
-              router.push("/patient/dashboard");
-            }
-          }
+          hasSynced.current = true;
+          // Sync user to database (ensures user exists in DB)
+          await usersService.syncUserClient();
         } catch (error) {
-          console.log("Failed to sync user", error);
+          console.error("Failed to sync user:", error);
+          hasSynced.current = false; // Allow retry on error
         }
       }
     };
 
     handleUserSync();
-  }, [isLoaded, isSignedIn, router, pathname]);
+  }, [isLoaded, isSignedIn]);
+
+  // Redirect based on role if on wrong page (using Clerk metadata role format)
+  useEffect(() => {
+    if (isLoaded && isSignedIn && role) {
+      if (role === "doctor" && !pathname.startsWith("/doctor")) {
+        router.push("/doctor/dashboard");
+      } else if (role === "admin" && !pathname.startsWith("/admin")) {
+        router.push("/admin");
+      } else if (role === "patient" && (pathname.startsWith("/doctor") || pathname.startsWith("/admin"))) {
+        router.push("/patient/dashboard");
+      }
+    }
+  }, [isLoaded, isSignedIn, role, pathname, router]);
 
   return null;
 }

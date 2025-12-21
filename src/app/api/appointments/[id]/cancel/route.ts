@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { refundService } from "@/lib/services/refund.service";
 import { appointmentsServerService } from "@/lib/services/server";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
 
 /**
@@ -17,14 +17,12 @@ export async function POST(
     const body = await request.json();
     const { reason } = body;
 
-    // Get auth context
-    const context = await getAuthContext();
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     // Get appointment
     const appointment = await appointmentsServerService.findUnique(id, {

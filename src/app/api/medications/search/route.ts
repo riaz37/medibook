@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { medicationSearchSchema } from "@/lib/validations";
 import { validateQuery } from "@/lib/utils/validation";
-import { requireAuth } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 
 // Cache for 10 minutes (medications don't change frequently)
 export const revalidate = 600;

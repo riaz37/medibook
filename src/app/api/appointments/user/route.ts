@@ -31,15 +31,13 @@ export async function GET(request: NextRequest) {
         );
       }
     } else {
-      // Middleware ensures user is authenticated
-      const { getAuthContext } = await import("@/lib/utils/auth-utils");
-      const context = await getAuthContext();
-      if (!context) {
-        return NextResponse.json(
-          { error: "Unauthorized" },
-          { status: 401 }
-        );
+      const { requireAuth } = await import("@/lib/server/rbac");
+      const authResult = await requireAuth();
+      if ("response" in authResult) {
+        return authResult.response;
       }
+      
+      const { context } = authResult;
       // Get DB user ID from Clerk user ID
       user = await usersServerService.findUniqueByClerkId(context.clerkUserId);
       if (!user) {

@@ -16,7 +16,7 @@ async function DoctorSetupPage() {
   });
 
   if (!dbUser || dbUser.role !== "DOCTOR") {
-    redirect("/select-role");
+    redirect("/");
   }
 
   // Get or create doctor profile

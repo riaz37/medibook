@@ -1,14 +1,17 @@
 import { StatCard } from "@/components/ui/stat-card";
 import { Calendar, CheckCircle2, List, AlertCircle } from "lucide-react";
 import prisma from "@/lib/prisma";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import { getDoctorStats } from "@/lib/utils/appointments";
 
 export default async function DoctorStatsGrid() {
-  const context = await getAuthContext();
+  const authResult = await requireAuth();
   let stats = { total: 0, pending: 0, upcoming: 0, completed: 0 };
 
-  if (context) {
+  if ("response" in authResult) {
+    // If auth fails, return default stats (component will still render with zeros)
+  } else {
+    const { context } = authResult;
     try {
       const user = await prisma.user.findUnique({
         where: { clerkId: context.clerkUserId },

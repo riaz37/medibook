@@ -3,12 +3,16 @@ import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
   "/", // Landing page - public
+  "/sign-in", // Clerk sign-in page
+  "/sign-up", // Role selection page - public
+  "/sign-up(.*)", // Clerk sign-up pages (patient and doctor)
   "/api/vapi-get-user-appointments",
   "/api/vapi-book-appointment",
   "/api/vapi-get-doctors",
   "/api/vapi-get-available-times",
   "/api/send-appointment-email",
   "/api/webhooks/stripe", // Stripe webhook - must be public
+  "/api/webhooks/clerk", // Clerk webhook - must be public
   "/api/settings/commission", // Commission percentage - needed for preview
 ]);
 
@@ -39,7 +43,34 @@ export default clerkMiddleware(async (auth, req) => {
 
   // Get role from session claims (set by Clerk metadata)
   // This is more scalable than querying DB on every request
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+  // Fallback to database if role is missing (handles new users or sync delays)
+  let role: string | undefined = (sessionClaims?.metadata as { role?: string })?.role;
+  
+  // Fallback to database if role is missing from session claims
+  // Note: We can't call getUserRoleFromSession() here because it calls auth() again
+  // Instead, we directly query the database using the userId we already have
+  if (!role && userId) {
+    try {
+      const prisma = (await import("@/lib/prisma")).default;
+      const dbUser = await prisma.user.findUnique({
+        where: { clerkId: userId },
+        select: { 
+          role: true,
+          doctorProfile: { select: { id: true } }
+        },
+      });
+      
+      if (dbUser?.role) {
+        // Convert database role to session role format
+        role = (dbUser.role === "ADMIN" ? "admin" : 
+                dbUser.role === "DOCTOR" ? "doctor" : "patient");
+      }
+    } catch (error) {
+      // Silently fail - middleware should not block requests
+      // API routes will handle auth properly
+      console.error("Error fetching role from database in middleware:", error);
+    }
+  }
 
   // Protect admin routes - require admin role
   if (isAdminRoute(req)) {
@@ -73,7 +104,8 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  // Protect patient routes - require patient role (or no role set yet, which will redirect to select-role)
+  // Protect patient routes - require patient role (new users default to patient role via webhook)
+  // Users without a role are treated as patients (will get PATIENT role from webhook)
   if (isPatientRoute(req)) {
     if (role === "doctor" || role === "admin") {
       // API routes return JSON errors
@@ -92,6 +124,8 @@ export default clerkMiddleware(async (auth, req) => {
         return NextResponse.redirect(url);
       }
     }
+    // If no role, allow access (user will get PATIENT role from webhook)
+    // This handles new users who haven't been synced yet
   }
 });
 
@@ -103,3 +137,4 @@ export const config = {
     "/(api|trpc)(.*)",
   ],
 };
+

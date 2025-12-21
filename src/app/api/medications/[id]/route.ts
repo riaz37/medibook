@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 
 /**
  * GET /api/medications/[id] - Get medication details

@@ -14,29 +14,24 @@ export async function PUT(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
 
-    // Middleware ensures user is admin for /api/admin/* routes
-    const { getAuthContext } = await import("@/lib/server/auth-utils");
-    const context = await getAuthContext(true); // Include DB user for reviewedBy field
-
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const { requireRole } = await import("@/lib/server/rbac");
+    const authResult = await requireRole("admin");
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
-    if (!context.dbUser) {
+    // Get DB user for reviewedBy field
+    const dbUser = await prisma.user.findUnique({
+      where: { clerkId: context.userId },
+      select: { id: true },
+    });
+
+    if (!dbUser) {
       return NextResponse.json(
         { error: "User not found in database" },
         { status: 404 }
-      );
-    }
-
-    // Ensure user is admin
-    if (context.role !== "admin") {
-      return NextResponse.json(
-        { error: "Forbidden: Admin access required" },
-        { status: 403 }
       );
     }
 
@@ -64,7 +59,7 @@ export async function PUT(
       data: {
         status: status as "APPROVED" | "REJECTED",
         reviewedAt: new Date(),
-        reviewedBy: context.dbUser.id,
+        reviewedBy: dbUser.id,
         rejectionReason: status === "REJECTED" ? rejectionReason : null,
       },
       include: {

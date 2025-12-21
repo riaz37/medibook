@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 datasource db {
@@ -27,6 +27,8 @@ model User {
   appointments  Appointment[]
   doctorProfile Doctor? // If user is a doctor, link to their doctor profile
   prescriptions Prescription[] // Prescriptions issued to this patient
+  doctorApplication DoctorApplication? // Doctor application if user applied to be a doctor
+  roleChanges RoleChangeAudit[] // Audit trail of role changes
 
   @@index([clerkId])
   @@index([email])
@@ -163,6 +165,12 @@ enum UserRole {
   PATIENT
   DOCTOR
   ADMIN
+}
+
+enum ApplicationStatus {
+  PENDING // Application submitted, awaiting review
+  APPROVED // Approved by admin
+  REJECTED // Rejected by admin
 }
 
 model DoctorVerification {
@@ -474,4 +482,46 @@ enum RefillStatus {
   APPROVED  // Refill approved by doctor
   REJECTED  // Refill rejected by doctor
   COMPLETED // Refill has been fulfilled
+}
+
+// Doctor Application System
+model DoctorApplication {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Application details
+  speciality    String
+  licenseNumber String?
+  yearsOfExperience Int?
+  bio           String?
+  
+  // Status
+  status        ApplicationStatus @default(PENDING)
+  submittedAt   DateTime @default(now())
+  reviewedAt    DateTime?
+  reviewedBy    String? // Admin user ID who reviewed
+  rejectionReason String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([status, submittedAt])
+  @@map("doctor_applications")
+}
+
+// Role Change Audit Trail
+model RoleChangeAudit {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  oldRole     UserRole
+  newRole     UserRole
+  changedBy   String   // Admin user ID who made the change
+  reason      String?
+  changedAt   DateTime @default(now())
+  
+  @@index([userId, changedAt])
+  @@map("role_change_audits")
 }

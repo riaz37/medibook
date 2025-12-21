@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireRole } from "@/lib/server/rbac";
 import { cacheMetrics } from "@/lib/services/server/cache-metrics";
 import { cacheService } from "@/lib/services/server/cache.service";
 
@@ -9,14 +9,12 @@ import { cacheService } from "@/lib/services/server/cache.service";
  */
 export async function GET(request: NextRequest) {
     try {
-        const context = await getAuthContext();
-
-        if (!context || context.role !== "admin") {
-            return NextResponse.json(
-                { error: "Unauthorized - Admin access required" },
-                { status: 403 }
-            );
+        const authResult = await requireRole("admin");
+        if ("response" in authResult) {
+            return authResult.response;
         }
+        
+        const { context } = authResult;
 
         const stats = await cacheMetrics.getStats();
         const isRedisAvailable = cacheService.isAvailable();

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Gender } from "@prisma/client";
+import { Gender } from "@/generated/prisma/client";
 import { doctorsServerService } from "@/lib/services/server";
 import { generateAvatar } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
@@ -29,9 +29,13 @@ export async function GET(request: NextRequest) {
 // POST /api/doctors - Create a new doctor (Admin only - middleware handles auth)
 export async function POST(request: NextRequest) {
   try {
-    // Middleware ensures user is admin for this route
-    const { getAuthContext } = await import("@/lib/utils/auth-utils");
-    const context = await getAuthContext();
+    const { requireRole } = await import("@/lib/server/rbac");
+    const authResult = await requireRole("admin");
+    if ("response" in authResult) {
+      return authResult.response;
+    }
+    
+    const { context } = authResult;
 
     const body = await request.json();
 

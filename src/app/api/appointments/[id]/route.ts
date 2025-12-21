@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { appointmentsServerService } from "@/lib/services/server";
 import { updateAppointmentStatusSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
-import { requireAppointmentAccess } from "@/lib/server/auth-utils";
+import { requireAppointmentAccess } from "@/lib/server/rbac";
 import { AppointmentStatus } from "@/generated/prisma/enums";
 
 // GET /api/appointments/[id] - Get appointment by ID

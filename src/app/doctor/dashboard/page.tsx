@@ -8,27 +8,27 @@ import ActivityFeed from "@/components/doctor/dashboard/ActivityFeed";
 import { DoctorAnalyticsSection } from "@/components/doctor/dashboard/DoctorAnalyticsSection";
 import { Suspense } from "react";
 import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { getUserRoleFromSession } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
 
 /**
  * Doctor Dashboard
  * 
  * Optimized for scalability:
- * - Uses session claims for role checking (no DB query for role)
+ * - Uses getUserRoleFromSession() which has database fallback
  * - Only queries DB for doctor profile data (needed for dashboard)
  */
 async function DoctorDashboardPage() {
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
   
   if (!userId) {
     redirect("/");
   }
 
-  // Get role from session claims (more scalable than DB query)
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+  // Get role from session claims with database fallback
+  const role = await getUserRoleFromSession();
 
-  // Check if user is a doctor (using session claims)
+  // Check if user is a doctor
   if (role !== "doctor" && role !== "admin") {
     redirect("/patient/dashboard");
   }
@@ -40,7 +40,7 @@ async function DoctorDashboardPage() {
   });
 
   if (!dbUser) {
-    redirect("/select-role");
+    redirect("/");
   }
 
   // Check if doctor profile exists and is complete

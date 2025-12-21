@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createStripeConnectAccount, createOnboardingLink } from "@/lib/stripe-connect";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 
 /**
  * POST /api/doctors/[id]/payment-setup
@@ -13,15 +13,12 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const context = await getAuthContext();
-
-    // Verify authorization - doctor can only set up their own account, admin can set up any
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     if (context.role === "doctor" && context.doctorId !== id) {
       return NextResponse.json(
@@ -134,14 +131,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const context = await getAuthContext();
-
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     if (context.role === "doctor" && context.doctorId !== id) {
       return NextResponse.json(

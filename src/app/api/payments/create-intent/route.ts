@@ -3,13 +3,22 @@ import { stripe } from "@/lib/stripe";
 import { paymentService } from "@/lib/services/payment.service";
 import { commissionService } from "@/lib/services/commission.service";
 import prisma from "@/lib/prisma";
+import { requirePermission } from "@/lib/server/rbac";
 
 /**
  * POST /api/payments/create-intent
  * Create a Stripe Payment Intent for an appointment
+ * Requires: payments.write permission (patients can create payment intents)
  */
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication and payments.write permission
+    const authResult = await requirePermission("payments", "write");
+    if ("response" in authResult) {
+      return authResult.response;
+    }
+
+    const { context } = authResult;
     const body = await request.json();
     const { appointmentId, appointmentPrice, doctorId } = body;
 
@@ -20,10 +29,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify appointment exists
+    // Verify appointment exists and user has access
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
-      include: { doctor: true },
+      include: { 
+        doctor: true,
+        patient: {
+          select: { clerkId: true },
+        },
+      },
     });
 
     if (!appointment) {
@@ -31,6 +45,21 @@ export async function POST(request: NextRequest) {
         { error: "Appointment not found" },
         { status: 404 }
       );
+    }
+
+    // Verify user is the patient for this appointment (unless admin)
+    if (context.role !== "admin") {
+      const dbUser = await prisma.user.findUnique({
+        where: { clerkId: context.userId },
+        select: { id: true },
+      });
+
+      if (!dbUser || appointment.patientId !== dbUser.id) {
+        return NextResponse.json(
+          { error: "Forbidden: You can only create payment intents for your own appointments" },
+          { status: 403 }
+        );
+      }
     }
 
     // Check if payment already exists

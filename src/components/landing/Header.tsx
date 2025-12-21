@@ -78,11 +78,11 @@ function Header() {
               Login
             </Button>
           </SignInButton>
-          <SignUpButton mode="modal">
+          <Link href="/sign-up">
             <Button size="sm" className="bg-primary hover:bg-primary/90">
               Get Started
             </Button>
-          </SignUpButton>
+          </Link>
           
           {/* Mobile Menu Button */}
           <button
@@ -127,11 +127,11 @@ function Header() {
                   Login
                 </Button>
               </SignInButton>
-              <SignUpButton mode="modal">
+              <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
                 <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
                   Get Started
                 </Button>
-              </SignUpButton>
+              </Link>
             </div>
           </div>
         </div>

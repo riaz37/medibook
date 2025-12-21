@@ -1,6 +1,6 @@
 import { Check, DollarSign, Users, Calendar, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SignUpButton } from "@clerk/nextjs";
+import Link from "next/link";
 
 function Pricing() {
   return (
@@ -86,11 +86,11 @@ function Pricing() {
                 </li>
               </ul>
 
-              <SignUpButton mode="modal">
+              <Link href="/sign-up" className="w-full">
                 <Button className="w-full" size="lg">
                   Get Started Free
                 </Button>
-              </SignUpButton>
+              </Link>
             </div>
           </div>
 
@@ -152,11 +152,11 @@ function Pricing() {
                 </li>
               </ul>
 
-              <SignUpButton mode="modal">
+              <Link href="/sign-up" className="w-full">
                 <Button className="w-full" size="lg" variant="outline">
                   Join as Doctor
                 </Button>
-              </SignUpButton>
+              </Link>
             </div>
           </div>
         </div>

@@ -13,14 +13,14 @@ import { parseISO, isPast, isToday, isAfter } from "date-fns";
 import { Calendar, CheckCircle2, List } from "lucide-react";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
-import { usersService } from "@/lib/services";
+import { useRole } from "@/lib/hooks/use-role";
 import { useEffect } from "react";
 
 function AppointmentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isLoaded } = useUser();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { isLoaded } = useUser();
+  const role = useRole();
 
   // Get initial tab from URL or default to "all"
   const initialTab = (searchParams.get("tab") as AppointmentFilter) || "all";
@@ -30,17 +30,10 @@ function AppointmentsPage() {
 
   // Redirect doctors away from appointments page
   useEffect(() => {
-    if (isLoaded && user) {
-      usersService.syncUserClient().then((syncedUser) => {
-        if (syncedUser?.role) {
-          setUserRole(syncedUser.role);
-          if (syncedUser.role === "DOCTOR") {
-            router.push("/doctor/dashboard");
-          }
-        }
-      });
+    if (isLoaded && role === "doctor") {
+      router.push("/doctor/dashboard");
     }
-  }, [isLoaded, user, router]);
+  }, [isLoaded, role, router]);
 
   // Fetch appointments
   const queryClient = useQueryClient();

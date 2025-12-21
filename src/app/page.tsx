@@ -7,24 +7,24 @@ import WhatToAsk from "@/components/landing/WhatToAsk";
 import Pricing from "@/components/landing/Pricing";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { getUserRoleFromSession } from "@/lib/server/rbac";
 
 /**
  * Home/Landing Page
  * 
  * Optimized for scalability:
- * - Uses session claims (from Clerk) instead of DB queries
+ * - Uses getUserRoleFromSession() which has database fallback
  * - Webhooks handle user sync automatically
  * - Only redirects authenticated users, no sync on every page load
  */
 export default async function Home() {
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
 
-  // If user is authenticated, redirect based on role from session claims
-  // This avoids DB queries on every page load
+  // If user is authenticated, redirect based on role
   if (userId) {
-    const role = (sessionClaims?.metadata as { role?: string })?.role;
+    const role = await getUserRoleFromSession();
     
-    // Redirect based on role (from Clerk metadata, synced by webhooks)
+    // Redirect based on role (from Clerk metadata with DB fallback)
     if (role === "doctor") {
       redirect("/doctor/dashboard");
     } else if (role === "admin") {
@@ -32,9 +32,9 @@ export default async function Home() {
     } else if (role === "patient") {
       redirect("/dashboard");
     }
-    // If no role in session claims, redirect to select-role
-    // The select-role page will check DB and sync metadata if needed
-    redirect("/select-role");
+    // If no role, default to patient dashboard
+    // New users will have PATIENT role assigned via webhook
+    redirect("/dashboard");
   }
 
   // Show landing page for unauthenticated users

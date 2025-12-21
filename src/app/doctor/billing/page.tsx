@@ -1,17 +1,17 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { getUserRoleFromSession, getAuthContext } from "@/lib/server/rbac";
 import { DoctorDashboardLayout } from "@/components/doctor/layout/DoctorDashboardLayout";
 import DoctorBillingClient from "./DoctorBillingClient";
 
 async function DoctorBillingPage() {
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
 
   if (!userId) {
     redirect("/");
   }
 
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+  const role = await getUserRoleFromSession();
 
   if (role !== "doctor" && role !== "admin") {
     redirect("/patient/dashboard");

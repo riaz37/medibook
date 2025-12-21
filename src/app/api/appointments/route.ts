@@ -24,16 +24,13 @@ function transformAppointment(appointment: any) {
 // GET /api/appointments - Get appointments (role-based)
 export async function GET(request: NextRequest) {
   try {
-    // Middleware ensures user is authenticated
-    const { getAuthContext } = await import("@/lib/utils/auth-utils");
-    const context = await getAuthContext();
-    
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const { requireAuth } = await import("@/lib/server/rbac");
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
     const { searchParams } = new URL(request.url);
     
     // Validate query parameters

@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { doctorsServerService } from "@/lib/services/server";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireRole } from "@/lib/server/rbac";
 
 /**
  * GET /api/admin/doctors - Get all doctors (admin only, includes unverified)
  */
 export async function GET(request: NextRequest) {
   try {
-    const context = await getAuthContext();
-    if (!context) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireRole("admin");
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     const doctors = await doctorsServerService.getAllForAdmin();
 

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { doctorAvailabilitySchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
+import { requireAuth } from "@/lib/server/rbac";
 
 // GET /api/doctors/[id]/config - Get doctor configuration
 // Allows authenticated users (patients, doctors, admins) to read config for booking purposes
@@ -14,16 +15,12 @@ export async function GET(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
 
-    // Middleware ensures user is authenticated
-    const { getAuthContext } = await import("@/lib/server/auth-utils");
-    const context = await getAuthContext();
-
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     // Verify doctor exists and is verified (for public booking access)
     const doctor = await prisma.doctor.findUnique({
@@ -67,11 +64,14 @@ export async function PUT(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
 
-    // Middleware ensures user is authenticated and has doctor/admin role
-    const { getAuthContext } = await import("@/lib/server/auth-utils");
-    const context = await getAuthContext();
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
+    }
+    
+    const { context } = authResult;
 
-    if (!context || (context.role !== "admin" && context.doctorId !== id)) {
+    if (context.role !== "admin" && context.doctorId !== id) {
       return NextResponse.json(
         { error: "Forbidden: You can only update your own configuration" },
         { status: 403 }

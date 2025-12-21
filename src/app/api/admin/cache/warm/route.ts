@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireRole } from "@/lib/server/rbac";
 import { cacheWarmer } from "@/lib/services/server/cache-warmer";
 
 /**
@@ -8,14 +8,12 @@ import { cacheWarmer } from "@/lib/services/server/cache-warmer";
  */
 export async function POST(request: NextRequest) {
     try {
-        const context = await getAuthContext();
-
-        if (!context || context.role !== "admin") {
-            return NextResponse.json(
-                { error: "Unauthorized - Admin access required" },
-                { status: 403 }
-            );
+        const authResult = await requireRole("admin");
+        if ("response" in authResult) {
+            return authResult.response;
         }
+        
+        const { context } = authResult;
 
         const body = await request.json();
         const { strategy } = body;

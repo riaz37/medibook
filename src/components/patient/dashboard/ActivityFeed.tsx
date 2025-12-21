@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock, User, ArrowRight } from "lucide-react";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
 import { format, parseISO, isToday, isAfter, differenceInDays } from "date-fns";
 import Link from "next/link";
@@ -19,10 +19,13 @@ function transformAppointment(appointment: any): DashboardAppointment {
 }
 
 export default async function ActivityFeed() {
-  const context = await getAuthContext();
+  const authResult = await requireAuth();
   let recentAppointments: DashboardAppointment[] = [];
 
-  if (context) {
+  if ("response" in authResult) {
+    // If auth fails, return empty state (component will show "No recent activity")
+  } else {
+    const { context } = authResult;
     try {
       const user = await prisma.user.findUnique({
         where: { clerkId: context.clerkUserId },

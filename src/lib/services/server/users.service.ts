@@ -150,7 +150,23 @@ class UsersServerService extends BaseServerService {
       // Check if email is in admin list
       const adminEmails = process.env.ADMIN_EMAILS?.split(",").map(e => e.trim().toLowerCase()) || [];
       const isAdminEmail = adminEmails.includes(userData.email.toLowerCase());
-      const defaultRole = isAdminEmail ? "ADMIN" : (userData.role || "PATIENT");
+      
+      // Get signup intent from Clerk metadata
+      const { clerkClient } = await import("@clerk/nextjs/server");
+      const client = await clerkClient();
+      const clerkUser = await client.users.getUser(clerkId);
+      const metadata = clerkUser.publicMetadata as { signupIntent?: string; role?: string } | undefined;
+      const signupIntent = metadata?.signupIntent;
+      
+      // Determine role based on signup intent or admin email
+      let assignedRole: UserRole;
+      if (isAdminEmail) {
+        assignedRole = "ADMIN";
+      } else if (signupIntent === "doctor") {
+        assignedRole = "DOCTOR";
+      } else {
+        assignedRole = userData.role || "PATIENT";
+      }
 
       // Upsert user
       return await this.prisma.user.upsert({
@@ -161,6 +177,7 @@ class UsersServerService extends BaseServerService {
           lastName: userData.lastName || undefined,
           phone: userData.phone || undefined,
           ...(isAdminEmail && { role: "ADMIN" }),
+          ...(signupIntent === "doctor" && { role: "DOCTOR" }),
         },
         create: {
           clerkId,
@@ -168,7 +185,7 @@ class UsersServerService extends BaseServerService {
           firstName: userData.firstName,
           lastName: userData.lastName,
           phone: userData.phone,
-          role: defaultRole,
+          role: assignedRole,
         },
       });
     }, "Failed to sync user from Clerk");

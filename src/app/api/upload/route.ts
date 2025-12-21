@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 
 /**
  * POST /api/upload - Upload a file to Cloudinary
@@ -8,14 +8,12 @@ import { getAuthContext } from "@/lib/server/auth-utils";
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const context = await getAuthContext();
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -103,14 +101,12 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    // Check authentication
-    const context = await getAuthContext();
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     const { searchParams } = new URL(request.url);
     const publicId = searchParams.get("publicId");

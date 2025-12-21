@@ -15,62 +15,103 @@ import prisma from "@/lib/prisma";
  * 4. Copy the signing secret to CLERK_WEBHOOK_SECRET env variable
  */
 export async function POST(req: Request) {
-  // Get the Svix headers for verification
-  const headerPayload = await headers();
-  const svix_id = headerPayload.get("svix-id");
-  const svix_timestamp = headerPayload.get("svix-timestamp");
-  const svix_signature = headerPayload.get("svix-signature");
-
-  // If there are no headers, error out
-  if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response("Error occurred -- no svix headers", {
-      status: 400,
-    });
-  }
-
-  // Get the body
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
-
-  // Create a new Svix instance with your secret
-  const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET || "");
-
-  let evt: WebhookEvent;
-
-  // Verify the payload with the headers
   try {
-    evt = wh.verify(body, {
-      "svix-id": svix_id,
-      "svix-timestamp": svix_timestamp,
-      "svix-signature": svix_signature,
-    }) as WebhookEvent;
-  } catch (err) {
-    console.error("Error verifying webhook:", err);
-    return new Response("Error occurred", {
-      status: 400,
-    });
-  }
+    // Get the Svix headers for verification
+    const headerPayload = await headers();
+    const svix_id = headerPayload.get("svix-id");
+    const svix_timestamp = headerPayload.get("svix-timestamp");
+    const svix_signature = headerPayload.get("svix-signature");
 
-  // Handle the webhook
-  const eventType = evt.type;
+    // If there are no headers, error out
+    if (!svix_id || !svix_timestamp || !svix_signature) {
+      return new Response("Error occurred -- no svix headers", {
+        status: 400,
+      });
+    }
 
-  // Type guard for user events
-  if (evt.type !== "user.created" && evt.type !== "user.updated" && evt.type !== "user.deleted") {
-    console.log(`Unhandled webhook event type: ${eventType}`);
-    return new Response("Event type not handled", { status: 200 });
-  }
+    // Check if webhook secret is configured
+    const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+    if (!webhookSecret || webhookSecret.trim() === "") {
+      console.error("CLERK_WEBHOOK_SECRET is not configured");
+      return new Response("Webhook secret not configured", {
+        status: 500,
+      });
+    }
 
-  const userData = evt.data;
-  const id = userData.id as string; // Type assertion: user events always have id
+    // Validate webhook secret format (should start with whsec_)
+    const trimmedSecret = webhookSecret.trim();
+    if (!trimmedSecret.startsWith("whsec_")) {
+      console.error("CLERK_WEBHOOK_SECRET has invalid format - should start with 'whsec_'");
+      console.error(`Secret length: ${trimmedSecret.length}, starts with: ${trimmedSecret.substring(0, 10)}...`);
+      return new Response("Invalid webhook secret format - must start with 'whsec_'", {
+        status: 500,
+      });
+    }
 
-  // Extract user data (only available on user.created and user.updated)
-  const email_addresses = "email_addresses" in userData ? userData.email_addresses : undefined;
-  const first_name = "first_name" in userData ? userData.first_name : undefined;
-  const last_name = "last_name" in userData ? userData.last_name : undefined;
-  const phone_numbers = "phone_numbers" in userData ? userData.phone_numbers : undefined;
+    // Get the body
+    let payload;
+    try {
+      payload = await req.json();
+    } catch (err) {
+      console.error("Error parsing request body:", err);
+      return new Response("Invalid request body", {
+        status: 400,
+      });
+    }
+    
+    const body = JSON.stringify(payload);
 
-  try {
-    switch (eventType) {
+    // Create a new Svix instance with your secret
+    let wh: Webhook;
+    try {
+      wh = new Webhook(trimmedSecret);
+    } catch (err) {
+      console.error("Error creating Webhook instance:", err);
+      // Log additional details without exposing the secret
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error(`Webhook secret error: ${errorMessage}`);
+      console.error(`Secret length: ${trimmedSecret.length}, format check: ${trimmedSecret.startsWith("whsec_") ? "valid prefix" : "invalid prefix"}`);
+      return new Response("Invalid webhook secret format", {
+        status: 500,
+      });
+    }
+
+    let evt: WebhookEvent;
+
+    // Verify the payload with the headers
+    try {
+      evt = wh.verify(body, {
+        "svix-id": svix_id,
+        "svix-timestamp": svix_timestamp,
+        "svix-signature": svix_signature,
+      }) as WebhookEvent;
+    } catch (err) {
+      console.error("Error verifying webhook signature:", err);
+      return new Response("Invalid webhook signature", {
+        status: 400,
+      });
+    }
+
+    // Handle the webhook
+    const eventType = evt.type;
+
+    // Type guard for user events
+    if (evt.type !== "user.created" && evt.type !== "user.updated" && evt.type !== "user.deleted") {
+      console.log(`Unhandled webhook event type: ${eventType}`);
+      return new Response("Event type not handled", { status: 200 });
+    }
+
+    const userData = evt.data;
+    const id = userData.id as string; // Type assertion: user events always have id
+
+    // Extract user data (only available on user.created and user.updated)
+    const email_addresses = "email_addresses" in userData ? userData.email_addresses : undefined;
+    const first_name = "first_name" in userData ? userData.first_name : undefined;
+    const last_name = "last_name" in userData ? userData.last_name : undefined;
+    const phone_numbers = "phone_numbers" in userData ? userData.phone_numbers : undefined;
+
+    try {
+      switch (eventType) {
       case "user.created":
       case "user.updated": {
         // Sync user to database
@@ -88,9 +129,27 @@ export async function POST(req: Request) {
         const adminEmails = process.env.ADMIN_EMAILS?.split(",").map(e => e.trim().toLowerCase()) || [];
         const isAdminEmail = adminEmails.includes(userEmail.toLowerCase());
 
-        // Determine role: admin if email matches, otherwise default to PATIENT
-        const defaultRole = isAdminEmail ? "ADMIN" : "PATIENT";
-        const roleForMetadata = isAdminEmail ? "admin" : "patient";
+        // Check for signup intent in Clerk metadata (set by client after signup)
+        // This allows us to assign role based on which signup path was used
+        const publicMetadata = "public_metadata" in userData ? userData.public_metadata : undefined;
+        const signupIntent = (publicMetadata as { signupIntent?: string } | undefined)?.signupIntent;
+
+        // Determine role based on signup path:
+        // - Admin emails → ADMIN
+        // - Patient signup path → PATIENT
+        // - Doctor signup path → DOCTOR (immediately assigned)
+        // - No intent (legacy/fallback) → PATIENT
+        let assignedRole: "ADMIN" | "PATIENT" | "DOCTOR";
+        if (isAdminEmail) {
+          assignedRole = "ADMIN";
+        } else if (signupIntent === "doctor") {
+          assignedRole = "DOCTOR";
+        } else {
+          assignedRole = "PATIENT";
+        }
+        
+        const roleForMetadata = assignedRole === "ADMIN" ? "admin" : 
+                               assignedRole === "DOCTOR" ? "doctor" : "patient";
 
         // Use upsert to handle both create and update
         const dbUser = await prisma.user.upsert({
@@ -100,9 +159,13 @@ export async function POST(req: Request) {
             firstName: first_name || undefined,
             lastName: last_name || undefined,
             phone: phone_numbers?.[0]?.phone_number || undefined,
-            // Only update role if it's a new user (user.created) or if email is admin
-            // For existing users, preserve their current role unless they're an admin
-            ...(eventType === "user.created" && { role: defaultRole }),
+            // Update role based on signup intent or admin email
+            // For user.created: assign role based on signup intent
+            // For user.updated: update role if signupIntent is set and user is still PATIENT
+            ...(eventType === "user.created" && { role: assignedRole }),
+            ...(eventType === "user.updated" && signupIntent === "doctor" && {
+              role: "DOCTOR", // Update to DOCTOR if signupIntent is doctor (handles late intent setting)
+            }),
             ...(isAdminEmail && { role: "ADMIN" }),
           },
           create: {
@@ -111,18 +174,62 @@ export async function POST(req: Request) {
             firstName: first_name || undefined,
             lastName: last_name || undefined,
             phone: phone_numbers?.[0]?.phone_number || undefined,
-            role: defaultRole,
+            role: assignedRole,
           },
+          include: { doctorProfile: { select: { id: true } } },
         });
+        
+        // If user.updated and signupIntent is doctor but user is still PATIENT, update role
+        if (eventType === "user.updated" && signupIntent === "doctor" && dbUser.role === "PATIENT") {
+          await prisma.user.update({
+            where: { clerkId: id },
+            data: { role: "DOCTOR" },
+          });
+          // Update dbUser reference for metadata sync
+          const updatedUser = await prisma.user.findUnique({ where: { clerkId: id } });
+          if (updatedUser) {
+            Object.assign(dbUser, updatedUser);
+          }
+        }
 
-        // Update Clerk metadata with role (important for session claims)
-        if (isAdminEmail || eventType === "user.created") {
+        // Always sync Clerk metadata with database role for new users, admin emails, or when signupIntent changes
+        // For existing users, sync if role changed or if signupIntent is set
+        const shouldSyncMetadata = 
+          eventType === "user.created" || 
+          isAdminEmail || 
+          !dbUser.role || // Sync if user has no role yet
+          signupIntent === "doctor"; // Sync when doctor intent is detected
+
+        if (shouldSyncMetadata) {
           const { clerkClient } = await import("@clerk/nextjs/server");
           const client = await clerkClient();
+          
+          // Get the current role from DB (may have been updated based on signupIntent)
+          const currentRole = dbUser.role || assignedRole;
+          const roleForClerk = currentRole === "ADMIN" ? "admin" : 
+                               currentRole === "DOCTOR" ? "doctor" : "patient";
+          
+          // Get doctorId from profile if available
+          const doctorId = dbUser.doctorProfile?.id || null;
+          
+          // Preserve signupIntent if it exists (for tracking which path user used)
+          const existingMetadata = publicMetadata as { signupIntent?: string; doctorId?: string } | undefined;
+          const metadataToSync: { role: string; signupIntent?: string; doctorId?: string } = {
+            role: roleForClerk,
+          };
+          
+          // Preserve signup intent if it was set
+          if (signupIntent || existingMetadata?.signupIntent) {
+            metadataToSync.signupIntent = signupIntent || existingMetadata?.signupIntent;
+          }
+          
+          // Sync doctorId if available
+          if (doctorId) {
+            metadataToSync.doctorId = doctorId;
+          }
+          
           await client.users.updateUserMetadata(id, {
-            publicMetadata: {
-              role: roleForMetadata,
-            },
+            publicMetadata: metadataToSync,
           });
         }
 
@@ -153,9 +260,13 @@ export async function POST(req: Request) {
         });
         break;
       }
-    }
+      }
 
-    return new Response("Webhook processed", { status: 200 });
+      return new Response("Webhook processed", { status: 200 });
+    } catch (dbError) {
+      console.error("Error processing webhook database operations:", dbError);
+      return new Response("Error processing webhook", { status: 500 });
+    }
   } catch (error) {
     console.error("Error processing webhook:", error);
     return new Response("Error processing webhook", { status: 500 });

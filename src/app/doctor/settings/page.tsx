@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import prisma from "@/lib/prisma";
 import { DoctorDashboardLayout } from "@/components/doctor/layout/DoctorDashboardLayout";
 import DoctorSettingsClient from "./DoctorSettingsClient";
+import { getUserRoleFromSession } from "@/lib/server/rbac";
 
 async function DoctorSettingsPage() {
   const { userId } = await auth();
@@ -12,14 +13,21 @@ async function DoctorSettingsPage() {
     redirect("/");
   }
 
-  // Get user from database
+  // Get role with database fallback
+  const role = await getUserRoleFromSession();
+
+  if (role !== "doctor" && role !== "admin") {
+    redirect("/");
+  }
+
+  // Get user from database for doctor profile
   const dbUser = await prisma.user.findUnique({
     where: { clerkId: userId },
     include: { doctorProfile: true },
   });
 
-  if (!dbUser || dbUser.role !== "DOCTOR") {
-    redirect("/select-role");
+  if (!dbUser) {
+    redirect("/");
   }
 
   // Check if doctor profile exists

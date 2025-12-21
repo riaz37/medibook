@@ -51,20 +51,6 @@ class UsersService extends BaseService {
   }
 
   /**
-   * Select user role
-   */
-  async selectRole(role: "PATIENT" | "DOCTOR" | "ADMIN"): Promise<User> {
-    try {
-      if (!role) {
-        throw new ApiException("Role is required");
-      }
-      return (await apiClient.selectUserRole(role)) as User;
-    } catch (error) {
-      throw this.handleError(error, "Failed to select role");
-    }
-  }
-
-  /**
    * Get user profile
    */
   async getProfile(): Promise<User | null> {

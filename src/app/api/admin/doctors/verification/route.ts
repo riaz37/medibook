@@ -6,9 +6,13 @@ import prisma from "@/lib/prisma";
  */
 export async function GET(request: NextRequest) {
   try {
-    // Middleware ensures user is admin for /api/admin/* routes
-    const { getAuthContext } = await import("@/lib/server/auth-utils");
-    const context = await getAuthContext();
+    const { requireRole } = await import("@/lib/server/rbac");
+    const authResult = await requireRole("admin");
+    if ("response" in authResult) {
+      return authResult.response;
+    }
+    
+    const { context } = authResult;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");

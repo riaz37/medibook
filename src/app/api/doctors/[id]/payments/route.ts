@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 
 /**
  * GET /api/doctors/[id]/payments
@@ -12,14 +12,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const context = await getAuthContext();
-
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     // Verify authorization - doctor can only see their own payments
     if (context.role === "doctor" && context.doctorId !== id) {

@@ -7,7 +7,7 @@
 
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { getAuthContext, type AuthContext } from "./auth-utils";
+import { getAuthContext, type AuthContext } from "./rbac";
 
 /**
  * Require prescription access - checks if user (doctor or patient) can access prescription

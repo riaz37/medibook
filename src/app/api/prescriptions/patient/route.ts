@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prescriptionsServerService, usersServerService } from "@/lib/services/server";
-import { requireAnyRole } from "@/lib/server/auth-utils";
+import { requireAnyRole } from "@/lib/server/rbac";
 
 /**
  * GET /api/prescriptions/patient - List patient's prescriptions

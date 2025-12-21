@@ -36,7 +36,22 @@ export async function syncUserDirect(): Promise<User | null> {
     // Format: ADMIN_EMAILS=admin1@example.com,admin2@example.com
     const adminEmails = process.env.ADMIN_EMAILS?.split(",").map(e => e.trim().toLowerCase()) || [];
     const isAdminEmail = adminEmails.includes(email.toLowerCase());
-    const defaultRole = isAdminEmail ? "ADMIN" : "PATIENT";
+    
+    // Get signup intent from Clerk metadata
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(user.id);
+    const existingMetadata = clerkUser.publicMetadata as { signupIntent?: string; role?: string } | undefined;
+    const signupIntent = existingMetadata?.signupIntent;
+
+    // Determine role based on signup intent or admin email
+    let assignedRole: "ADMIN" | "PATIENT" | "DOCTOR";
+    if (isAdminEmail) {
+      assignedRole = "ADMIN";
+    } else if (signupIntent === "doctor") {
+      assignedRole = "DOCTOR";
+    } else {
+      assignedRole = "PATIENT";
+    }
 
     // Single upsert operation - handles both create and update
     // This is idempotent and handles race conditions
@@ -48,8 +63,9 @@ export async function syncUserDirect(): Promise<User | null> {
         firstName: user.firstName || undefined,
         lastName: user.lastName || undefined,
         phone: user.phoneNumbers[0]?.phoneNumber || undefined,
-        // Update role if email is admin (for existing users who become admin)
+        // Update role if email is admin or if signupIntent is doctor and user is still PATIENT
         ...(isAdminEmail && { role: "ADMIN" }),
+        ...(signupIntent === "doctor" && { role: "DOCTOR" }),
       },
       create: {
         clerkId: user.id,
@@ -57,17 +73,21 @@ export async function syncUserDirect(): Promise<User | null> {
         firstName: user.firstName,
         lastName: user.lastName,
         phone: user.phoneNumbers[0]?.phoneNumber,
-        role: defaultRole,
+        role: assignedRole,
       },
       include: { doctorProfile: true },
     });
 
-    // Update Clerk metadata if user is admin (for session claims)
-    if (isAdminEmail) {
-      const client = await clerkClient();
+    // Update Clerk metadata with correct role and signup intent
+    const roleForClerk = dbUser.role === "ADMIN" ? "admin" : 
+                        dbUser.role === "DOCTOR" ? "doctor" : "patient";
+    
+    if (isAdminEmail || !existingMetadata?.role || signupIntent === "doctor") {
       await client.users.updateUserMetadata(user.id, {
         publicMetadata: {
-          role: "admin",
+          role: roleForClerk,
+          // Preserve signup intent if it exists
+          ...(signupIntent && { signupIntent }),
         },
       });
     }

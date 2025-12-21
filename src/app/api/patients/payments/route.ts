@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireRole } from "@/lib/server/rbac";
 
 /**
  * GET /api/patients/payments
@@ -8,14 +8,12 @@ import { getAuthContext } from "@/lib/server/auth-utils";
  */
 export async function GET(request: NextRequest) {
   try {
-    const context = await getAuthContext();
-
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireRole("patient");
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     if (context.role !== "patient") {
       return NextResponse.json(

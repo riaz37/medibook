@@ -47,11 +47,15 @@ export async function POST(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
     
-    // Middleware ensures user is authenticated and has doctor/admin role
-    const { getAuthContext } = await import("@/lib/server/auth-utils");
-    const context = await getAuthContext();
+    const { requireAuth } = await import("@/lib/server/rbac");
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
+    }
     
-    if (!context || (context.role !== "admin" && context.doctorId !== id)) {
+    const { context } = authResult;
+
+    if (context.role !== "admin" && context.doctorId !== id) {
       return NextResponse.json(
         { error: "Forbidden: You can only create appointment types for your own profile" },
         { status: 403 }

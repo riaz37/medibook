@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar, Clock, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
 import { format, parseISO, differenceInDays } from "date-fns";
 import Link from "next/link";
@@ -9,10 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 
 async function ActivityFeed() {
-  const context = await getAuthContext();
+  const authResult = await requireAuth();
   let recentAppointments: any[] = [];
 
-  if (context) {
+  if ("response" in authResult) {
+    // If auth fails, return empty state (component will show "No recent activity")
+  } else {
+    const { context } = authResult;
     try {
       const user = await prisma.user.findUnique({
         where: { clerkId: context.clerkUserId },

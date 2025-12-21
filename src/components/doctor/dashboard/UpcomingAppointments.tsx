@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, ClockIcon, ArrowRight, User, Mail, Phone } from "lucide-react";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
 import { format, isAfter, isSameDay, parseISO, differenceInDays, differenceInHours } from "date-fns";
 import Link from "next/link";
@@ -10,10 +10,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { UpcomingAppointmentData } from "@/lib/types";
 
 async function UpcomingAppointments() {
-  const context = await getAuthContext();
+  const authResult = await requireAuth();
   let appointments: UpcomingAppointmentData[] = [];
 
-  if (context) {
+  if ("response" in authResult) {
+    // If auth fails, return empty appointments (component will show "No upcoming appointments")
+  } else {
+    const { context } = authResult;
     try {
       const user = await prisma.user.findUnique({
         where: { clerkId: context.clerkUserId },

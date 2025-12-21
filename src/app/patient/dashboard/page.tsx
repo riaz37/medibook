@@ -5,29 +5,24 @@ import DashboardHero from "@/components/patient/dashboard/DashboardHero";
 import StatsGrid from "@/components/patient/dashboard/StatsGrid";
 import MainActions from "@/components/patient/dashboard/MainActions";
 import NextAppointment from "@/components/patient/dashboard/NextAppointment";
-import { PatientOnboardingTour } from "@/components/patient/dashboard/PatientOnboardingTour";
+import { getUserRoleFromSession } from "@/lib/server/rbac";
 
 /**
  * Patient Dashboard
  * 
  * Optimized for scalability:
- * - Uses session claims for role checking (no DB query)
+ * - Uses getUserRoleFromSession() which has database fallback
  * - Middleware already handles authentication
  */
 async function DashboardPage() {
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
 
   if (!userId) {
     redirect("/");
   }
 
-  // Get role from session claims (set by Clerk metadata, synced by webhooks)
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
-
-  // Redirect if user needs to select role
-  if (!role) {
-    redirect("/select-role");
-  }
+  // Get role from session claims with database fallback
+  const role = await getUserRoleFromSession();
 
   // Redirect doctors and admins to their respective dashboards
   if (role === "doctor") {
@@ -39,7 +34,6 @@ async function DashboardPage() {
   // Patient dashboard
   return (
     <PatientDashboardLayout>
-      <PatientOnboardingTour />
       <div className="max-w-7xl mx-auto w-full">
         <DashboardHero />
         <StatsGrid />

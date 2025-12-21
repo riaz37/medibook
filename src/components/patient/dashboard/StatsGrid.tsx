@@ -1,16 +1,21 @@
 import { StatCard } from "@/components/ui/stat-card";
 import { Calendar, CheckCircle2, List, Mic } from "lucide-react";
 import { appointmentsService } from "@/lib/services";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
 import { getUpcomingAppointmentCount } from "@/lib/utils/appointments";
 
 export default async function StatsGrid() {
   const stats = await appointmentsService.getStats();
-  const context = await getAuthContext();
+  const authResult = await requireAuth();
+  
   let upcomingCount = 0;
 
-  if (context) {
+  if ("response" in authResult) {
+    // If auth fails, still render stats with 0 for upcoming count
+    // Component can still display other stats
+  } else {
+    const { context } = authResult;
     try {
       const user = await prisma.user.findUnique({
         where: { clerkId: context.clerkUserId },

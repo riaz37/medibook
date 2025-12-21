@@ -2,21 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { usersServerService } from "@/lib/services/server";
 import { updateUserProfileSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 
 /**
  * GET /api/users/profile - Get current user profile
  */
 export async function GET() {
   try {
-    const context = await getAuthContext();
-    
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     const user = await usersServerService.findUniqueByClerkId(context.clerkUserId, {
       select: {
@@ -52,14 +50,12 @@ export async function GET() {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const context = await getAuthContext();
-    
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     const body = await request.json();
 

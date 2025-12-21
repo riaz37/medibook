@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAppointmentAccess } from "@/lib/server/auth-utils";
+import { requireAppointmentAccess } from "@/lib/server/rbac";
 import { generateICS } from "@/lib/utils/ics-generator";
 
 // GET /api/appointments/[id]/export - Export appointment as ICS calendar file

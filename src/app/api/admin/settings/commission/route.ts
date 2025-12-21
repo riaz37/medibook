@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { commissionService } from "@/lib/services/commission.service";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireRole } from "@/lib/server/rbac";
 
 /**
  * GET /api/admin/settings/commission
@@ -8,14 +8,12 @@ import { getAuthContext } from "@/lib/server/auth-utils";
  */
 export async function GET(request: NextRequest) {
   try {
-    const context = await getAuthContext();
-    
-    if (!context || context.role !== "admin") {
-      return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 403 }
-      );
+    const authResult = await requireRole("admin");
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     const settings = await commissionService.getPlatformSettings();
     if (!settings) {
@@ -46,14 +44,12 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const context = await getAuthContext();
-    
-    if (!context || context.role !== "admin") {
-      return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 403 }
-      );
+    const authResult = await requireRole("admin");
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     const body = await request.json();
     const { commissionPercentage } = body;

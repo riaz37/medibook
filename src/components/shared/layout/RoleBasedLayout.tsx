@@ -1,8 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { usersService } from "@/lib/services";
-import { useEffect, useState } from "react";
+import { useRole } from "@/lib/hooks/use-role";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import Navbar from "@/components/Navbar";
 
@@ -15,23 +14,15 @@ interface RoleBasedLayoutProps {
  * Role-Based Layout Wrapper
  * Automatically selects the appropriate layout based on user role
  * Falls back to generic Navbar if role is not determined
+ * Uses Clerk session claims (via useRole hook) - UserSync handles DB sync globally
  */
-export function RoleBasedLayout({ children, role }: RoleBasedLayoutProps) {
-  const { user, isLoaded } = useUser();
-  const [userRole, setUserRole] = useState<string | null>(role || null);
-
-  useEffect(() => {
-    if (isLoaded && user && !role) {
-      usersService.syncUserClient().then((syncedUser) => {
-        if (syncedUser?.role) {
-          setUserRole(syncedUser.role);
-        }
-      });
-    }
-  }, [isLoaded, user, role]);
+export function RoleBasedLayout({ children, role: propRole }: RoleBasedLayoutProps) {
+  const { isLoaded } = useUser();
+  const sessionRole = useRole();
+  const role = propRole || sessionRole;
 
   // Use patient layout for patient role
-  if (userRole === "PATIENT" || role === "patient") {
+  if (role === "patient") {
     return <PatientDashboardLayout>{children}</PatientDashboardLayout>;
   }
 

@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appointmentsServerService, usersServerService } from "@/lib/services/server";
+import { requireAuth } from "@/lib/server/rbac";
 
 // GET /api/appointments/stats - Get user appointment statistics
 export async function GET(request: NextRequest) {
   try {
-    // Middleware ensures user is authenticated
-    const { getAuthContext } = await import("@/lib/utils/auth-utils");
-    const context = await getAuthContext();
-    
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     // Filter based on role
     let appointments;

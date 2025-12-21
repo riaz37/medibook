@@ -4,28 +4,34 @@ import { Button } from "@/components/ui/button";
 import { CalendarIcon, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 
 export default async function DoctorDashboardHero() {
   const user = await currentUser();
-  const context = await getAuthContext();
+  const authResult = await requireAuth();
+  
   let doctor = null;
   let isVerified = false;
 
-  if (context) {
-    try {
-      const dbUser = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-        include: { doctorProfile: true },
-      });
+  if ("response" in authResult) {
+    // If auth fails, return null (component won't render)
+    return null;
+  }
 
-      if (dbUser?.doctorProfile) {
-        doctor = dbUser.doctorProfile;
-        isVerified = doctor.isVerified;
-      }
-    } catch (error) {
-      console.error("Error fetching doctor data:", error);
+  const { context } = authResult;
+
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { clerkId: context.clerkUserId },
+      include: { doctorProfile: true },
+    });
+
+    if (dbUser?.doctorProfile) {
+      doctor = dbUser.doctorProfile;
+      isVerified = doctor.isVerified;
     }
+  } catch (error) {
+    console.error("Error fetching doctor data:", error);
   }
 
   const getGreeting = () => {

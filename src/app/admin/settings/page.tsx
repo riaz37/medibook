@@ -2,15 +2,16 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { AdminDashboardLayout } from "@/components/admin/layout/AdminDashboardLayout";
 import AdminSettingsClient from "./AdminSettingsClient";
+import { getUserRoleFromSession } from "@/lib/server/rbac";
 
 async function AdminSettingsPage() {
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
 
   if (!userId) {
     redirect("/");
   }
 
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+  const role = await getUserRoleFromSession();
 
   if (role !== "admin") {
     redirect("/admin");

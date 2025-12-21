@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { doctorsServerService } from "@/lib/services/server";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 
 interface PeriodRange {
   start: Date;
@@ -15,14 +15,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const context = await getAuthContext();
-
-    if (!context) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    const authResult = await requireAuth();
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     // Doctors can only access their own statements; admins can view all
     if (context.role === "doctor" && context.doctorId !== id) {

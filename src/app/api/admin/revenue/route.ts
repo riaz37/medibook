@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireRole } from "@/lib/server/rbac";
 import { subDays, format, startOfDay } from "date-fns";
 import { cacheService, CacheTTL } from "@/lib/services/server/cache.service";
 
@@ -12,14 +12,12 @@ export const revalidate = 300; // 5 minutes
  */
 export async function GET(request: NextRequest) {
   try {
-    const context = await getAuthContext();
-
-    if (!context || context.role !== "admin") {
-      return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 403 }
-      );
+    const authResult = await requireRole("admin");
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     const searchParams = request.nextUrl.searchParams;
     const period = searchParams.get("period");

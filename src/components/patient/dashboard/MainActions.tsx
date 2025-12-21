@@ -81,8 +81,8 @@ export default function MainActions() {
 
           <Link href="/patient/appointments/book">
             <Button
-              variant="outline"
-              className="w-full mt-6 border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 font-semibold py-3 rounded-xl transition-all duration-300"
+              variant="default"
+              className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               <CalendarIcon className="mr-2 h-5 w-5" />
               Schedule Now

@@ -1,7 +1,7 @@
 import { format, isAfter, isSameDay, parseISO, isPast, differenceInDays, differenceInHours } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CalendarIcon, ClockIcon, ArrowRight } from "lucide-react";
-import { getAuthContext } from "@/lib/server/auth-utils";
+import { requireAuth } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,13 @@ function transformAppointment(appointment: any): NextAppointmentData {
 }
 
 async function NextAppointment() {
-  // Middleware ensures user is authenticated
-  const context = await getAuthContext();
+  const authResult = await requireAuth();
   let appointments: NextAppointmentData[] = [];
 
-  if (context) {
+  if ("response" in authResult) {
+    // If auth fails, return empty appointments (component will show "No upcoming appointments")
+  } else {
+    const { context } = authResult;
     try {
       // Get DB user ID from Clerk user ID
       const user = await prisma.user.findUnique({

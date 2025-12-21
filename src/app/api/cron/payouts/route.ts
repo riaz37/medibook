@@ -63,15 +63,14 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const { getAuthContext } = await import("@/lib/server/auth-utils");
-    const context = await getAuthContext();
-
-    if (!context || context.role !== "admin") {
-      return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 403 }
-      );
+    const { requireRole } = await import("@/lib/server/rbac");
+    const authResult = await requireRole("admin");
+    
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    
+    const { context } = authResult;
 
     // Get pending payouts
     const pendingPayouts = await payoutService.getPendingPayouts();
