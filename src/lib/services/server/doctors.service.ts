@@ -293,9 +293,45 @@ class DoctorsServerService extends BaseServerService {
 
   /**
    * Get all doctors for admin (includes unverified)
+   * Excludes admins - admins should not have doctor profiles (they're created by script)
    */
   async getAllForAdmin(): Promise<Doctor[]> {
-    return this.findMany();
+    return this.execute(async () => {
+      // Get admin role ID to exclude admins
+      const adminRole = await this.prisma.role.findUnique({
+        where: { name: "admin" },
+        select: { id: true },
+      });
+
+      const where: Prisma.DoctorWhereInput = {};
+      
+      // Exclude doctors where the user has admin role
+      // Include doctors without userId (standalone doctor profiles)
+      if (adminRole) {
+        where.OR = [
+          { userId: null }, // Doctors without user accounts
+          {
+            user: {
+              roleId: {
+                not: adminRole.id,
+              },
+            },
+          },
+        ];
+      }
+
+      const defaultInclude: Prisma.DoctorInclude = {
+        _count: {
+          select: { appointments: true },
+        },
+      };
+
+      return await this.prisma.doctor.findMany({
+        where,
+        include: defaultInclude,
+        orderBy: { createdAt: "desc" },
+      });
+    }, "Failed to fetch doctors");
   }
 
   /**

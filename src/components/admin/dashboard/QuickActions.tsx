@@ -21,7 +21,7 @@ export default function QuickActions() {
       title: "View Doctors",
       description: "Manage all registered doctors",
       icon: Users,
-      href: "/admin/doctors",
+      href: "/admin/users",
       color: "text-blue-600",
     },
     {

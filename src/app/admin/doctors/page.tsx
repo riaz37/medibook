@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/server/rbac";
-import AdminDoctorsPageClient from "./AdminDoctorsPageClient";
 
 /**
  * Admin Doctors Management Page
  * 
- * Allows admins to view and manage all doctors
+ * Redirects to unified Users Management page with doctor filter
  */
 async function AdminDoctorsPage() {
   const authResult = await requireRole("admin");
@@ -13,7 +12,8 @@ async function AdminDoctorsPage() {
     redirect("/sign-in");
   }
 
-  return <AdminDoctorsPageClient />;
+  // Redirect to unified users page with doctor filter
+  redirect("/admin/users");
 }
 
 export default AdminDoctorsPage;

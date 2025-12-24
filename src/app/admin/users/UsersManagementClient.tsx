@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Mail, Search, Edit, History } from "lucide-react";
+import {
+  User,
+  Mail,
+  Search,
+  Edit,
+} from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityListSkeleton } from "@/components/ui/loading-skeleton";
@@ -33,12 +38,13 @@ interface UserWithRole {
 }
 
 export default function UsersManagementClient() {
+  // Users state
   const [users, setUsers] = useState<UserWithRole[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<Role | "all">("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "doctor" | "patient">("all");
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState<Role | "">("");
   const [reason, setReason] = useState("");
 
@@ -48,7 +54,7 @@ export default function UsersManagementClient() {
 
   const fetchUsers = async () => {
     try {
-      setIsLoading(true);
+      setIsLoadingUsers(true);
       const response = await fetch("/api/admin/users");
       if (!response.ok) {
         throw new Error("Failed to fetch users");
@@ -59,15 +65,20 @@ export default function UsersManagementClient() {
       console.error("Error fetching users:", error);
       toast.error("Failed to load users");
     } finally {
-      setIsLoading(false);
+      setIsLoadingUsers(false);
     }
   };
 
   const handleChangeRole = (user: UserWithRole) => {
+    // Prevent changing admin roles
+    if (user.role === "admin") {
+      toast.error("Admin roles cannot be changed");
+      return;
+    }
     setSelectedUser(user);
     setNewRole(user.role);
     setReason("");
-    setIsDialogOpen(true);
+    setIsRoleDialogOpen(true);
   };
 
   const handleConfirmRoleChange = async () => {
@@ -90,7 +101,6 @@ export default function UsersManagementClient() {
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = errorData.error || errorData.message || "Failed to update role";
-        // Format validation errors if present
         if (errorData.details && errorData.details.length > 0) {
           const detailMessages = errorData.details.map((d: { field: string; message: string }) => d.message).join(", ");
           throw new Error(`${errorMessage}. ${detailMessages}`);
@@ -99,7 +109,7 @@ export default function UsersManagementClient() {
       }
 
       toast.success("User role updated successfully");
-      setIsDialogOpen(false);
+      setIsRoleDialogOpen(false);
       setSelectedUser(null);
       setNewRole("");
       setReason("");
@@ -110,26 +120,35 @@ export default function UsersManagementClient() {
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.firstName && user.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (user.lastName && user.lastName.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    return matchesSearch && matchesRole;
-  });
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const matchesSearch =
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.firstName && user.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (user.lastName && user.lastName.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      let matchesRole = true;
+      if (roleFilter === "all") {
+        matchesRole = true;
+      } else if (roleFilter === "doctor") {
+        matchesRole = user.role === "doctor" || user.role === "doctor_pending";
+      } else if (roleFilter === "patient") {
+        matchesRole = user.role === "patient";
+      }
+      
+      return matchesSearch && matchesRole;
+    });
+  }, [users, searchQuery, roleFilter]);
 
-  const roleCounts = {
-    all: users.length,
-    patient: users.filter((u) => u.role === "patient").length,
-    doctor_pending: users.filter((u) => u.role === "doctor_pending").length,
-    doctor: users.filter((u) => u.role === "doctor").length,
-    admin: users.filter((u) => u.role === "admin").length,
-  };
-
-  if (isLoading) {
-    return <ActivityListSkeleton count={5} />;
-  }
+  const roleCounts = useMemo(() => {
+    return {
+      all: users.length,
+      patient: users.filter((u) => u.role === "patient").length,
+      doctor_pending: users.filter((u) => u.role === "doctor_pending").length,
+      doctor: users.filter((u) => u.role === "doctor").length,
+      admin: users.filter((u) => u.role === "admin").length,
+    };
+  }, [users]);
 
   return (
     <div className="space-y-6">
@@ -176,11 +195,11 @@ export default function UsersManagementClient() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Users Management */}
       <Card>
         <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>Manage user roles and permissions</CardDescription>
+          <CardTitle>Users Management</CardTitle>
+          <CardDescription>Manage user accounts and roles</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 mb-6">
@@ -193,21 +212,21 @@ export default function UsersManagementClient() {
                 className="pl-10"
               />
             </div>
-            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as Role | "all")}>
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as "all" | "doctor" | "patient")}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by role" />
+                <SelectValue placeholder="Filter" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="patient">Patient</SelectItem>
-                <SelectItem value="doctor_pending">Doctor (Pending)</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="doctor">Doctor</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="patient">Patients</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {filteredUsers.length === 0 ? (
+          {isLoadingUsers ? (
+            <ActivityListSkeleton count={5} />
+          ) : filteredUsers.length === 0 ? (
             <EmptyState
               title="No users found"
               description="No users match your search criteria"
@@ -251,21 +270,29 @@ export default function UsersManagementClient() {
                               : "outline"
                           }
                         >
-                          {user.role === "doctor_pending" ? "Doctor (Pending)" : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          {user.role === "doctor_pending"
+                            ? "Doctor (Pending)"
+                            : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         {new Date(user.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleChangeRole(user)}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Change Role
-                        </Button>
+                        {user.role !== "admin" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleChangeRole(user)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Change Role
+                          </Button>
+                        ) : (
+                          <Badge variant="default" className="text-xs">
+                            Protected
+                          </Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -277,7 +304,7 @@ export default function UsersManagementClient() {
       </Card>
 
       {/* Role Change Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Change User Role</DialogTitle>
@@ -289,19 +316,16 @@ export default function UsersManagementClient() {
             <div className="space-y-2">
               <Label>Current Role</Label>
               <div className="text-sm text-muted-foreground">
-                {selectedUser?.role === "doctor_pending" 
-                  ? "Doctor (Pending)" 
-                  : selectedUser?.role 
-                    ? selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)
-                    : "N/A"}
+                {selectedUser?.role === "doctor_pending"
+                  ? "Doctor (Pending)"
+                  : selectedUser?.role
+                  ? selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)
+                  : "N/A"}
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="newRole">New Role *</Label>
-              <Select
-                value={newRole}
-                onValueChange={(v) => setNewRole(v as Role)}
-              >
+              <Select value={newRole} onValueChange={(v) => setNewRole(v as Role)}>
                 <SelectTrigger id="newRole">
                   <SelectValue placeholder="Select new role" />
                 </SelectTrigger>
@@ -326,7 +350,7 @@ export default function UsersManagementClient() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>
               Cancel
             </Button>
             <Button

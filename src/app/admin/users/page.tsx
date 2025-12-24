@@ -4,9 +4,9 @@ import UsersManagementClient from "./UsersManagementClient";
 import { requireRole } from "@/lib/server/rbac";
 
 /**
- * Admin Users Management Page
+ * Admin Users & Doctors Management Page
  * 
- * Allows admins to view and manage user roles
+ * Unified page for managing user accounts, roles, and doctor profiles
  */
 async function AdminUsersPage() {
   const authResult = await requireRole("admin");
@@ -20,7 +20,7 @@ async function AdminUsersPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Users Management</h1>
           <p className="text-muted-foreground">
-            View and manage user roles. Change user roles with proper audit trail.
+            Manage user accounts and roles. Filter by All, Doctor, or Patients.
           </p>
         </div>
         <UsersManagementClient />

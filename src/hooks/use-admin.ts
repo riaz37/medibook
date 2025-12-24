@@ -6,12 +6,27 @@ import { queryKeys } from "@/lib/constants/query-keys";
 import { handleApiError } from "@/lib/utils/toast";
 import { showErrorToast } from "@/components/shared/ErrorToast";
 import type { VerificationWithDoctor } from "@/lib/types";
+import type { DoctorApplication } from "@/lib/types/rbac";
 
 export function useAdminDoctorVerifications(status?: "PENDING" | "APPROVED" | "REJECTED") {
   return useQuery<VerificationWithDoctor[]>({
     queryKey: queryKeys.admin.verifications(status),
     queryFn: async () => {
       return (await adminService.getDoctorVerifications(status)) as VerificationWithDoctor[];
+    },
+  });
+}
+
+export function useAdminDoctorApplications() {
+  return useQuery<DoctorApplication[]>({
+    queryKey: queryKeys.admin.applications,
+    queryFn: async () => {
+      const response = await fetch("/api/admin/doctors/applications");
+      if (!response.ok) {
+        throw new Error("Failed to fetch applications");
+      }
+      const data = await response.json();
+      return data.applications || [];
     },
   });
 }

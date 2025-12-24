@@ -79,7 +79,7 @@ async function RecentActivity() {
           description: doc.isVerified ? "Verified" : "Pending verification",
           timestamp: doc.createdAt,
           icon: UserPlus,
-          href: "/admin/doctors",
+          href: "/admin/users",
         })),
       ]
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())

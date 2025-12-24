@@ -48,6 +48,7 @@ export const queryKeys = {
       }
       return [...queryKeys.admin.all, "verifications"] as const;
     },
+    applications: () => [...queryKeys.admin.all, "applications"] as const,
   },
 
   // Users

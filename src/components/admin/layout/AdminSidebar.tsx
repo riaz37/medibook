@@ -9,9 +9,9 @@ import {
   Settings,
   Wallet,
   BarChart3,
-  FileText,
   Database,
   UserCheck,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,90 +25,105 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { UserButton } from "@/components/shared/UserButton";
 import Image from "next/image";
-
-const menuItems = [
-  {
-    title: "Overview",
-    items: [
-      {
-        title: "Dashboard",
-        url: "/admin",
-        icon: Home,
-        badge: null,
-      },
-    ],
-  },
-  {
-    title: "Management",
-    items: [
-      {
-        title: "Users",
-        url: "/admin/users",
-        icon: UserCheck,
-        badge: null,
-      },
-      {
-        title: "Doctors",
-        url: "/admin/doctors",
-        icon: Users,
-        badge: null,
-      },
-      {
-        title: "Applications",
-        url: "/admin/doctors/applications",
-        icon: FileText,
-        badge: null,
-      },
-      {
-        title: "Verifications",
-        url: "/admin/verifications",
-        icon: CheckCircle2,
-        badge: null,
-      },
-    ],
-  },
-  {
-    title: "Financial",
-    items: [
-      {
-        title: "Analytics",
-        url: "/admin/analytics",
-        icon: BarChart3,
-        badge: null,
-      },
-      {
-        title: "Payments",
-        url: "/admin/settings/payments",
-        icon: Wallet,
-        badge: null,
-      },
-    ],
-  },
-  {
-    title: "Settings",
-    items: [
-      {
-        title: "Settings",
-        url: "/admin/settings",
-        icon: Settings,
-        badge: null,
-      },
-      {
-        title: "Cache",
-        url: "/admin/cache",
-        icon: Database,
-        badge: null,
-      },
-    ],
-  },
-];
+import { useAdminDoctorVerifications, useAdminDoctorApplications } from "@/hooks";
+import { useMemo } from "react";
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const { user } = useCurrentUser();
+  
+  // Fetch pending counts for badges
+  const { data: verifications = [] } = useAdminDoctorVerifications("PENDING");
+  const { data: applications = [] } = useAdminDoctorApplications();
+  
+  const pendingVerificationsCount = useMemo(() => {
+    return verifications.filter((v) => v.status === "PENDING").length;
+  }, [verifications]);
+  
+  const pendingApplicationsCount = useMemo(() => {
+    return applications.filter((a) => a.status === "PENDING").length;
+  }, [applications]);
+  
+  const totalPendingCount = pendingVerificationsCount + pendingApplicationsCount;
+
+  const menuItems = [
+    {
+      title: "Overview",
+      items: [
+        {
+          title: "Dashboard",
+          url: "/admin",
+          icon: Home,
+          badge: null,
+        },
+      ],
+    },
+    {
+      title: "Monitoring",
+      items: [
+        {
+          title: "Verifications",
+          url: "/admin/verifications",
+          icon: CheckCircle2,
+          badge: totalPendingCount > 0 ? totalPendingCount : null,
+        },
+      ],
+    },
+    {
+      title: "Management",
+      items: [
+        {
+          title: "Users",
+          url: "/admin/users",
+          icon: Users,
+          badge: null,
+        },
+      ],
+    },
+    {
+      title: "Analytics",
+      items: [
+        {
+          title: "Analytics",
+          url: "/admin/analytics",
+          icon: BarChart3,
+          badge: null,
+        },
+      ],
+    },
+    {
+      title: "Financial",
+      items: [
+        {
+          title: "Payments",
+          url: "/admin/settings/payments",
+          icon: Wallet,
+          badge: null,
+        },
+      ],
+    },
+    {
+      title: "System",
+      items: [
+        {
+          title: "Settings",
+          url: "/admin/settings",
+          icon: Settings,
+          badge: null,
+        },
+        {
+          title: "Cache",
+          url: "/admin/cache",
+          icon: Database,
+          badge: null,
+        },
+      ],
+    },
+  ];
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -141,9 +156,16 @@ export function AdminSidebar() {
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                        <Link href={item.url}>
-                          <Icon />
-                          <span>{item.title}</span>
+                        <Link href={item.url} className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <Icon />
+                            <span>{item.title}</span>
+                          </div>
+                          {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
+                            <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1.5 text-xs">
+                              {item.badge}
+                            </Badge>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
