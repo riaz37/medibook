@@ -4,6 +4,7 @@ import { vapiService } from "@/lib/services/vapi.service";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { createLogger } from "@/lib/logger";
 import crypto from "crypto";
+import type { Prisma } from "@/generated/prisma/client";
 
 const logger = createLogger("vapi-webhook");
 
@@ -49,15 +50,17 @@ export async function POST(request: NextRequest) {
       const functionName = functionCall?.name;
       const parameters = functionCall?.parameters || {};
 
-      // Extract call context (phone numbers)
+      // Extract call context
       const callerPhone = call?.from;
       const calledPhone = call?.to;
+      const variables = call?.assistant?.model?.variables || call?.variables || {};
+      const userIdFromContext = variables.userId;
 
       let result: any;
 
       switch (functionName) {
         case "get_doctors":
-          result = await handleGetDoctors();
+          result = await handleGetDoctors(parameters);
           break;
 
         case "get_available_slots":
@@ -72,7 +75,8 @@ export async function POST(request: NextRequest) {
           result = await handleBookAppointment(
             parameters,
             callerPhone,
-            calledPhone
+            calledPhone,
+            userIdFromContext
           );
           break;
 
@@ -102,33 +106,58 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Get list of available doctors
+ * Get list of available doctors with optional filtering
  */
-async function handleGetDoctors() {
+async function handleGetDoctors(params: { query?: string; speciality?: string; city?: string } = {}) {
   try {
+    const where: Prisma.DoctorWhereInput = {
+      isVerified: true,
+    };
+
+    if (params.query) {
+      where.OR = [
+        { name: { contains: params.query, mode: "insensitive" } },
+        { speciality: { contains: params.query, mode: "insensitive" } },
+        { bio: { contains: params.query, mode: "insensitive" } },
+      ];
+    }
+
+    if (params.speciality) {
+      where.speciality = { contains: params.speciality, mode: "insensitive" };
+    }
+
+    if (params.city) {
+      where.city = { contains: params.city, mode: "insensitive" };
+    }
+
     const doctors = await prisma.doctor.findMany({
-      where: {
-        isVerified: true,
-      },
+      where,
       select: {
         id: true,
         name: true,
         speciality: true,
         email: true,
         phone: true,
+        city: true,
       },
       orderBy: {
         name: "asc",
       },
+      take: 5, // Limit to 5 results for voice interface
     });
+
+    if (doctors.length === 0) {
+      return "I couldn't find any doctors matching your criteria. Please try a different speciality or location.";
+    }
 
     return {
       doctors: doctors.map((doctor) => ({
         id: doctor.id,
         name: doctor.name,
         speciality: doctor.speciality,
-        phone: doctor.phone,
+        location: doctor.city,
       })),
+      count: doctors.length,
     };
   } catch (error) {
     logger.error("Error getting doctors", {
@@ -185,6 +214,10 @@ async function handleGetAvailableSlots(doctorId: string, date: string) {
 
     const slots = await doctorsConfigService.getAvailableTimeSlots(doctorId, date);
 
+    if (slots.length === 0) {
+      return `I checked ${date} but there are no available slots. Would you like to check another date?`;
+    }
+
     return {
       slots,
       date,
@@ -212,6 +245,10 @@ async function handleGetAppointmentTypes(doctorId: string) {
     }
 
     const types = await doctorsConfigService.getAppointmentTypes(doctorId);
+
+    if (types.length === 0) {
+      return "This doctor doesn't have any specific appointment types configured. You can book a general consultation.";
+    }
 
     return {
       appointmentTypes: types.map((type) => ({
@@ -245,7 +282,8 @@ async function handleBookAppointment(
     reason?: string;
   },
   callerPhone?: string,
-  calledPhone?: string
+  calledPhone?: string,
+  userIdFromContext?: string
 ) {
   try {
     const { doctorId, date, time, appointmentTypeId, email, phoneNumber, reason } =
@@ -256,15 +294,24 @@ async function handleBookAppointment(
       throw new Error("Missing required fields: doctorId, date, time, appointmentTypeId");
     }
 
-    // Get or create user
-    const userPhone = phoneNumber || callerPhone;
-    const userEmail = email;
+    let user;
 
-    if (!userEmail && !userPhone) {
-      throw new Error("Email or phone number is required to book an appointment");
+    // 1. Try to find user by ID from context (authenticated web user)
+    if (userIdFromContext) {
+      user = await prisma.user.findUnique({ where: { id: userIdFromContext } });
     }
 
-    const user = await vapiService.getUserFromCallContext(userPhone, userEmail);
+    // 2. If no user from context, try to find/create by phone/email (voice caller)
+    if (!user) {
+      const userPhone = phoneNumber || callerPhone;
+      const userEmail = email;
+
+      if (!userEmail && !userPhone) {
+        throw new Error("Email or phone number is required to book an appointment");
+      }
+
+      user = await vapiService.getUserFromCallContext(userPhone, userEmail);
+    }
 
     if (!user) {
       throw new Error("Could not identify or create user account");
@@ -283,8 +330,8 @@ async function handleBookAppointment(
         date,
         time,
         appointmentTypeId,
-        email: userEmail || user.email,
-        phoneNumber: userPhone || user.phone,
+        email: email || user.email,
+        phoneNumber: phoneNumber || user.phone,
         reason,
       }),
     });
@@ -313,5 +360,3 @@ async function handleBookAppointment(
     );
   }
 }
-
-
