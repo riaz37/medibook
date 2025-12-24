@@ -91,7 +91,7 @@ export abstract class BaseService {
   /**
    * Core request method with error handling, retry logic, and interceptors
    */
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}, retryCount = 0): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
     // Apply request interceptors (e.g., add auth headers)
@@ -108,6 +108,24 @@ export abstract class BaseService {
         ...interceptedOptions,
         cache: interceptedOptions.cache || (typeof window === "undefined" ? "no-store" : undefined),
       });
+
+      // Handle 401 Unauthorized - Refresh Token Logic
+      if (response.status === 401 && retryCount < 1 && !endpoint.includes("/auth/refresh")) {
+        try {
+          // Attempt to refresh the token
+          const refreshResponse = await fetch(`${this.baseUrl}/api/auth/refresh`, {
+            method: "POST",
+          });
+
+          if (refreshResponse.ok) {
+            // Token refreshed successfully, retry original request
+            return this.request<T>(endpoint, options, retryCount + 1);
+          }
+        } catch (refreshError) {
+          // Refresh failed, proceed to throw the original 401 error
+          console.error("Token refresh failed:", refreshError);
+        }
+      }
 
       // Apply response interceptors
       const processedResponse = await this.applyResponseInterceptors(response);
