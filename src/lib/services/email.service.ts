@@ -3,6 +3,8 @@ import AppointmentConfirmationEmail from "@/components/emails/AppointmentConfirm
 import AppointmentCancellationEmail from "@/components/emails/AppointmentCancellationEmail";
 import AppointmentRescheduleEmail from "@/components/emails/AppointmentRescheduleEmail";
 import PaymentLinkEmail from "@/components/emails/PaymentLinkEmail";
+import PasswordResetEmail from "@/components/emails/PasswordResetEmail";
+import EmailVerificationEmail from "@/components/emails/EmailVerificationEmail";
 import transporter from "@/lib/nodemailer";
 import { pdfService } from "@/lib/services/pdf.service";
 import { render } from "@react-email/render";
@@ -248,6 +250,70 @@ export class EmailService {
       console.log("Reschedule email sent for:", appointmentId);
     } catch (error) {
       console.error("Failed to send reschedule email:", error);
+    }
+  }
+
+  /**
+   * Send password reset email
+   */
+  async sendPasswordResetEmail(
+    email: string,
+    resetLink: string,
+    userName?: string
+  ) {
+    try {
+      const emailHtml = await render(
+        PasswordResetEmail({
+          resetLink,
+          userName,
+          expiresIn: "1 hour",
+        })
+      );
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `Medibook <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Reset Your Password - Medibook",
+        html: emailHtml,
+      });
+
+      console.log("Password reset email sent to:", email);
+    } catch (error) {
+      console.error("Failed to send password reset email:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send email verification email
+   */
+  async sendEmailVerification(
+    email: string,
+    verificationLink: string,
+    userName?: string,
+    verificationCode?: string
+  ) {
+    try {
+      const emailHtml = await render(
+        EmailVerificationEmail({
+          verificationLink,
+          verificationCode,
+          userName,
+          expiresIn: "24 hours",
+        })
+      );
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `Medibook <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Verify Your Email - Medibook",
+        html: emailHtml,
+      });
+
+      console.log("Verification email sent to:", email);
+    } catch (error) {
+      console.error("Failed to send verification email:", error);
+      throw error;
     }
   }
 }

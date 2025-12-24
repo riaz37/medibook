@@ -9,6 +9,7 @@ import {
   User,
   CreditCard,
   FileText,
+  Heart,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,6 +59,12 @@ const menuItems = [
   {
     title: "Medical",
     items: [
+      {
+        title: "Medical History",
+        url: "/patient/medical-history",
+        icon: Heart,
+        badge: null,
+      },
       {
         title: "Prescriptions",
         url: "/patient/prescriptions",
