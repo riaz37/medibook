@@ -20,7 +20,8 @@ export async function POST(
       return authResult.response;
     }
 
-    const { userId: adminUserId } = authResult;
+    const { context } = authResult;
+    const adminUserId = context.userId;
     const { id: applicationId } = await params;
 
     // Get application

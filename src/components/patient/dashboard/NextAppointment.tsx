@@ -29,23 +29,17 @@ async function NextAppointment() {
   } else {
     const { context } = authResult;
     try {
-      // Get DB user ID from Clerk user ID
-      const user = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
+      // context.userId is already the DB user ID
+      const dbAppointments = await prisma.appointment.findMany({
+        where: { userId: context.userId },
+        include: {
+          user: { select: { firstName: true, lastName: true, email: true } },
+          doctor: { select: { name: true, imageUrl: true } },
+        },
+        orderBy: [{ date: "asc" }, { time: "asc" }],
       });
 
-      if (user) {
-        const dbAppointments = await prisma.appointment.findMany({
-          where: { userId: user.id },
-          include: {
-            user: { select: { firstName: true, lastName: true, email: true } },
-            doctor: { select: { name: true, imageUrl: true } },
-          },
-          orderBy: [{ date: "asc" }, { time: "asc" }],
-        });
-
-        appointments = dbAppointments.map(transformAppointment);
-      }
+      appointments = dbAppointments.map(transformAppointment);
     } catch (error) {
       // Error is handled silently for server components - could add error logging service here
     }

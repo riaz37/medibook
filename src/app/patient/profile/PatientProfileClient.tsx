@@ -254,12 +254,11 @@ export default function PatientProfileClient() {
               </div>
             </div>
 
-            {clerkUser && (
+            {user && (
               <Alert>
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>
-                  Your account is managed through Clerk authentication. Profile picture and email
-                  verification can be updated in your Clerk account settings.
+                  Your profile information can be updated above. Email changes require contacting support.
                 </AlertDescription>
               </Alert>
             )}

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       include: { 
         doctor: true,
         user: {
-          select: { clerkId: true },
+          select: { id: true },
         },
       },
     });
@@ -49,12 +49,7 @@ export async function POST(request: NextRequest) {
 
     // Verify user is the patient for this appointment (unless admin)
     if (context.role !== "admin") {
-      const dbUser = await prisma.user.findUnique({
-        where: { clerkId: context.userId },
-        select: { id: true },
-      });
-
-      if (!dbUser || appointment.userId !== dbUser.id) {
+      if (appointment.userId !== context.userId) {
         return NextResponse.json(
           { error: "Forbidden: You can only create payment intents for your own appointments" },
           { status: 403 }

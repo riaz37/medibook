@@ -30,9 +30,9 @@ export async function POST(
       );
     }
 
-    // Get patient ID from DB
+    // Get patient ID from DB (context.userId is already the DB user ID)
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: context.userId },
+      where: { id: context.userId },
       select: { id: true },
     });
 

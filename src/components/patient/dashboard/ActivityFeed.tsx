@@ -27,22 +27,17 @@ export default async function ActivityFeed() {
   } else {
     const { context } = authResult;
     try {
-      const user = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
+      // context.userId is already the DB user ID
+      const dbAppointments = await prisma.appointment.findMany({
+        where: { userId: context.userId },
+        include: {
+          doctor: { select: { name: true, imageUrl: true } },
+        },
+        orderBy: [{ date: "desc" }, { time: "desc" }],
+        take: 5,
       });
 
-      if (user) {
-        const dbAppointments = await prisma.appointment.findMany({
-          where: { userId: user.id },
-          include: {
-            doctor: { select: { name: true, imageUrl: true } },
-          },
-          orderBy: [{ date: "desc" }, { time: "desc" }],
-          take: 5,
-        });
-
-        recentAppointments = dbAppointments.map(transformAppointment);
-      }
+      recentAppointments = dbAppointments.map(transformAppointment);
     } catch (error) {
       // Error is handled silently for server components - could add error logging service here
     }
