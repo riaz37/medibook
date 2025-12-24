@@ -212,6 +212,51 @@ export function validateRoleTransition(
 }
 
 /**
+ * Require access to a specific appointment
+ * Checks that the user has access to the appointment (own appointment or admin)
+ */
+export async function requireAppointmentAccess(appointmentId: string): Promise<{ context: AuthContext } | { response: NextResponse }> {
+  const context = await getAuthContext();
+  if (!context) {
+    return {
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    select: { userId: true, doctorId: true },
+  });
+
+  if (!appointment) {
+    return {
+      response: NextResponse.json({ error: "Appointment not found" }, { status: 404 }),
+    };
+  }
+
+  // Admin can access all appointments
+  if (context.role === "admin") {
+    return { context };
+  }
+
+  // Patient can only access their own appointments
+  if (context.role === "patient" && appointment.userId !== context.userId) {
+    return {
+      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+
+  // Doctor can only access appointments they are assigned to
+  if (context.role === "doctor" && appointment.doctorId !== context.doctorId) {
+    return {
+      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+
+  return { context };
+}
+
+/**
  * Convert role string to UserRole enum
  */
 export function roleToUserRole(role: Role): UserRole {

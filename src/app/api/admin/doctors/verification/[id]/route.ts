@@ -22,9 +22,9 @@ export async function PUT(
     
     const { context } = authResult;
 
-    // Get DB user for reviewedBy field
+    // Get DB user for reviewedBy field (context.userId is already the DB user ID)
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: context.userId },
+      where: { id: context.userId },
       select: { id: true },
     });
 

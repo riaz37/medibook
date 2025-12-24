@@ -20,7 +20,7 @@ const signUpSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   role: z.enum(["patient", "doctor"], {
-    required_error: "Please select a role",
+    message: "Please select a role",
   }),
 });
 

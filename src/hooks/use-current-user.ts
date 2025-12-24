@@ -31,11 +31,8 @@ export function useCurrentUser() {
 
   return {
     user: data ? {
-      id: data.id,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      emailAddresses: data.email ? [{ emailAddress: data.email }] : [],
       ...data,
+      emailAddresses: data.email ? [{ emailAddress: data.email }] : [],
     } : null,
     isLoaded: isSuccess || (!isLoading && !data),
     isSignedIn: !!data,

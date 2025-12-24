@@ -13,12 +13,9 @@ export default async function DoctorStatsGrid() {
   } else {
     const { context } = authResult;
     try {
-      const user = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-        include: { doctorProfile: true },
-      });
-      if (user?.doctorProfile) {
-        stats = await getDoctorStats(user.doctorProfile.id);
+      // context.doctorId is already available if the user is a doctor
+      if (context.doctorId) {
+        stats = await getDoctorStats(context.doctorId);
       }
     } catch (error) {
       console.error("Error fetching doctor stats:", error);

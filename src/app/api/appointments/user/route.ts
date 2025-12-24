@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
       }
       
       const { context } = authResult;
-      // Get DB user ID from Clerk user ID
-      user = await usersServerService.findUniqueByClerkId(context.clerkUserId);
+      // Get user by ID
+      user = await usersServerService.findUnique(context.userId);
       if (!user) {
         return NextResponse.json(
           { error: "User not found. Please ensure your account is properly set up." },

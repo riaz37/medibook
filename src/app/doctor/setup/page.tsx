@@ -15,7 +15,10 @@ async function DoctorSetupPage() {
   }
 
   // Get or create doctor profile
-  let doctor = user.doctorProfile;
+  let doctor = await prisma.doctor.findUnique({
+    where: { userId: user.id },
+  });
+  
   if (!doctor) {
     // Create basic doctor profile
     doctor = await prisma.doctor.create({

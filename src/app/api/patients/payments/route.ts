@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     // Get user from database
     const user = await prisma.user.findUnique({
-      where: { clerkId: context.clerkUserId },
+      where: { id: context.userId },
     });
 
     if (!user) {

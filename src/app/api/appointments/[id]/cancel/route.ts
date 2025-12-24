@@ -40,11 +40,7 @@ export async function POST(
 
     // Check authorization
     if (context.role === "patient") {
-      const dbUser = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-        select: { id: true },
-      });
-      if (dbUser && appointment.userId !== dbUser.id) {
+      if (appointment.userId !== context.userId) {
         return NextResponse.json(
           { error: "Forbidden" },
           { status: 403 }
