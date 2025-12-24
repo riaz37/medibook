@@ -1,13 +1,13 @@
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getUserRoleFromSession, getAuthContext } from "@/lib/server/rbac";
 import { DoctorDashboardLayout } from "@/components/doctor/layout/DoctorDashboardLayout";
 import DoctorBillingClient from "./DoctorBillingClient";
 
 async function DoctorBillingPage() {
-  const { userId } = await auth();
+  const user = await getCurrentUser();
 
-  if (!userId) {
+  if (!user) {
     redirect("/");
   }
 

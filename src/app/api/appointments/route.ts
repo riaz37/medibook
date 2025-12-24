@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
 
     const { doctorId, date, time, reason, userId, appointmentTypeId } = validation.data;
 
-    // If userId is provided directly (e.g., from VAPI), use it; otherwise get from Clerk auth
+    // If userId is provided directly (e.g., from VAPI), use it; otherwise get from auth
     let user;
     if (userId) {
       const { usersServerService } = await import("@/lib/services/server");

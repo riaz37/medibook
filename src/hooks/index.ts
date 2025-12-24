@@ -3,6 +3,9 @@
  * All React Query hooks in one place
  */
 
+// Auth
+export * from "./use-auth";
+
 // Appointments
 export * from "./use-appointment";
 

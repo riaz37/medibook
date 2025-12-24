@@ -1,7 +1,7 @@
 import Image from "next/image";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { SettingsIcon, UsersIcon, CheckCircle2Icon } from "lucide-react";
+import { UsersIcon, CheckCircle2Icon } from "lucide-react";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
@@ -23,7 +23,7 @@ const getPendingVerifications = unstable_cache(
 );
 
 export default async function AdminDashboardHero() {
-  const user = await currentUser();
+  const user = await getCurrentUser();
   const pendingVerifications = await getPendingVerifications();
 
   const getGreeting = () => {

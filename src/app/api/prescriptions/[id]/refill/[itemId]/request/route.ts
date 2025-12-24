@@ -30,18 +30,7 @@ export async function POST(
       );
     }
 
-    // Get patient ID from DB
-    const dbUser = await prisma.user.findUnique({
-      where: { clerkId: context.userId },
-      select: { id: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
-    }
+    // Use userId from context directly
 
     const body = await request.json();
 
@@ -77,7 +66,7 @@ export async function POST(
     }
 
     // Verify patient owns the prescription
-    if (prescriptionItem.prescription.patientId !== dbUser.id) {
+    if (prescriptionItem.prescription.patientId !== context.userId) {
       return NextResponse.json(
         { error: "You don't have access to this prescription" },
         { status: 403 }
@@ -119,7 +108,7 @@ export async function POST(
     const refill = await prisma.prescriptionRefill.create({
       data: {
         prescriptionItemId: itemId,
-        requestedBy: dbUser.id,
+        requestedBy: context.userId,
         status: "PENDING",
         notes: notes || null,
       },

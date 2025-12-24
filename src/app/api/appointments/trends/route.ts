@@ -25,15 +25,7 @@ export async function GET(request: NextRequest) {
     // Build where clause based on role
     let whereClause: any = {};
     if (context.role === "patient") {
-      const dbUser = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-        select: { id: true },
-      });
-      if (dbUser) {
-        whereClause.userId = dbUser.id;
-      } else {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
-      }
+      whereClause.userId = context.userId;
     } else if (context.role === "doctor" && context.doctorId) {
       whereClause.doctorId = context.doctorId;
     }

@@ -27,13 +27,8 @@ export default async function ActivityFeed() {
   } else {
     const { context } = authResult;
     try {
-      const user = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-      });
-
-      if (user) {
-        const dbAppointments = await prisma.appointment.findMany({
-          where: { userId: user.id },
+      const dbAppointments = await prisma.appointment.findMany({
+        where: { userId: context.userId },
           include: {
             doctor: { select: { name: true, imageUrl: true } },
           },
@@ -41,8 +36,7 @@ export default async function ActivityFeed() {
           take: 5,
         });
 
-        recentAppointments = dbAppointments.map(transformAppointment);
-      }
+      recentAppointments = dbAppointments.map(transformAppointment);
     } catch (error) {
       // Error is handled silently for server components - could add error logging service here
     }

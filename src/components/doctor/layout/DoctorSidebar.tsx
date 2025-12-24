@@ -23,7 +23,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useUser } from "@/hooks/use-auth";
+import { UserButton } from "@/components/auth";
 import Image from "next/image";
 
 const menuItems = [

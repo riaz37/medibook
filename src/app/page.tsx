@@ -24,7 +24,7 @@ export default async function Home() {
   if (user) {
     const role = await getUserRoleFromSession();
     
-    // Redirect based on role (from Clerk metadata with DB fallback)
+    // Redirect based on role (database is the source of truth)
     if (role === "doctor") {
       redirect("/doctor/dashboard");
     } else if (role === "admin") {

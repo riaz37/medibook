@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +36,7 @@ import {
 import Link from "next/link";
 
 export default function PatientProfileClient() {
-  const { user: clerkUser } = useUser();
+  const { user: authUser } = useUser();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -254,12 +254,12 @@ export default function PatientProfileClient() {
               </div>
             </div>
 
-            {clerkUser && (
+            {authUser && (
               <Alert>
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>
-                  Your account is managed through Clerk authentication. Profile picture and email
-                  verification can be updated in your Clerk account settings.
+                  Your account is securely managed. Contact support if you need to update your
+                  email address.
                 </AlertDescription>
               </Alert>
             )}

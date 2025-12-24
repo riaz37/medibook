@@ -62,15 +62,14 @@ class UsersServerService extends BaseServerService {
   }
 
   /**
-   * Backward-compat: find by Clerk ID (deprecated)
-   * In custom auth, we use internal user ID. Map clerkId to userId.
+   * Alias for findUnique - kept for backward compatibility
+   * @deprecated Use findUnique instead
    */
-  async findUniqueByClerkId(
-    clerkId: string,
+  async findUniqueById(
+    id: string,
     include?: Prisma.UserInclude
   ): Promise<User | null> {
-    this.validateRequired({ clerkId }, ["clerkId"]);
-    return this.findUnique(clerkId, include);
+    return this.findUnique(id, include);
   }
 
   /**

@@ -17,13 +17,7 @@ export default async function StatsGrid() {
   } else {
     const { context } = authResult;
     try {
-      const user = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-        select: { id: true },
-      });
-      if (user) {
-        upcomingCount = await getUpcomingAppointmentCount(user.id);
-      }
+      upcomingCount = await getUpcomingAppointmentCount(context.userId);
     } catch (error) {
       // Error is handled silently for server components - could add error logging service here
     }

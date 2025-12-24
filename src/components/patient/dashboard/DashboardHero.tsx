@@ -1,11 +1,11 @@
 import Image from "next/image";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
 import Link from "next/link";
 
 export default async function DashboardHero() {
-  const user = await currentUser();
+  const user = await getCurrentUser();
 
   const getGreeting = () => {
     const hour = new Date().getHours();

@@ -51,7 +51,7 @@ export default function AdminSettingsClient() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Security settings are managed through Clerk authentication. Advanced security features
+              Security settings are managed through the authentication system. Advanced security features
               will be available in future updates.
             </AlertDescription>
           </Alert>

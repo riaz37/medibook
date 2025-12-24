@@ -17,14 +17,9 @@ async function ActivityFeed() {
   } else {
     const { context } = authResult;
     try {
-      const user = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-        include: { doctorProfile: true },
-      });
-
-      if (user?.doctorProfile) {
+      if (context.doctorId) {
         const dbAppointments = await prisma.appointment.findMany({
-          where: { doctorId: user.doctorProfile.id },
+          where: { doctorId: context.doctorId },
           include: {
             user: { select: { firstName: true, lastName: true } },
           },

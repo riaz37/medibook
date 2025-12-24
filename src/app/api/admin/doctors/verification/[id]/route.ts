@@ -22,18 +22,7 @@ export async function PUT(
     
     const { context } = authResult;
 
-    // Get DB user for reviewedBy field
-    const dbUser = await prisma.user.findUnique({
-      where: { clerkId: context.userId },
-      select: { id: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User not found in database" },
-        { status: 404 }
-      );
-    }
+    // userId from context is the database user ID
 
     const body = await request.json();
 
@@ -59,7 +48,7 @@ export async function PUT(
       data: {
         status: status as "APPROVED" | "REJECTED",
         reviewedAt: new Date(),
-        reviewedBy: dbUser.id,
+        reviewedBy: context.userId,
         rejectionReason: status === "REJECTED" ? rejectionReason : null,
       },
       include: {

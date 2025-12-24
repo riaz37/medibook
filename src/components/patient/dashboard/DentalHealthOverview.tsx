@@ -1,10 +1,10 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrainIcon, HeartIcon, ShieldIcon, SparklesIcon } from "lucide-react";
 import { format } from "date-fns";
 
 async function DentalHealthOverview() {
-  const user = await currentUser();
+  const user = await getCurrentUser();
 
   return (
     <Card className="lg:col-span-2">

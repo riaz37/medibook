@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, Clock, CheckCircle2, AlertCircle, Phone, Mail, SearchIcon, XCircleIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/hooks/use-auth";
 import { useDoctorAppointments, useUpdateAppointmentStatus } from "@/hooks";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageLoading } from "@/components/ui/loading-skeleton";

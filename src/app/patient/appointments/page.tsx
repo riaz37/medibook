@@ -12,8 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { parseISO, isPast, isToday, isAfter } from "date-fns";
 import { Calendar, CheckCircle2, List } from "lucide-react";
 import { toast } from "sonner";
-import { useUser } from "@clerk/nextjs";
-import { useRole } from "@/lib/hooks/use-role";
+import { useUser, useRole } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { PageLoading } from "@/components/ui/loading-skeleton";
 

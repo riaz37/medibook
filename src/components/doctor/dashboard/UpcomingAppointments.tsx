@@ -18,15 +18,10 @@ async function UpcomingAppointments() {
   } else {
     const { context } = authResult;
     try {
-      const user = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-        include: { doctorProfile: true },
-      });
-
-      if (user?.doctorProfile) {
+      if (context.doctorId) {
         const dbAppointments = await prisma.appointment.findMany({
           where: {
-            doctorId: user.doctorProfile.id,
+            doctorId: context.doctorId,
           },
           include: {
             user: {

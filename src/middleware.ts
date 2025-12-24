@@ -9,7 +9,6 @@ const isPublicRoute = (path: string) => {
     "/sign-in",
     "/sign-up",
     "/api/webhooks/stripe",
-    "/api/webhooks/clerk", // Legacy, can be removed
     "/api/vapi-get-user-appointments",
     "/api/vapi-book-appointment",
     "/api/vapi-get-doctors",

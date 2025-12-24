@@ -1,7 +1,7 @@
 "use client";
 
 import { vapi } from "@/lib/vapi";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/hooks/use-auth";
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import Image from "next/image";
@@ -95,8 +95,8 @@ function VapiWidget() {
         setMessages([]);
         setCallEnded(false);
 
-        // Pass user context (clerkId) and current date to VAPI via call variables
-        // This will be available in the backend as body.call?.variables?.clerkId
+        // Pass user context (userId) and current date to VAPI via call variables
+        // This will be available in the backend as body.call?.variables?.userId
         const now = new Date();
         const todayISO = now.toISOString().split('T')[0]; // YYYY-MM-DD format
         const todayFormatted = now.toLocaleDateString('en-US', { 
@@ -110,16 +110,16 @@ function VapiWidget() {
           assistantId: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
         };
         
-        // Pass clerkId and current date as variables
+        // Pass userId and current date as variables
         callConfig.variables = {
           currentDate: todayISO,
           currentDateFormatted: todayFormatted,
           currentYear: now.getFullYear().toString(),
         };
         
-        // If user is logged in, add clerkId
+        // If user is logged in, add userId
         if (user?.id) {
-          callConfig.variables.clerkId = user.id;
+          callConfig.variables.userId = user.id;
         }
         
         await vapi.start(callConfig);
@@ -229,7 +229,7 @@ function VapiWidget() {
             {/* User Image */}
             <div className="relative size-32 mb-4">
               <Image
-                src={user?.imageUrl!}
+                src={user?.imageUrl || "/logo.png"}
                 alt="User"
                 width={128}
                 height={128}

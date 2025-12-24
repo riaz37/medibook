@@ -13,8 +13,7 @@ import { useAppointmentBookingStore } from "@/lib/stores/appointment-booking.sto
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useRole } from "@/lib/hooks/use-role";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useRole } from "@/hooks/use-auth";
 import { showError, handleApiError, toastMessages } from "@/lib/utils/toast";
 
 function BookAppointmentPage() {

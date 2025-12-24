@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import DashboardHero from "@/components/patient/dashboard/DashboardHero";
@@ -15,13 +15,13 @@ import { getUserRoleFromSession } from "@/lib/server/rbac";
  * - Middleware already handles authentication
  */
 async function DashboardPage() {
-  const { userId } = await auth();
+  const user = await getCurrentUser();
 
-  if (!userId) {
+  if (!user) {
     redirect("/");
   }
 
-  // Get role from session claims with database fallback
+  // Get role from session with database as source of truth
   const role = await getUserRoleFromSession();
 
   // Redirect doctors and admins to their respective dashboards

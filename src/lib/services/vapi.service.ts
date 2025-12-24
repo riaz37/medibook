@@ -82,20 +82,14 @@ class VapiService extends BaseService {
       }
 
       // Create new user (they'll need to complete registration later)
-      // Note: We can't create a Clerk user here, so we'll create a DB user
-      // that can be linked to Clerk account later
       const normalizedEmail = email.toLowerCase().trim();
       const normalizedPhone = phoneNumber.replace(/\D/g, "");
       
-      // Generate a temporary clerkId (will be updated when user registers)
-      const tempClerkId = `vapi_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      
       user = await prisma.user.create({
         data: {
-          clerkId: tempClerkId,
           email: normalizedEmail,
           phone: normalizedPhone,
-          role: "PATIENT",
+          userRole: "PATIENT",
         },
       });
 

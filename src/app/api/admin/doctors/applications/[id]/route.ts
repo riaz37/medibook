@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
-import { clerkClient } from "@clerk/nextjs/server";
 import { UserRole } from "@/generated/prisma/client";
 
 /**
@@ -21,7 +20,8 @@ export async function POST(
       return authResult.response;
     }
 
-    const { userId: adminUserId } = authResult;
+    const { context } = authResult;
+    const adminUserId = context.userId;
     const { id: applicationId } = await params;
 
     // Get application
@@ -75,11 +75,17 @@ export async function POST(
     });
 
     if (action === "approve") {
+      // Find Role ID for doctor
+      const doctorRole = await prisma.role.findUnique({
+        where: { name: "doctor" },
+      });
+
       // Update user role to DOCTOR
-      const updatedUser = await prisma.user.update({
+      await prisma.user.update({
         where: { id: application.userId },
         data: {
-          role: UserRole.DOCTOR,
+          userRole: UserRole.DOCTOR,
+          roleId: doctorRole?.id,
         },
       });
 
@@ -101,20 +107,6 @@ export async function POST(
           isVerified: false, // Will need verification documents
         },
       });
-
-      // Update Clerk metadata with role
-      try {
-        const client = await clerkClient();
-        await client.users.updateUserMetadata(application.user.clerkId, {
-          publicMetadata: {
-            role: "doctor",
-            doctorId: doctor.id,
-          },
-        });
-      } catch (error) {
-        console.error("Error updating Clerk metadata:", error);
-        // Continue even if metadata update fails
-      }
 
       // Log role change
       await prisma.roleChangeAudit.create({

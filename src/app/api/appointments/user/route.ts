@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { appointmentsServerService, usersServerService } from "@/lib/services/server";
 
 function transformAppointment(appointment: any) {
@@ -38,8 +37,8 @@ export async function GET(request: NextRequest) {
       }
       
       const { context } = authResult;
-      // Get DB user ID from Clerk user ID
-      user = await usersServerService.findUniqueByClerkId(context.clerkUserId);
+      // Get user from context (database is the source of truth)
+      user = await usersServerService.findUnique(context.userId);
       if (!user) {
         return NextResponse.json(
           { error: "User not found. Please ensure your account is properly set up." },

@@ -30,18 +30,7 @@ export async function POST(
       );
     }
 
-    // Get doctor ID from DB
-    const dbUser = await prisma.user.findUnique({
-      where: { clerkId: context.userId },
-      select: { id: true },
-    });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
-    }
+    // Use userId from context directly
 
     const body = await request.json();
 
@@ -93,7 +82,7 @@ export async function POST(
       where: { id: refill.id },
       data: {
         status: status as "APPROVED" | "REJECTED",
-        approvedBy: dbUser.id,
+        approvedBy: context.userId,
         approvedAt: new Date(),
         notes: notes || null,
       },

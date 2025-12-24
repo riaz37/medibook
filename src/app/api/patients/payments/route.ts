@@ -22,23 +22,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { clerkId: context.clerkUserId },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
-    }
+    // Use userId from context (database is source of truth)
 
     // Get payments for this patient's appointments
     const payments = await prisma.appointmentPayment.findMany({
       where: {
         appointment: {
-          userId: user.id,
+          userId: context.userId,
         },
       },
       include: {

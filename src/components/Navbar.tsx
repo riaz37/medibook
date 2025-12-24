@@ -1,7 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { useRole } from "@/lib/hooks/use-role";
+import { useUser, useRole } from "@/hooks/use-auth";
 import { PatientNavbar } from "./navbar/PatientNavbar";
 import { DoctorNavbar } from "./navbar/DoctorNavbar";
 import { AdminNavbar } from "./navbar/AdminNavbar";

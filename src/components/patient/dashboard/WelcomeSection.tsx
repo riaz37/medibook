@@ -1,9 +1,8 @@
 import Image from "next/image";
-
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function WelcomeSection() {
-  const user = await currentUser();
+  const user = await getCurrentUser();
 
   return (
     <div className="relative z-10 flex items-center justify-between bg-gradient-to-br from-primary/10 via-primary/5 to-background rounded-3xl p-8 border border-primary/20 mb-12 overflow-hidden">

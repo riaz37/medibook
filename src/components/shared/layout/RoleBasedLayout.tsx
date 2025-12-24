@@ -1,7 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { useRole } from "@/lib/hooks/use-role";
+import { useUser, useRole } from "@/hooks/use-auth";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import Navbar from "@/components/Navbar";
 
@@ -14,7 +13,7 @@ interface RoleBasedLayoutProps {
  * Role-Based Layout Wrapper
  * Automatically selects the appropriate layout based on user role
  * Falls back to generic Navbar if role is not determined
- * Uses Clerk session claims (via useRole hook) - UserSync handles DB sync globally
+ * Uses custom auth session - database is the source of truth
  */
 export function RoleBasedLayout({ children, role: propRole }: RoleBasedLayoutProps) {
   const { isLoaded } = useUser();

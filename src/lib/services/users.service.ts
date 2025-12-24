@@ -1,7 +1,6 @@
 /**
  * Users Service
  * Handles all user-related business logic
- * Note: Server-side sync should use syncUserDirect from @/lib/server/users
  */
 
 import { apiClient } from "./api-client.service";
@@ -9,26 +8,6 @@ import { BaseService, ApiException } from "./base.service";
 import type { User } from "@/lib/types";
 
 class UsersService extends BaseService {
-  /**
-   * Sync user from Clerk to database
-   * Server-side only - uses direct database access via syncUserDirect
-   * For client-side, use syncUserClient()
-   */
-  async syncUser(): Promise<User | null> {
-    return this.syncUserClient();
-  }
-
-  /**
-   * Sync user from client-side
-   */
-  async syncUserClient(): Promise<User | null> {
-    try {
-      return (await apiClient.syncUser()) as User;
-    } catch (error) {
-      console.error("Error syncing user:", error);
-      return null;
-    }
-  }
 
   /**
    * Get current user from auth (server-side)

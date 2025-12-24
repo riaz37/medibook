@@ -142,7 +142,6 @@ export interface UpdateDoctorInput extends Partial<CreateDoctorInput> {
 
 export interface User {
   id: string;
-  clerkId: string;
   email: string;
   firstName?: string | null;
   lastName?: string | null;
@@ -154,11 +153,11 @@ export interface User {
 
 export interface AuthUser {
   id: string;
-  clerkId: string;
   email: string;
   firstName?: string | null;
   lastName?: string | null;
   phone?: string | null;
+  role?: string;
 }
 
 // ============================================================================

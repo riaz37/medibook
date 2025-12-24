@@ -1,13 +1,13 @@
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AdminDashboardLayout } from "@/components/admin/layout/AdminDashboardLayout";
 import AdminAnalyticsClient from "./AdminAnalyticsClient";
 import { getUserRoleFromSession } from "@/lib/server/rbac";
 
 async function AdminAnalyticsPage() {
-  const { userId } = await auth();
+  const user = await getCurrentUser();
 
-  if (!userId) {
+  if (!user) {
     redirect("/");
   }
 

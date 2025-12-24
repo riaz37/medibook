@@ -16,22 +16,13 @@ export async function GET(request: NextRequest) {
     const { context } = authResult;
     const { searchParams } = new URL(request.url);
 
-    // Get patient ID from DB user
-    const dbUser = await usersServerService.findUniqueByClerkId(context.userId);
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
-    }
-
     // Query parameters
     const status = searchParams.get("status");
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    // Get prescriptions using service
-    const { prescriptions, total } = await prescriptionsServerService.getByPatient(dbUser.id, {
+    // Get prescriptions using service (userId from context is the DB user ID)
+    const { prescriptions, total } = await prescriptionsServerService.getByPatient(context.userId, {
       status: status as any,
       limit,
       offset,

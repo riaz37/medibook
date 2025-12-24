@@ -7,8 +7,8 @@
 Highlights:
 
 - 🏠 Modern Landing Page with gradients & images
-- 🔐 Authentication via Clerk (Google, GitHub, Email & Password)
-- 🔑 Email Verification (6-digit code)
+- 🔐 Custom Authentication with JWT Sessions (Email & Password)
+- 🔒 Secure Password Hashing with bcrypt
 - 📅 Doctor Appointment Booking System
 - 🦷 3-Step Booking Flow (Doctor → Service & Time → Confirm)
 - 📩 Email Notifications for Doctor Appointments (Nodemailer)
@@ -27,10 +27,10 @@ Highlights:
 ## 🧪 .env Setup
 
 ```bash
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
-
 DATABASE_URL=your_postgres_database_url
+
+# JWT Secret for session tokens
+JWT_SECRET=your_secure_jwt_secret_key
 
 NEXT_PUBLIC_VAPI_ASSISTANT_ID=your_vapi_assistant_id
 NEXT_PUBLIC_VAPI_API_KEY=your_vapi_api_key

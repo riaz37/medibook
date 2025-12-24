@@ -7,7 +7,7 @@ import { UserRole } from "@/generated/prisma/client";
 import { ApplicationStatus } from "@/generated/prisma/client";
 
 /**
- * Role type matching Prisma UserRole enum (lowercase for Clerk metadata)
+ * Role type matching Prisma UserRole enum (lowercase)
  */
 export type Role = "patient" | "doctor" | "admin";
 
