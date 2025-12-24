@@ -157,7 +157,7 @@
 // - time: Time in HH:MM format using 24-hour time (e.g., 14:30 for 2:30 PM)
 // - appointmentType: One of "checkup", "cleaning", "consultation", or "emergency"
 // - reason: Optional description of the appointment reason
-// - clerkId: The user's Clerk authentication ID (will be automatically passed from call context)
+// - userId: The user's authentication ID (will be automatically passed from call context)
 
 // The function will:
 // - Validate the appointment details

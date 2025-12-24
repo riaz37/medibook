@@ -1,28 +1,27 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import DashboardHero from "@/components/patient/dashboard/DashboardHero";
 import StatsGrid from "@/components/patient/dashboard/StatsGrid";
 import MainActions from "@/components/patient/dashboard/MainActions";
 import NextAppointment from "@/components/patient/dashboard/NextAppointment";
-import { getUserRoleFromSession } from "@/lib/server/rbac";
+import { getCurrentUser } from "@/lib/auth";
 
 /**
  * Patient Dashboard
  * 
  * Optimized for scalability:
- * - Uses getUserRoleFromSession() which has database fallback
+ * - Uses custom authentication with database
  * - Middleware already handles authentication
  */
 async function DashboardPage() {
-  const { userId } = await auth();
+  const user = await getCurrentUser();
 
-  if (!userId) {
-    redirect("/");
+  if (!user) {
+    redirect("/sign-in");
   }
 
-  // Get role from session claims with database fallback
-  const role = await getUserRoleFromSession();
+  // Get role from user
+  const role = user.role?.name || user.userRole.toLowerCase();
 
   // Redirect doctors and admins to their respective dashboards
   if (role === "doctor") {

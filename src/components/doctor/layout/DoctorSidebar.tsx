@@ -23,7 +23,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { UserButton } from "@/components/shared/UserButton";
 import Image from "next/image";
 
 const menuItems = [
@@ -92,7 +93,7 @@ const menuItems = [
 
 export function DoctorSidebar() {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user } = useCurrentUser();
 
   return (
     <Sidebar variant="inset" collapsible="icon">

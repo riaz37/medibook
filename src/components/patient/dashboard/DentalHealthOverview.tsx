@@ -1,10 +1,10 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrainIcon, HeartIcon, ShieldIcon, SparklesIcon } from "lucide-react";
 import { format } from "date-fns";
+import { getCurrentUser } from "@/lib/auth";
 
 async function DentalHealthOverview() {
-  const user = await currentUser();
+  const user = await getCurrentUser();
 
   return (
     <Card className="lg:col-span-2">
@@ -20,7 +20,7 @@ async function DentalHealthOverview() {
           {/* Member Since */}
           <div className="text-center p-4 bg-gradient-to-br from-primary/5 to-muted/30 rounded-xl border border-primary/20">
             <div className="text-2xl font-bold text-primary mb-1">
-              {format(new Date(user?.createdAt!), "MMM yyyy")}
+              {format(new Date(user?.createdAt || new Date()), "MMM yyyy")}
             </div>
             <div className="text-sm text-muted-foreground">Member Since</div>
           </div>

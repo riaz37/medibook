@@ -1,13 +1,13 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { useRole } from "@/lib/hooks/use-role";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useRole } from "@/hooks/use-role";
 import { PatientNavbar } from "./navbar/PatientNavbar";
 import { DoctorNavbar } from "./navbar/DoctorNavbar";
 import { AdminNavbar } from "./navbar/AdminNavbar";
 
 function Navbar() {
-  const { isLoaded } = useUser();
+  const { isLoaded } = useCurrentUser();
   const role = useRole();
 
   // Show appropriate navbar based on role

@@ -1,37 +1,32 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
 async function DoctorSetupPage() {
-  const user = await currentUser();
+  const user = await getCurrentUser();
   
   if (!user) {
-    redirect("/");
+    redirect("/sign-in");
   }
 
-  // Get user from database
-  const dbUser = await prisma.user.findUnique({
-    where: { clerkId: user.id },
-    include: { doctorProfile: true },
-  });
-
-  if (!dbUser || dbUser.role !== "DOCTOR") {
+  // Check if user is a doctor
+  if (user.userRole !== "DOCTOR") {
     redirect("/");
   }
 
   // Get or create doctor profile
-  let doctor = dbUser.doctorProfile;
+  let doctor = user.doctorProfile;
   if (!doctor) {
     // Create basic doctor profile
     doctor = await prisma.doctor.create({
       data: {
-        userId: dbUser.id,
-        name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.emailAddresses[0]?.emailAddress || "Doctor",
-        email: user.emailAddresses[0]?.emailAddress || "",
-        phone: user.phoneNumbers[0]?.phoneNumber || "",
+        userId: user.id,
+        name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || "Doctor",
+        email: user.email || "",
+        phone: user.phone || "",
         speciality: "",
         gender: "MALE", // Default, will be updated
-        imageUrl: user.imageUrl || "",
+        imageUrl: "/placeholder-doctor.png",
       },
     });
   }

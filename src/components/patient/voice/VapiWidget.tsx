@@ -1,7 +1,7 @@
 "use client";
 
 import { vapi } from "@/lib/vapi";
-import { useUser } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import Image from "next/image";
@@ -14,7 +14,7 @@ function VapiWidget() {
   const [messages, setMessages] = useState<any[]>([]);
   const [callEnded, setCallEnded] = useState(false);
 
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useCurrentUser();
   const messageContainerRef = useRef<HTMLDivElement>(null);
 
   // auto-scroll for messages
@@ -95,8 +95,8 @@ function VapiWidget() {
         setMessages([]);
         setCallEnded(false);
 
-        // Pass user context (clerkId) and current date to VAPI via call variables
-        // This will be available in the backend as body.call?.variables?.clerkId
+        // Pass user context (userId) and current date to VAPI via call variables
+        // This will be available in the backend as body.call?.variables?.userId
         const now = new Date();
         const todayISO = now.toISOString().split('T')[0]; // YYYY-MM-DD format
         const todayFormatted = now.toLocaleDateString('en-US', { 
@@ -110,16 +110,16 @@ function VapiWidget() {
           assistantId: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
         };
         
-        // Pass clerkId and current date as variables
+        // Pass userId and current date as variables
         callConfig.variables = {
           currentDate: todayISO,
           currentDateFormatted: todayFormatted,
           currentYear: now.getFullYear().toString(),
         };
         
-        // If user is logged in, add clerkId
+        // If user is logged in, add userId
         if (user?.id) {
-          callConfig.variables.clerkId = user.id;
+          callConfig.variables.userId = user.id;
         }
         
         await vapi.start(callConfig);
@@ -228,18 +228,16 @@ function VapiWidget() {
           <div className="aspect-video flex flex-col items-center justify-center p-6 relative">
             {/* User Image */}
             <div className="relative size-32 mb-4">
-              <Image
-                src={user?.imageUrl!}
-                alt="User"
-                width={128}
-                height={128}
-                className="size-full object-cover rounded-full"
-              />
+              <div className="size-full rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-4xl font-bold text-primary">
+                  {user?.firstName?.[0] || "U"}
+                </span>
+              </div>
             </div>
 
             <h2 className="text-xl font-bold text-foreground">You</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {user ? (user.firstName + " " + (user.lastName || "")).trim() : "Guest"}
+              {user ? `${user.firstName} ${user.lastName || ""}`.trim() : "Guest"}
             </p>
 
             {/* User Ready Text */}

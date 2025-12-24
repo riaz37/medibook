@@ -1,6 +1,5 @@
 "use client";
 
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "../ui/button";
@@ -73,11 +72,11 @@ function Header() {
 
         <div className="flex items-center gap-3">
           <AnimatedThemeToggler className="h-9 w-9" />
-          <SignInButton mode="modal">
+          <Link href="/sign-in">
             <Button variant="ghost" size="sm" className="hidden sm:flex">
               Login
             </Button>
-          </SignInButton>
+          </Link>
           <Link href="/sign-up">
             <Button size="sm" className="bg-primary hover:bg-primary/90">
               Get Started
@@ -122,11 +121,11 @@ function Header() {
               Features
             </button>
             <div className="pt-3 border-t border-border/50 flex flex-col gap-2">
-              <SignInButton mode="modal">
+              <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="ghost" size="sm" className="w-full justify-start">
                   Login
                 </Button>
-              </SignInButton>
+              </Link>
               <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
                 <Button size="sm" className="w-full bg-primary hover:bg-primary/90">
                   Get Started

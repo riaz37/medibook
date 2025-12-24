@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/server/rbac";
 import type { DoctorApplicationData } from "@/lib/types/rbac";
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Get user from database
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { id: userId },
       include: {
         doctorApplication: true,
         doctorProfile: true,
@@ -40,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is already a doctor
-    if (dbUser.role === "DOCTOR" || dbUser.doctorProfile) {
+    if (dbUser.userRole === "DOCTOR" || dbUser.doctorProfile) {
       return NextResponse.json(
         { error: "You are already a doctor on the platform" },
         { status: 400 }
