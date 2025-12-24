@@ -5,6 +5,7 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/server/rbac";
 import { getCurrentUser } from "@/lib/auth";
+import { format } from "date-fns";
 
 export default async function DoctorDashboardHero() {
   const user = await getCurrentUser();
@@ -41,55 +42,50 @@ export default async function DoctorDashboardHero() {
     return "Good evening";
   };
 
+  const today = new Date();
+  const dayOfWeek = format(today, "EEEE");
+  const dateStr = format(today, "MMMM d, yyyy");
+
   return (
-    <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between bg-gradient-to-br from-primary/10 via-primary/5 to-background rounded-3xl p-6 md:p-8 border border-primary/20 mb-8 overflow-hidden">
-      <div className="space-y-4 flex-1">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 w-fit">
-          {isVerified ? (
-            <>
-              <CheckCircle2 className="size-3 text-primary" />
-              <span className="text-sm font-medium text-primary">
-                Verified Doctor
-              </span>
-            </>
-          ) : (
-            <>
-              <Clock className="size-3 text-yellow-600" />
-              <span className="text-sm font-medium text-yellow-600">
-                Verification Pending
-              </span>
-            </>
-          )}
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+      <div className="space-y-3 flex-1">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 w-fit">
+            {isVerified ? (
+              <>
+                <CheckCircle2 className="size-3 text-primary" />
+                <span className="text-sm font-medium text-primary">
+                  Verified Doctor
+                </span>
+              </>
+            ) : (
+              <>
+                <Clock className="size-3 text-yellow-600" />
+                <span className="text-sm font-medium text-yellow-600">
+                  Verification Pending
+                </span>
+              </>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {dayOfWeek}, {dateStr}
+          </div>
         </div>
 
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold">
             {getGreeting()}, {doctor?.name || user?.firstName}!
           </h1>
-          <p className="text-muted-foreground text-sm md:text-base">
-            Manage your appointments, patients, and practice settings. Stay on
-            top of your schedule and provide the best care.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-3 mt-4">
-          <Link href="/doctor/appointments">
-            <Button size="lg" variant="default">
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              View Appointments
-            </Button>
-          </Link>
         </div>
       </div>
 
-      <div className="hidden lg:flex items-center justify-center size-24 md:size-32 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full mt-4 md:mt-0 md:ml-8">
-        <Image
-          src="/logo.png"
-          alt="Medibook"
-          width={64}
-          height={64}
-          className="w-16 h-16"
-        />
+      <div className="mt-4 md:mt-0">
+        <Link href="/doctor/appointments">
+          <Button size="lg" variant="default">
+            <CalendarIcon className="w-4 h-4 mr-2" />
+            View Today's Schedule
+          </Button>
+        </Link>
       </div>
     </div>
   );

@@ -68,8 +68,14 @@ export function useMedicalRecords(
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch medical records");
+        const errorData = await response.json();
+        const errorMessage = errorData.error || errorData.message || "Failed to fetch medical records";
+        // Format validation errors if present
+        if (errorData.details && errorData.details.length > 0) {
+          const detailMessages = errorData.details.map((d: { field: string; message: string }) => d.message).join(", ");
+          throw new Error(`${errorMessage}. ${detailMessages}`);
+        }
+        throw new Error(errorMessage);
       }
 
       return response.json();
@@ -86,8 +92,14 @@ export function useHealthProfile(patientId: string) {
       const response = await fetch(`/api/patients/${patientId}/health-profile`);
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch health profile");
+        const errorData = await response.json();
+        const errorMessage = errorData.error || errorData.message || "Failed to fetch health profile";
+        // Format validation errors if present
+        if (errorData.details && errorData.details.length > 0) {
+          const detailMessages = errorData.details.map((d: { field: string; message: string }) => d.message).join(", ");
+          throw new Error(`${errorMessage}. ${detailMessages}`);
+        }
+        throw new Error(errorMessage);
       }
 
       return response.json();

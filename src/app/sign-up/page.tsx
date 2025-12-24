@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,45 +9,91 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
+import { Eye, EyeOff, Stethoscope, User } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 const signUpSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  role: z.enum(["patient", "doctor"], {
-    message: "Please select a role",
-  }),
+  role: z.enum(["patient", "doctor"]),
+  // Doctor-specific fields (optional, but required if role is doctor)
+  speciality: z.string().optional(),
+  licenseNumber: z.string().optional(),
+  yearsOfExperience: z.number().optional(),
+  bio: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+}).refine((data) => {
+  if (data.role === "doctor") {
+    return data.speciality && data.speciality.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Speciality is required for doctors",
+  path: ["speciality"],
 });
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
 export default function SignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Get role from URL query parameter
+  const roleFromUrl = searchParams.get("role") as "patient" | "doctor" | null;
+  const defaultRole = roleFromUrl === "doctor" ? "doctor" : "patient";
+
+  // Redirect to role selection if no role is provided
+  useEffect(() => {
+    if (!roleFromUrl) {
+      router.push("/sign-up/select-role");
+    }
+  }, [roleFromUrl, router]);
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
       firstName: "",
       lastName: "",
-      role: "patient",
+      role: defaultRole,
+      speciality: "",
+      licenseNumber: "",
+      yearsOfExperience: undefined,
+      bio: "",
     },
   });
+
+  const selectedRole = form.watch("role");
+
+  // Update role when URL changes
+  useEffect(() => {
+    if (roleFromUrl && roleFromUrl !== selectedRole) {
+      form.setValue("role", roleFromUrl);
+    }
+  }, [roleFromUrl, form, selectedRole]);
 
   const onSubmit = async (data: SignUpFormData) => {
     try {
       setIsLoading(true);
+      // Remove confirmPassword before sending to API
+      const { confirmPassword, ...signUpData } = data;
       const response = await fetch("/api/auth/sign-up", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(signUpData),
       });
 
       const result = await response.json();
@@ -57,14 +103,8 @@ export default function SignUpPage() {
         return;
       }
 
-      toast.success("Account created successfully");
-      
-      // Redirect based on role
-      if (result.user?.role === "doctor") {
-        router.push("/doctor/dashboard");
-      } else {
-        router.push("/patient/dashboard");
-      }
+      // Redirect to verify-email page with sent=true parameter
+      router.push("/verify-email?sent=true");
       router.refresh();
     } catch (error) {
       toast.error("An error occurred. Please try again.");
@@ -81,7 +121,11 @@ export default function SignUpPage() {
             <Image src="/logo.png" alt="Medibook" width={48} height={48} />
           </div>
           <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>Get started with Medibook today</CardDescription>
+          <CardDescription>
+            {selectedRole === "doctor" 
+              ? "Join as a healthcare professional" 
+              : "Get started with Medibook today"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -147,12 +191,28 @@ export default function SignUpPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Minimum 8 characters"
-                        type="password"
-                        disabled={isLoading}
-                        {...field}
-                      />
+                      <div className="relative">
+                        <Input
+                          placeholder="Minimum 8 characters"
+                          type={showPassword ? "text" : "password"}
+                          disabled={isLoading}
+                          {...field}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={isLoading}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -160,25 +220,147 @@ export default function SignUpPage() {
               />
               <FormField
                 control={form.control}
-                name="role"
+                name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>I am a</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="patient">Patient</SelectItem>
-                        <SelectItem value="doctor">Doctor</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          placeholder="Confirm your password"
+                          type={showConfirmPassword ? "text" : "password"}
+                          disabled={isLoading}
+                          {...field}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          disabled={isLoading}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              {/* Role is pre-selected from URL, show as read-only info */}
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Account Type</FormLabel>
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div className="flex items-center gap-2">
+                        {field.value === "doctor" ? (
+                          <>
+                            <Stethoscope className="h-5 w-5 text-primary" />
+                            <span className="font-medium">Signing up as Doctor</span>
+                          </>
+                        ) : (
+                          <>
+                            <User className="h-5 w-5 text-primary" />
+                            <span className="font-medium">Signing up as Patient</span>
+                          </>
+                        )}
+                      </div>
+                      <Link 
+                        href="/sign-up/select-role" 
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Change
+                      </Link>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {selectedRole === "doctor" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="speciality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Speciality *</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., Cardiology, Pediatrics, General Practice"
+                            disabled={isLoading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="licenseNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>License Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Your medical license number (optional)"
+                            disabled={isLoading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="yearsOfExperience"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Years of Experience</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="Number of years"
+                            disabled={isLoading}
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bio</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Tell us about your medical background and experience..."
+                            rows={4}
+                            disabled={isLoading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating account..." : "Sign up"}
               </Button>

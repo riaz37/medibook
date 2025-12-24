@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { updateAppointmentTypeSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
+import { requireAuth } from "@/lib/server/rbac";
+import { createForbiddenResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * PUT /api/doctors/[id]/appointment-types/[typeId] - Update appointment type (doctor only)
@@ -15,7 +17,6 @@ export async function PUT(
     // Await params (Next.js 15 requirement)
     const { id, typeId } = await params;
     
-    const { requireAuth } = await import("@/lib/server/rbac");
     const authResult = await requireAuth();
     if ("response" in authResult) {
       return authResult.response;
@@ -24,10 +25,7 @@ export async function PUT(
     const { context } = authResult;
 
     if (context.role !== "admin" && context.doctorId !== id) {
-      return NextResponse.json(
-        { error: "Forbidden: You can only update appointment types for your own profile" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("You can only update appointment types for your own profile");
     }
 
     const body = await request.json();
@@ -53,11 +51,8 @@ export async function PUT(
 
     return NextResponse.json(type);
   } catch (error) {
-    console.error("Error updating appointment type:", error);
-    return NextResponse.json(
-      { error: "Failed to update appointment type" },
-      { status: 500 }
-    );
+    console.error("[PUT /api/doctors/[id]/appointment-types/[typeId]] Error:", error);
+    return createServerErrorResponse("Failed to update appointment type");
   }
 }
 
@@ -72,7 +67,6 @@ export async function DELETE(
     // Await params (Next.js 15 requirement)
     const { id, typeId } = await params;
     
-    const { requireAuth } = await import("@/lib/server/rbac");
     const authResult = await requireAuth();
     if ("response" in authResult) {
       return authResult.response;
@@ -81,20 +75,14 @@ export async function DELETE(
     const { context } = authResult;
 
     if (context.role !== "admin" && context.doctorId !== id) {
-      return NextResponse.json(
-        { error: "Forbidden: You can only delete appointment types for your own profile" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("You can only delete appointment types for your own profile");
     }
 
     await doctorsConfigService.deleteAppointmentType(typeId, id);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting appointment type:", error);
-    return NextResponse.json(
-      { error: "Failed to delete appointment type" },
-      { status: 500 }
-    );
+    console.error("[DELETE /api/doctors/[id]/appointment-types/[typeId]] Error:", error);
+    return createServerErrorResponse("Failed to delete appointment type");
   }
 }
 

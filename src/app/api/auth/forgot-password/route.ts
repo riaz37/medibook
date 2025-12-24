@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { z } from "zod";
 import crypto from "crypto";
 import { emailService } from "@/lib/services/email.service";
+import { createErrorResponse, createValidationErrorResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email(),
@@ -14,10 +15,11 @@ export async function POST(req: Request) {
     const result = forgotPasswordSchema.safeParse(body);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid email address" },
-        { status: 400 }
-      );
+      const details = result.error.issues.map((issue) => ({
+        field: issue.path.join("."),
+        message: issue.message,
+      }));
+      return createValidationErrorResponse(details);
     }
 
     const { email } = result.data;
@@ -67,9 +69,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Forgot password error:", error);
-    return NextResponse.json(
-      { error: "An error occurred. Please try again later." },
-      { status: 500 }
-    );
+    return createServerErrorResponse("Failed to process password reset request");
   }
 }

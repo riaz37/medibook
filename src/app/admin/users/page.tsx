@@ -11,7 +11,7 @@ import { requireRole } from "@/lib/server/rbac";
 async function AdminUsersPage() {
   const authResult = await requireRole("admin");
   if ("response" in authResult) {
-    redirect("/");
+    redirect("/sign-in");
   }
 
   return (

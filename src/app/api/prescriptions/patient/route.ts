@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prescriptionsServerService, usersServerService } from "@/lib/services/server";
 import { requireAnyRole } from "@/lib/server/rbac";
+import { createNotFoundResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * GET /api/prescriptions/patient - List patient's prescriptions
@@ -19,10 +20,7 @@ export async function GET(request: NextRequest) {
     // Get patient ID from DB user
     const dbUser = await usersServerService.findUniqueByClerkId(context.userId);
     if (!dbUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("User");
     }
 
     // Query parameters
@@ -70,11 +68,8 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    console.error("Error fetching patient prescriptions:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch prescriptions" },
-      { status: 500 }
-    );
+    console.error("[GET /api/prescriptions/patient] Error:", error);
+    return createServerErrorResponse("Failed to fetch prescriptions");
   }
 }
 

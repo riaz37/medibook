@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireRole } from "@/lib/server/rbac";
+import { createServerErrorResponse, createUnauthorizedResponse } from "@/lib/utils/api-response";
 
 /**
  * GET /api/admin/doctors/verification - Get all pending verifications (admin only)
  */
 export async function GET(request: NextRequest) {
   try {
-    const { requireRole } = await import("@/lib/server/rbac");
     const authResult = await requireRole("admin");
     if ("response" in authResult) {
       return authResult.response;
@@ -40,11 +41,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(verifications);
   } catch (error) {
-    console.error("Error fetching verifications:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch verifications" },
-      { status: 500 }
-    );
+    console.error("[GET /api/admin/doctors/verification] Error:", error);
+    return createServerErrorResponse("Failed to fetch verifications");
   }
 }
 

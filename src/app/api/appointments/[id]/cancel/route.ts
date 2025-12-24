@@ -3,6 +3,7 @@ import { refundService } from "@/lib/services/refund.service";
 import { appointmentsServerService } from "@/lib/services/server";
 import { requireAuth } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
+import { createErrorResponse, createNotFoundResponse, createForbiddenResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * POST /api/appointments/[id]/cancel
@@ -32,27 +33,19 @@ export async function POST(
     });
 
     if (!appointment) {
-      return NextResponse.json(
-        { error: "Appointment not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("Appointment");
     }
 
     // Check authorization
     if (context.role === "patient") {
       if (appointment.userId !== context.userId) {
-        return NextResponse.json(
-          { error: "Forbidden" },
-          { status: 403 }
-        );
+        return createForbiddenResponse("You can only cancel your own appointments");
       }
     }
 
+    // Only verified doctors can cancel appointments (not doctor_pending)
     if (context.role === "doctor" && appointment.doctorId !== context.doctorId) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("You can only cancel appointments for your own patients");
     }
 
     // Process refund if payment exists
@@ -79,9 +72,6 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error cancelling appointment:", error);
-    return NextResponse.json(
-      { error: "Failed to cancel appointment" },
-      { status: 500 }
-    );
+    return createServerErrorResponse("Failed to cancel appointment");
   }
 }

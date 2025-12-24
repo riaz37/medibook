@@ -24,12 +24,9 @@ model User {
   emailVerified Boolean @default(false)
   emailVerifiedAt DateTime?
   
-  // Custom RBAC
-  roleId       String?
-  role         Role?    @relation(fields: [roleId], references: [id])
-  
-  // Legacy role enum (kept for backward compatibility during migration)
-  userRole     UserRole @default(PATIENT) @map("role")
+  // RBAC - Role-based access control
+  roleId       String
+  role         Role     @relation(fields: [roleId], references: [id])
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -40,7 +37,6 @@ model User {
   doctorProfile Doctor?
   prescriptions Prescription[]
   doctorApplication DoctorApplication?
-  roleChanges   RoleChangeAudit[]
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
   refreshTokens RefreshToken[]
@@ -257,12 +253,6 @@ enum AppointmentStatus {
   CONFIRMED // Confirmed by doctor
   COMPLETED // Appointment completed
   CANCELLED // Cancelled by patient or doctor
-}
-
-enum UserRole {
-  PATIENT
-  DOCTOR
-  ADMIN
 }
 
 enum ApplicationStatus {
@@ -606,22 +596,6 @@ model DoctorApplication {
   
   @@index([status, submittedAt])
   @@map("doctor_applications")
-}
-
-// Role Change Audit Trail
-model RoleChangeAudit {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  oldRole     UserRole
-  newRole     UserRole
-  changedBy   String   // Admin user ID who made the change
-  reason      String?
-  changedAt   DateTime @default(now())
-  
-  @@index([userId, changedAt])
-  @@map("role_change_audits")
 }
 
 // Password Reset Token

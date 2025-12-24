@@ -36,7 +36,7 @@ function CTA() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Link href="/sign-up">
+              <Link href="/sign-up/select-role">
                 <Button
                   size="lg"
                   className="px-6 py-3 font-semibold bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary/85 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
@@ -45,7 +45,7 @@ function CTA() {
                   Get Started
                 </Button>
               </Link>
-              <Link href="/sign-up">
+              <Link href="/sign-up/select-role">
                 <Button
                   size="lg"
                   variant="outline"

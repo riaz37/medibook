@@ -53,14 +53,14 @@ function Hero() {
 
               {/* CTA BUTTONS */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/sign-up">
+                <Link href="/sign-up/select-role">
                   <Button size={"lg"}>
                     <MicIcon className="mr-2 size-5" />
                     Get Started
                   </Button>
                 </Link>
 
-                <Link href="/sign-up">
+                <Link href="/sign-up/select-role">
                   <Button size={"lg"} variant={"outline"}>
                     <CalendarIcon className="mr-2 size-5" />
                     Book appointment

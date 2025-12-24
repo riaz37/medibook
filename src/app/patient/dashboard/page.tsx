@@ -2,9 +2,10 @@ import { redirect } from "next/navigation";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import DashboardHero from "@/components/patient/dashboard/DashboardHero";
 import StatsGrid from "@/components/patient/dashboard/StatsGrid";
-import MainActions from "@/components/patient/dashboard/MainActions";
+import QuickActions from "@/components/patient/dashboard/QuickActions";
 import NextAppointment from "@/components/patient/dashboard/NextAppointment";
 import { getCurrentUser } from "@/lib/auth";
+import { getAuthContext } from "@/lib/server/rbac";
 
 /**
  * Patient Dashboard
@@ -16,30 +17,38 @@ import { getCurrentUser } from "@/lib/auth";
 async function DashboardPage() {
   const user = await getCurrentUser();
 
-  if (!user) {
+  if (!user || !user.role) {
     redirect("/sign-in");
   }
 
-  // Get role from user
-  const role = user.role?.name || user.userRole.toLowerCase();
+  // Check email verification
+  if (!user.emailVerified) {
+    redirect("/verify-email");
+  }
 
-  // Redirect doctors and admins to their respective dashboards
-  if (role === "doctor") {
+  const context = await getAuthContext();
+  
+  // Redirect doctors (pending or verified) and admins to their respective dashboards
+  if (context?.role === "doctor" || context?.role === "doctor_pending") {
     redirect("/doctor/dashboard");
-  } else if (role === "admin") {
+  } else if (context?.role === "admin") {
     redirect("/admin");
   }
 
-  // Patient dashboard
   return (
     <PatientDashboardLayout>
       <div className="max-w-7xl mx-auto w-full">
+        {/* Hero Section - Compact */}
         <DashboardHero />
+
+        {/* Next Appointment - Primary Focus */}
+        <NextAppointment />
+
+        {/* Quick Actions - Essential Only */}
+        <QuickActions />
+
+        {/* Essential Stats - Minimal */}
         <StatsGrid />
-        <MainActions />
-        <div className="grid lg:grid-cols-3 gap-6">
-          <NextAppointment />
-        </div>
       </div>
     </PatientDashboardLayout>
   );

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { appointmentsServerService } from "@/lib/services/server";
+import { appointmentsServerService, usersServerService } from "@/lib/services/server";
 import { bookAppointmentSchema, appointmentQuerySchema } from "@/lib/validations";
 import { validateRequest, validateQuery } from "@/lib/utils/validation";
+import { requireAuth } from "@/lib/server/rbac";
+import { createErrorResponse, createServerErrorResponse, createNotFoundResponse } from "@/lib/utils/api-response";
 import AppointmentConfirmationEmail from "@/components/emails/AppointmentConfirmationEmail";
 import transporter from "@/lib/nodemailer";
 import { render } from "@react-email/render";
@@ -16,14 +18,21 @@ function transformAppointment(appointment: any) {
     patientEmail: appointment.user.email || "",
     doctorName: appointment.doctor.name,
     doctorImageUrl: appointment.doctor.imageUrl || "",
+    doctorSpeciality: appointment.doctor.speciality || null,
     date: appointment.date.toISOString().split("T")[0],
+    price: appointment.payment?.appointmentPrice ? Number(appointment.payment.appointmentPrice) : null,
+    paymentStatus: appointment.payment?.status || null,
+    patientPaid: appointment.payment?.patientPaid || false,
+    refunded: appointment.payment?.refunded || false,
+    hasPrescription: !!appointment.prescription,
+    prescriptionId: appointment.prescription?.id || null,
+    appointmentTypeName: null, // TODO: Fetch separately if needed using appointmentTypeId
   };
 }
 
 // GET /api/appointments - Get appointments (role-based)
 export async function GET(request: NextRequest) {
   try {
-    const { requireAuth } = await import("@/lib/server/rbac");
     const authResult = await requireAuth();
     if ("response" in authResult) {
       return authResult.response;
@@ -67,10 +76,26 @@ export async function GET(request: NextRequest) {
                 email: true,
               },
             },
-            doctor: { select: { name: true, imageUrl: true } },
+            doctor: { select: { name: true, imageUrl: true, speciality: true } },
+            payment: {
+              select: {
+                id: true,
+                appointmentPrice: true,
+                status: true,
+                patientPaid: true,
+                refunded: true,
+                refundAmount: true,
+              },
+            },
+            prescription: {
+              select: {
+                id: true,
+                status: true,
+              },
+            },
           },
         });
-    } else if (context.role === "doctor") {
+    } else if (context.role === "doctor" || context.role === "doctor_pending") {
       // Doctors can see their own appointments
       if (context.doctorId) {
         appointments = await appointmentsServerService.getByDoctor(context.doctorId, {
@@ -84,14 +109,27 @@ export async function GET(request: NextRequest) {
                 email: true,
               },
             },
-            doctor: { select: { name: true, imageUrl: true } },
+            doctor: { select: { name: true, imageUrl: true, speciality: true } },
+            payment: {
+              select: {
+                id: true,
+                appointmentPrice: true,
+                status: true,
+                patientPaid: true,
+                refunded: true,
+                refundAmount: true,
+              },
+            },
+            prescription: {
+              select: {
+                id: true,
+                status: true,
+              },
+            },
           },
         });
       } else {
-        return NextResponse.json(
-          { error: "Doctor profile not found" },
-          { status: 404 }
-        );
+        return createNotFoundResponse("Doctor profile");
       }
     } else if (context.role === "admin") {
       // Admins can see all appointments, optionally filtered by doctorId
@@ -107,25 +145,35 @@ export async function GET(request: NextRequest) {
               email: true,
             },
           },
-          doctor: { select: { name: true, imageUrl: true } },
+          doctor: { select: { name: true, imageUrl: true, speciality: true } },
+          payment: {
+            select: {
+              id: true,
+              appointmentPrice: true,
+              status: true,
+              patientPaid: true,
+              refunded: true,
+              refundAmount: true,
+            },
+          },
+          prescription: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
         },
       });
     } else {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return createErrorResponse("Unauthorized", 401, undefined, "UNAUTHORIZED");
     }
 
     const transformedAppointments = appointments.map(transformAppointment);
 
     return NextResponse.json(transformedAppointments);
   } catch (error) {
-    console.log("Error fetching appointments:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch appointments" },
-      { status: 500 }
-    );
+    console.error("[GET /api/appointments] Error:", error);
+    return createServerErrorResponse("Failed to fetch appointments");
   }
 }
 
@@ -142,32 +190,23 @@ export async function POST(request: NextRequest) {
 
     const { doctorId, date, time, reason, userId, appointmentTypeId } = validation.data;
 
-    // If userId is provided directly (e.g., from VAPI), use it; otherwise get from Clerk auth
+    // If userId is provided directly (e.g., from VAPI), use it; otherwise get from auth
     let user;
     if (userId) {
-      const { usersServerService } = await import("@/lib/services/server");
       user = await usersServerService.findUnique(userId);
       if (!user) {
-        return NextResponse.json(
-          { error: "User not found. Please ensure your account is properly set up." },
-          { status: 404 }
-        );
+        return createNotFoundResponse("User");
       }
     } else {
       // Middleware ensures user is authenticated
-      const { requireAuth } = await import("@/lib/server/rbac");
       const authResult = await requireAuth();
       if ("response" in authResult) {
         return authResult.response;
       }
       const { context } = authResult;
-      const { usersServerService } = await import("@/lib/services/server");
       user = await usersServerService.findUnique(context.userId);
       if (!user) {
-        return NextResponse.json(
-          { error: "User not found. Please ensure your account is properly set up." },
-          { status: 404 }
-        );
+        return createNotFoundResponse("User");
       }
     }
 
@@ -187,7 +226,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         // If model doesn't exist yet, use default
-        console.log("Appointment type model not available yet, using default duration");
+        console.error("[POST /api/appointments] Appointment type model not available yet, using default duration");
       }
     } else {
       // If no appointment type, get default from doctor's availability
@@ -200,7 +239,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         // If model doesn't exist yet, use default
-        console.log("Availability model not available yet, using default duration");
+        console.error("[POST /api/appointments] Availability model not available yet, using default duration");
       }
     }
 
@@ -223,7 +262,7 @@ export async function POST(request: NextRequest) {
           where: { id: appointmentTypeId },
         });
       } catch (error) {
-        console.log("Could not fetch appointment type");
+        console.error("[POST /api/appointments] Could not fetch appointment type");
       }
     }
 
@@ -264,19 +303,16 @@ export async function POST(request: NextRequest) {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log("Confirmation email sent successfully");
+        console.log("[POST /api/appointments] Confirmation email sent successfully");
       } catch (emailError) {
         // Log error but don't fail the booking - email can be retried later
-        console.error("Failed to send confirmation email:", emailError);
+        console.error("[POST /api/appointments] Failed to send confirmation email:", emailError);
       }
     }
 
-    return NextResponse.json(transformAppointment(appointment));
+    return NextResponse.json(transformAppointment(appointment), { status: 201 });
   } catch (error) {
-    console.error("Error booking appointment:", error);
-    return NextResponse.json(
-      { error: "Failed to book appointment. Please try again later." },
-      { status: 500 }
-    );
+    console.error("[POST /api/appointments] Error:", error);
+    return createServerErrorResponse("Failed to book appointment");
   }
 }

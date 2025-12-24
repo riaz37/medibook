@@ -83,7 +83,7 @@ export function AppointmentConfirmationModal({
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3">
-            <Link href="/appointments" className="w-full">
+            <Link href="/patient/appointments" className="w-full">
               <Button className="w-full" onClick={() => onOpenChange(false)}>
                 View My Appointments
               </Button>

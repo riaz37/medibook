@@ -49,7 +49,8 @@ export default function DoctorApplicationForm() {
       toast.info("Your application is under review. You'll be notified once it's processed.");
       
       // Redirect to patient dashboard (they're still a patient until approved)
-      router.push("/dashboard");
+      router.push("/patient/dashboard");
+      router.refresh();
     } catch (error) {
       console.error("Error submitting application:", error);
       toast.error(error instanceof Error ? error.message : "Failed to submit application");

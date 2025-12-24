@@ -94,7 +94,6 @@ class VapiService extends BaseService {
         data: {
           email: normalizedEmail,
           phone: normalizedPhone,
-          userRole: "PATIENT", // Legacy enum
           roleId: patientRole?.id,
         },
       });

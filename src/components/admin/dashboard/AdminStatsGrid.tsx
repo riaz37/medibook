@@ -1,4 +1,4 @@
-import { StatCard } from "@/components/ui/stat-card";
+import { StatCard } from "@/components/shared/cards/StatCard";
 import { Users, UserCheck, Calendar, CheckCircle2 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { unstable_cache } from "next/cache";

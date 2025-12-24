@@ -55,3 +55,36 @@ NEXT_PUBLIC_APP_URL=your_app_url
 1- npm install
 2- npm run dev
 ```
+
+## 👨‍💼 Admin Setup
+
+Admin users cannot sign up through the regular sign-up flow. To create an admin user, use the provided script:
+
+```bash
+npm run create-admin <email> <password> <firstName> <lastName>
+```
+
+**Example:**
+```bash
+npm run create-admin admin@medibook.com SecurePass123! Admin User
+```
+
+**Or using tsx directly:**
+```bash
+npx tsx scripts/create-admin.ts admin@medibook.com SecurePass123! Admin User
+```
+
+**Notes:**
+- Admin users are automatically email-verified
+- The admin role and permissions are created automatically when you run `npm run db:seed`
+- Admin users have full access to all features including:
+  - Managing doctor applications
+  - Approving/rejecting doctors
+  - Managing users
+  - Viewing analytics
+  - Platform settings
+
+**First-time setup:**
+1. Run `npm run db:seed` to create roles and permissions
+2. Run `npm run create-admin` to create your first admin user
+3. Sign in at `/sign-in` with the admin credentials

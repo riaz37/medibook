@@ -3,6 +3,7 @@
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { PatientSidebar } from "./PatientSidebar";
 import { PatientNavbar } from "@/components/navbar/PatientNavbar";
+import { VoiceAssistantWidget } from "@/components/patient/voice/VoiceAssistantWidget";
 
 interface PatientDashboardLayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface PatientDashboardLayoutProps {
 /**
  * Patient Dashboard Layout
  * Provides sidebar navigation and top navbar for patient pages
+ * Includes floating voice assistant widget
  */
 export function PatientDashboardLayout({ children }: PatientDashboardLayoutProps) {
   return (
@@ -22,7 +24,8 @@ export function PatientDashboardLayout({ children }: PatientDashboardLayoutProps
           {children}
         </div>
       </SidebarInset>
+      {/* Floating Voice Assistant Widget */}
+      <VoiceAssistantWidget />
     </SidebarProvider>
   );
 }
-

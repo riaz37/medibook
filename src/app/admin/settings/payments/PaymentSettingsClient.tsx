@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Percent, Save, Loader2 } from "lucide-react";
-import { showSuccess, showError } from "@/lib/utils/toast";
+import { toast } from "sonner";
 
 function PaymentSettingsClient() {
   const queryClient = useQueryClient();
@@ -19,7 +19,9 @@ function PaymentSettingsClient() {
     queryFn: async () => {
       const response = await fetch("/api/admin/settings/commission");
       if (!response.ok) {
-        throw new Error("Failed to fetch commission settings");
+        const errorData = await response.json().catch(() => ({ error: "Failed to fetch commission settings" }));
+        const errorMessage = errorData.error || errorData.message || "Failed to fetch commission settings";
+        throw new Error(errorMessage);
       }
       return response.json();
     },
@@ -41,24 +43,30 @@ function PaymentSettingsClient() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update commission");
+        const errorData = await response.json();
+        const errorMessage = errorData.error || errorData.message || "Failed to update commission";
+        // Format validation errors if present
+        if (errorData.details && errorData.details.length > 0) {
+          const detailMessages = errorData.details.map((d: { field: string; message: string }) => d.message).join(", ");
+          throw new Error(`${errorMessage}. ${detailMessages}`);
+        }
+        throw new Error(errorMessage);
       }
 
       return response.json();
     },
     onSuccess: () => {
-      showSuccess("Commission percentage updated successfully");
+      toast.success("Commission percentage updated successfully");
       queryClient.invalidateQueries({ queryKey: ["commission-settings"] });
     },
     onError: (error: Error) => {
-      showError(error.message || "Failed to update commission percentage");
+      toast.error(error.message || "Failed to update commission percentage");
     },
   });
 
   const handleSave = () => {
     if (commissionPercentage < 1 || commissionPercentage > 10) {
-      showError("Commission percentage must be between 1% and 10%");
+      toast.error("Commission percentage must be between 1% and 10%");
       return;
     }
 
@@ -74,16 +82,15 @@ function PaymentSettingsClient() {
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Payment Settings</h1>
-          <p className="text-muted-foreground mt-2">
-            Configure platform commission and payment settings
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Payment Settings</h1>
+        <p className="text-muted-foreground">
+          Configure platform commission and payment settings
+        </p>
+      </div>
 
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Percent className="w-5 h-5" />
@@ -148,7 +155,6 @@ function PaymentSettingsClient() {
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }

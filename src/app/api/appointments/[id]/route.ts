@@ -3,6 +3,7 @@ import { appointmentsServerService } from "@/lib/services/server";
 import { updateAppointmentStatusSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { requireAppointmentAccess } from "@/lib/server/rbac";
+import { createNotFoundResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 import { AppointmentStatus } from "@/generated/prisma/client";
 
 // GET /api/appointments/[id] - Get appointment by ID
@@ -23,19 +24,13 @@ export async function GET(
     const appointment = await appointmentsServerService.findUniqueWithType(id);
 
     if (!appointment) {
-      return NextResponse.json(
-        { error: "Appointment not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("Appointment");
     }
 
     return NextResponse.json(appointment);
   } catch (error) {
-    console.error("Error fetching appointment:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch appointment" },
-      { status: 500 }
-    );
+    console.error("[GET /api/appointments/[id]] Error:", error);
+    return createServerErrorResponse("Failed to fetch appointment");
   }
 }
 
@@ -72,11 +67,8 @@ export async function PUT(
 
     return NextResponse.json(updatedAppointment);
   } catch (error) {
-    console.error("Error updating appointment:", error);
-    return NextResponse.json(
-      { error: "Failed to update appointment" },
-      { status: 500 }
-    );
+    console.error("[PUT /api/appointments/[id]] Error:", error);
+    return createServerErrorResponse("Failed to update appointment");
   }
 }
 

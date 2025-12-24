@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { createAppointmentTypeSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
+import { requireAuth } from "@/lib/server/rbac";
+import { createNotFoundResponse, createForbiddenResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 // GET /api/doctors/[id]/appointment-types - Get appointment types (public for booking)
 export async function GET(
@@ -20,20 +22,14 @@ export async function GET(
     });
 
     if (!doctor || !doctor.isVerified) {
-      return NextResponse.json(
-        { error: "Doctor not found or not verified" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("Doctor");
     }
 
     const types = await doctorsConfigService.getAppointmentTypes(id);
     return NextResponse.json(types);
   } catch (error) {
-    console.error("Error fetching appointment types:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch appointment types" },
-      { status: 500 }
-    );
+    console.error("[GET /api/doctors/[id]/appointment-types] Error:", error);
+    return createServerErrorResponse("Failed to fetch appointment types");
   }
 }
 
@@ -46,7 +42,6 @@ export async function POST(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
     
-    const { requireAuth } = await import("@/lib/server/rbac");
     const authResult = await requireAuth();
     if ("response" in authResult) {
       return authResult.response;
@@ -55,10 +50,7 @@ export async function POST(
     const { context } = authResult;
 
     if (context.role !== "admin" && context.doctorId !== id) {
-      return NextResponse.json(
-        { error: "Forbidden: You can only create appointment types for your own profile" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("You can only create appointment types for your own profile");
     }
 
     const body = await request.json();
@@ -78,12 +70,9 @@ export async function POST(
 
     const type = await doctorsConfigService.createAppointmentType(id, normalizedData);
 
-    return NextResponse.json(type);
+    return NextResponse.json(type, { status: 201 });
   } catch (error) {
-    console.error("Error creating appointment type:", error);
-    return NextResponse.json(
-      { error: "Failed to create appointment type" },
-      { status: 500 }
-    );
+    console.error("[POST /api/doctors/[id]/appointment-types] Error:", error);
+    return createServerErrorResponse("Failed to create appointment type");
   }
 }

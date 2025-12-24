@@ -3,13 +3,16 @@
  * Centralized types for role-based access control
  */
 
-import { UserRole } from "@/generated/prisma/client";
 import { ApplicationStatus } from "@/generated/prisma/client";
 
 /**
- * Role type matching Prisma UserRole enum (lowercase for Clerk metadata)
+ * Role type matching Prisma Role model
+ * - patient: Regular patients
+ * - doctor_pending: Doctors who signed up but are pending admin approval
+ * - doctor: Verified doctors with full access
+ * - admin: Administrators
  */
-export type Role = "patient" | "doctor" | "admin";
+export type Role = "patient" | "doctor_pending" | "doctor" | "admin";
 
 /**
  * Permission action types

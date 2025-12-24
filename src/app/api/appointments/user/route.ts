@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appointmentsServerService, usersServerService } from "@/lib/services/server";
+import { requireAuth } from "@/lib/server/rbac";
+import { createErrorResponse, createServerErrorResponse, createNotFoundResponse } from "@/lib/utils/api-response";
 
 function transformAppointment(appointment: any) {
   return {
@@ -8,7 +10,14 @@ function transformAppointment(appointment: any) {
     patientEmail: appointment.user.email,
     doctorName: appointment.doctor.name,
     doctorImageUrl: appointment.doctor.imageUrl || "",
+    doctorSpeciality: appointment.doctor.speciality || null,
     date: appointment.date.toISOString().split("T")[0],
+    price: appointment.payment?.appointmentPrice ? Number(appointment.payment.appointmentPrice) : appointment.appointmentType?.price ? Number(appointment.appointmentType.price) : null,
+    paymentStatus: appointment.payment?.status || null,
+    patientPaid: appointment.payment?.patientPaid || false,
+    refunded: appointment.payment?.refunded || false,
+    hasPrescription: !!appointment.prescription,
+    prescriptionId: appointment.prescription?.id || null,
   };
 }
 
@@ -24,13 +33,9 @@ export async function GET(request: NextRequest) {
     if (userId) {
       user = await usersServerService.findUnique(userId);
       if (!user) {
-        return NextResponse.json(
-          { error: "User not found. Please ensure your account is properly set up." },
-          { status: 404 }
-        );
+        return createNotFoundResponse("User");
       }
     } else {
-      const { requireAuth } = await import("@/lib/server/rbac");
       const authResult = await requireAuth();
       if ("response" in authResult) {
         return authResult.response;
@@ -40,17 +45,30 @@ export async function GET(request: NextRequest) {
       // Get user by ID
       user = await usersServerService.findUnique(context.userId);
       if (!user) {
-        return NextResponse.json(
-          { error: "User not found. Please ensure your account is properly set up." },
-          { status: 404 }
-        );
+        return createNotFoundResponse("User");
       }
     }
 
     const appointments = await appointmentsServerService.getByUser(user.id, {
       include: {
         user: { select: { firstName: true, lastName: true, email: true } },
-        doctor: { select: { name: true, imageUrl: true } },
+        doctor: { select: { name: true, imageUrl: true, speciality: true } },
+        payment: {
+          select: {
+            id: true,
+            appointmentPrice: true,
+            status: true,
+            patientPaid: true,
+            refunded: true,
+            refundAmount: true,
+          },
+        },
+        prescription: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
       },
     });
 
@@ -58,11 +76,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(transformedAppointments);
   } catch (error) {
-    console.error("Error fetching user appointments:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch user appointments" },
-      { status: 500 }
-    );
+    console.error("[GET /api/appointments/user] Error:", error);
+    return createServerErrorResponse("Failed to fetch user appointments");
   }
 }
 

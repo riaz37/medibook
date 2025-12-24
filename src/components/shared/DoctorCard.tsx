@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,7 @@ interface DoctorCardProps {
   variant?: "default" | "compact";
 }
 
-export function DoctorCard({ doctor, variant = "default" }: DoctorCardProps) {
+const DoctorCardComponent = ({ doctor, variant = "default" }: DoctorCardProps) => {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const workingDays = doctor.workingHours
     .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
@@ -53,7 +54,7 @@ export function DoctorCard({ doctor, variant = "default" }: DoctorCardProps) {
                 </span>
               </div>
             </div>
-            <Link href={`/appointments/book?doctorId=${doctor.id}`}>
+            <Link href={`/patient/appointments/book?doctorId=${doctor.id}`}>
               <Button size="sm">Book</Button>
             </Link>
           </div>
@@ -179,7 +180,7 @@ export function DoctorCard({ doctor, variant = "default" }: DoctorCardProps) {
 
             {/* Actions */}
             <div className="mt-auto flex items-center gap-3 pt-4 border-t">
-              <Link href={`/appointments/book?doctorId=${doctor.id}`} className="flex-1">
+              <Link href={`/patient/appointments/book?doctorId=${doctor.id}`} className="flex-1">
                 <Button className="w-full">
                   <Calendar className="h-4 w-4 mr-2" />
                   Book Appointment
@@ -196,4 +197,7 @@ export function DoctorCard({ doctor, variant = "default" }: DoctorCardProps) {
       </CardContent>
     </Card>
   );
-}
+};
+
+// Memoize component to prevent unnecessary re-renders
+export const DoctorCard = React.memo(DoctorCardComponent);

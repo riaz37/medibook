@@ -22,10 +22,10 @@ export async function POST(
 
     const { context } = accessResult;
 
-    // Only doctor or admin can approve/reject refills
+    // Only verified doctors (not pending) or admin can approve/reject refills
     if (context.role !== "doctor" && context.role !== "admin") {
       return NextResponse.json(
-        { error: "Only doctors can process refill requests" },
+        { error: "Only verified doctors can process refill requests" },
         { status: 403 }
       );
     }

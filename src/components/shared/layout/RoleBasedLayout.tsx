@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 
 interface RoleBasedLayoutProps {
   children: React.ReactNode;
-  role?: "patient" | "doctor" | "admin";
+  role?: "patient" | "doctor_pending" | "doctor" | "admin";
 }
 
 /**
@@ -25,7 +25,7 @@ export function RoleBasedLayout({ children, role: propRole }: RoleBasedLayoutPro
     return <PatientDashboardLayout>{children}</PatientDashboardLayout>;
   }
 
-  // For doctor and admin, use generic Navbar (they have their own layouts)
+  // For doctor (pending or verified) and admin, use generic Navbar (they have their own layouts)
   // This can be extended later with DoctorDashboardLayout and AdminDashboardLayout
   return (
     <>

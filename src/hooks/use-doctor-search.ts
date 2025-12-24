@@ -101,8 +101,14 @@ export function useDoctorSearch(options: UseDoctorSearchOptions = {}) {
     queryFn: async () => {
       const response = await fetch(`/api/doctors/search?${buildQueryString()}`);
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to search doctors");
+        const errorData = await response.json();
+        const errorMessage = errorData.error || errorData.message || "Failed to search doctors";
+        // Format validation errors if present
+        if (errorData.details && errorData.details.length > 0) {
+          const detailMessages = errorData.details.map((d: { field: string; message: string }) => d.message).join(", ");
+          throw new Error(`${errorMessage}. ${detailMessages}`);
+        }
+        throw new Error(errorMessage);
       }
       return response.json();
     },
@@ -164,7 +170,11 @@ export function useDoctorFilterOptions() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "specialities" }),
       });
-      if (!response.ok) throw new Error("Failed to fetch specialities");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to fetch specialities" }));
+        const errorMessage = errorData.error || errorData.message || "Failed to fetch specialities";
+        throw new Error(errorMessage);
+      }
       return response.json();
     },
     staleTime: 1000 * 60 * 60, // 1 hour
@@ -178,7 +188,11 @@ export function useDoctorFilterOptions() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "locations" }),
       });
-      if (!response.ok) throw new Error("Failed to fetch locations");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to fetch locations" }));
+        const errorMessage = errorData.error || errorData.message || "Failed to fetch locations";
+        throw new Error(errorMessage);
+      }
       return response.json();
     },
     staleTime: 1000 * 60 * 60, // 1 hour

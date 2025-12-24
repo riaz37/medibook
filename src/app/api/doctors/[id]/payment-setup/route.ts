@@ -27,9 +27,10 @@ export async function POST(
       );
     }
 
+    // Only verified doctors (not pending) or admin can set up payments
     if (context.role !== "doctor" && context.role !== "admin") {
       return NextResponse.json(
-        { error: "Forbidden" },
+        { error: "Only verified doctors can set up payment accounts" },
         { status: 403 }
       );
     }

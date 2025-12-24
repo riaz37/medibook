@@ -73,6 +73,23 @@ export interface AppointmentWithRelations extends Appointment {
     price: number | null;
     description: string | null;
   } | null;
+  payment?: {
+    id: string;
+    appointmentPrice: number | string;
+    commissionAmount: number | string;
+    doctorPayoutAmount: number | string;
+    status: string;
+    patientPaid: boolean;
+    doctorPaid: boolean;
+    refunded?: boolean;
+    refundAmount?: number | string | null;
+    patientPaidAt?: Date | string | null;
+  } | null;
+  prescription?: {
+    id: string;
+    status: string;
+    issueDate?: Date | string;
+  } | null;
 }
 
 export interface BookAppointmentInput {
@@ -167,8 +184,10 @@ export interface AuthUser {
 
 export interface ApiError {
   error: string;
+  details?: Array<{ field: string; message: string }>;
+  code?: string;
   status?: number;
-  message?: string;
+  message?: string; // For backward compatibility
 }
 
 export interface ApiResponse<T> {

@@ -10,10 +10,10 @@
  */
 
 import { BaseServerService, ServerServiceError } from "./base-server.service";
-import type { Prisma, User, UserRole } from "@/generated/prisma/client";
+import type { Prisma, User } from "@/generated/prisma/client";
 
 export interface FindUsersOptions {
-  role?: UserRole;
+  role?: string;
   include?: Prisma.UserInclude;
 }
 
@@ -21,7 +21,7 @@ export interface UpdateUserData {
   firstName?: string;
   lastName?: string;
   phone?: string;
-  role?: UserRole;
+  role?: string;
 }
 
 class UsersServerService extends BaseServerService {
@@ -46,17 +46,51 @@ class UsersServerService extends BaseServerService {
 
   /**
    * Find user by ID
+   * Supports both select and include options
    */
   async findUnique(
     id: string,
-    include?: Prisma.UserInclude
+    options?: Prisma.UserInclude | Prisma.UserSelect | { select?: Prisma.UserSelect; include?: Prisma.UserInclude }
   ): Promise<User | null> {
     this.validateRequired({ id }, ["id"]);
 
     return this.execute(async () => {
+      if (!options) {
+        return await this.prisma.user.findUnique({
+          where: { id },
+        });
+      }
+
+      // Handle object with select or include property
+      if ('select' in options && options.select) {
+        return await this.prisma.user.findUnique({
+          where: { id },
+          select: options.select,
+        });
+      }
+
+      if ('include' in options && options.include) {
+        return await this.prisma.user.findUnique({
+          where: { id },
+          include: options.include,
+        });
+      }
+
+      // Handle direct select object (keys like id, email, etc.)
+      const selectKeys = ['id', 'email', 'firstName', 'lastName', 'phone', 'createdAt', 'updatedAt', 'role', 'emailVerified'];
+      const isSelect = options && Object.keys(options).some(key => selectKeys.includes(key));
+      
+      if (isSelect) {
+        return await this.prisma.user.findUnique({
+          where: { id },
+          select: options as Prisma.UserSelect,
+        });
+      }
+
+      // Default to include
       return await this.prisma.user.findUnique({
         where: { id },
-        include,
+        include: options as Prisma.UserInclude,
       });
     }, "Failed to find user");
   }
@@ -119,7 +153,7 @@ class UsersServerService extends BaseServerService {
   /**
    * Update user role
    */
-  async updateRole(id: string, role: UserRole): Promise<User> {
+  async updateRole(id: string, role: string): Promise<User> {
     this.validateRequired({ id, role }, ["id", "role"]);
 
     return this.execute(async () => {

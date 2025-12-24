@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prescriptionsServerService } from "@/lib/services/server";
 import { requireAnyRole } from "@/lib/server/rbac";
+import { createNotFoundResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * GET /api/prescriptions/doctor - List doctor's prescriptions
@@ -19,10 +20,7 @@ export async function GET(request: NextRequest) {
     // Get doctor ID
     const doctorId = context.doctorId;
     if (!doctorId) {
-      return NextResponse.json(
-        { error: "Doctor profile not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("Doctor profile");
     }
 
     // Query parameters
@@ -72,11 +70,8 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    console.error("Error fetching doctor prescriptions:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch prescriptions" },
-      { status: 500 }
-    );
+    console.error("[GET /api/prescriptions/doctor] Error:", error);
+    return createServerErrorResponse("Failed to fetch prescriptions");
   }
 }
 

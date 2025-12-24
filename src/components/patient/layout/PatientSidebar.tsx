@@ -1,11 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Home,
   Calendar,
-  Mic,
   User,
   CreditCard,
   FileText,
@@ -24,9 +23,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useUserAppointments } from "@/hooks";
 import { UserButton } from "@/components/shared/UserButton";
 import Image from "next/image";
+import { useMemo } from "react";
 
 const menuItems = [
   {
@@ -44,27 +46,21 @@ const menuItems = [
     title: "Appointments",
     items: [
       {
-        title: "Find a Doctor",
-        url: "/doctors",
+        title: "Find & Book Doctor",
+        url: "/patient/appointments?tab=find-book",
         icon: Stethoscope,
         badge: null,
       },
       {
-        title: "Appointments",
-        url: "/patient/appointments",
+        title: "My Appointments",
+        url: "/patient/appointments?tab=my-appointments",
         icon: Calendar,
-        badge: null,
-      },
-      {
-        title: "Voice Assistant",
-        url: "/patient/voice",
-        icon: Mic,
-        badge: null,
+        badge: "upcoming", // Will show upcoming count
       },
     ],
   },
   {
-    title: "Medical",
+    title: "Health & Care",
     items: [
       {
         title: "Medical History",
@@ -101,7 +97,19 @@ const menuItems = [
 
 export function PatientSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useCurrentUser();
+  const { data: appointments = [] } = useUserAppointments();
+
+  // Calculate upcoming appointments count
+  const upcomingCount = useMemo(() => {
+    if (!appointments || appointments.length === 0) return 0;
+    const now = new Date();
+    return appointments.filter((apt: any) => {
+      const aptDate = new Date(apt.date);
+      return aptDate >= now && (apt.status === "CONFIRMED" || apt.status === "PENDING");
+    }).length;
+  }, [appointments]);
 
   return (
     <Sidebar collapsible="icon" variant="inset">
@@ -128,8 +136,23 @@ export function PatientSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
-                  const isActive = pathname === item.url || pathname?.startsWith(item.url + "/");
+                  // Handle active state for appointments with tab query params
+                  let isActive = false;
+                  if (item.url.includes("?tab=")) {
+                    const urlPath = item.url.split("?")[0];
+                    const tabParam = item.url.split("tab=")[1];
+                    const currentTab = searchParams.get("tab");
+                    isActive = pathname === urlPath && currentTab === tabParam;
+                  } else {
+                    isActive = pathname === item.url || pathname?.startsWith(item.url + "/");
+                  }
                   const Icon = item.icon;
+
+                  // Determine badge value
+                  let badgeValue: number | null = null;
+                  if (item.badge === "upcoming" && upcomingCount > 0) {
+                    badgeValue = upcomingCount;
+                  }
 
                   return (
                     <SidebarMenuItem key={item.title}>
@@ -138,9 +161,16 @@ export function PatientSidebar() {
                         isActive={isActive}
                         tooltip={item.title}
                       >
-                        <Link href={item.url}>
-                          <Icon />
-                          <span>{item.title}</span>
+                        <Link href={item.url} className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <Icon />
+                            <span>{item.title}</span>
+                          </div>
+                          {badgeValue !== null && (
+                            <Badge variant="secondary" className="ml-auto h-5 min-w-5 px-1.5 text-xs">
+                              {badgeValue}
+                            </Badge>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -160,7 +190,7 @@ export function PatientSidebar() {
               {user?.firstName} {user?.lastName}
             </span>
             <span className="truncate text-xs text-muted-foreground">
-              {user?.emailAddresses?.[0]?.emailAddress}
+              {user?.email}
             </span>
           </div>
         </div>
@@ -168,4 +198,3 @@ export function PatientSidebar() {
     </Sidebar>
   );
 }
-

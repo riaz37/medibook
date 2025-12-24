@@ -132,8 +132,18 @@ export abstract class BaseService {
 
       if (!processedResponse.ok) {
         const errorData = await this.parseErrorResponse(processedResponse);
+        // Extract error message - prefer error field, fallback to message
+        const errorMessage = errorData.error || errorData.message || `Request failed with status ${processedResponse.status}`;
+        
+        // If there are validation details, format them nicely
+        let formattedMessage = errorMessage;
+        if (errorData.details && errorData.details.length > 0) {
+          const detailMessages = errorData.details.map(d => `${d.field}: ${d.message}`).join(", ");
+          formattedMessage = `${errorMessage}. ${detailMessages}`;
+        }
+        
         throw new ApiException(
-          errorData.error || errorData.message || `Request failed with status ${processedResponse.status}`,
+          formattedMessage,
           processedResponse.status,
           errorData
         );

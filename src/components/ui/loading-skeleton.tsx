@@ -51,6 +51,61 @@ export function ActivityListSkeleton({ count = 5 }: { count?: number }) {
 }
 
 /**
+ * Chart Skeleton Component
+ * Loading state for chart components
+ */
+export function ChartSkeleton({ className, height = 300 }: { className?: string; height?: number }) {
+  return (
+    <Card className={className}>
+      <CardHeader>
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-4 w-32 mt-2" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {/* Chart area skeleton */}
+          <Skeleton className="w-full" style={{ height: `${height}px` }} />
+          {/* Legend skeleton */}
+          <div className="flex items-center gap-4 mt-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Skeleton className="h-3 w-3 rounded-full" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Table Skeleton Component
+ * Loading state for table components
+ */
+export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
+  return (
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="flex gap-4">
+        {Array.from({ length: columns }).map((_, i) => (
+          <Skeleton key={i} className="h-4 flex-1" />
+        ))}
+      </div>
+      {/* Rows */}
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <div key={rowIndex} className="flex gap-4">
+          {Array.from({ length: columns }).map((_, colIndex) => (
+            <Skeleton key={colIndex} className="h-4 flex-1" />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
  * Loading Spinner Component
  * Reusable spinner for consistent loading states
  */
@@ -116,4 +171,3 @@ export function CardLoading({ className }: { className?: string }) {
     </Card>
   );
 }
-

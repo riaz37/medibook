@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
+import { createValidationErrorResponse } from "./api-response";
 
 /**
  * Validate request body with Zod schema
@@ -21,13 +22,7 @@ export function validateRequest<T>(
 
       return {
         success: false,
-        response: NextResponse.json(
-          {
-            error: "Validation failed",
-            details: errors,
-          },
-          { status: 400 }
-        ),
+        response: createValidationErrorResponse(errors),
       };
     }
 
@@ -36,13 +31,12 @@ export function validateRequest<T>(
     
     return {
       success: false,
-      response: NextResponse.json(
-        { 
-          error: "Invalid request data",
-          message: error instanceof Error ? error.message : "Unknown validation error"
+      response: createValidationErrorResponse([
+        {
+          field: "unknown",
+          message: error instanceof Error ? error.message : "Unknown validation error",
         },
-        { status: 400 }
-      ),
+      ]),
     };
   }
 }
@@ -74,13 +68,7 @@ export function validateQuery<T>(
 
       return {
         success: false,
-        response: NextResponse.json(
-          {
-            error: "Invalid query parameters",
-            details: errors,
-          },
-          { status: 400 }
-        ),
+        response: createValidationErrorResponse(errors),
       };
     }
 
@@ -89,13 +77,12 @@ export function validateQuery<T>(
     
     return {
       success: false,
-      response: NextResponse.json(
-        { 
-          error: "Invalid query parameters",
-          message: error instanceof Error ? error.message : "Unknown validation error"
+      response: createValidationErrorResponse([
+        {
+          field: "unknown",
+          message: error instanceof Error ? error.message : "Unknown validation error",
         },
-        { status: 400 }
-      ),
+      ]),
     };
   }
 }

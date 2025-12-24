@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { payoutService } from "@/lib/services/payout.service";
+import { requireRole } from "@/lib/server/rbac";
+import { createUnauthorizedResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * POST /api/cron/payouts
@@ -15,10 +17,7 @@ export async function POST(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return createUnauthorizedResponse();
     }
 
     // Get pending payouts that are ready to be processed
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
         results.failed++;
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         results.errors.push(`Payout ${payout.id}: ${errorMessage}`);
-        console.error(`Failed to process payout ${payout.id}:`, error);
+        console.error(`[POST /api/cron/payouts] Failed to process payout ${payout.id}:`, error);
       }
     }
 
@@ -49,11 +48,8 @@ export async function POST(request: NextRequest) {
       results,
     });
   } catch (error) {
-    console.error("Error in payout cron job:", error);
-    return NextResponse.json(
-      { error: "Failed to process payouts" },
-      { status: 500 }
-    );
+    console.error("[POST /api/cron/payouts] Error:", error);
+    return createServerErrorResponse("Failed to process payouts");
   }
 }
 
@@ -63,7 +59,6 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const { requireRole } = await import("@/lib/server/rbac");
     const authResult = await requireRole("admin");
     
     if ("response" in authResult) {
@@ -85,11 +80,8 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("Error getting pending payouts:", error);
-    return NextResponse.json(
-      { error: "Failed to get pending payouts" },
-      { status: 500 }
-    );
+    console.error("[GET /api/cron/payouts] Error:", error);
+    return createServerErrorResponse("Failed to get pending payouts");
   }
 }
 

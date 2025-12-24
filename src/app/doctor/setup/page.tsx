@@ -1,17 +1,24 @@
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { getAuthContext } from "@/lib/server/rbac";
 
 async function DoctorSetupPage() {
   const user = await getCurrentUser();
   
-  if (!user) {
+  if (!user || !user.role) {
     redirect("/sign-in");
   }
 
-  // Check if user is a doctor
-  if (user.userRole !== "DOCTOR") {
-    redirect("/");
+  // Check email verification
+  if (!user.emailVerified) {
+    redirect("/verify-email");
+  }
+
+  // Check if user is a doctor (pending or verified) or admin
+  const context = await getAuthContext();
+  if (!context || (context.role !== "doctor" && context.role !== "doctor_pending" && context.role !== "admin")) {
+    redirect("/sign-in");
   }
 
   // Get or create doctor profile

@@ -1,8 +1,9 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon } from "lucide-react";
+import { Stethoscope } from "lucide-react";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
+import { format } from "date-fns";
 
 export default async function DashboardHero() {
   const user = await getCurrentUser();
@@ -14,35 +15,38 @@ export default async function DashboardHero() {
     return "Good evening";
   };
 
+  const today = new Date();
+  const dayOfWeek = format(today, "EEEE");
+  const dateStr = format(today, "MMMM d, yyyy");
+
   return (
-    <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between bg-gradient-to-br from-primary/10 via-primary/5 to-background rounded-3xl p-6 md:p-8 border border-primary/20 mb-8 overflow-hidden">
-      <div className="space-y-4 flex-1">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 w-fit">
-          <div className="size-2 bg-primary rounded-full animate-pulse"></div>
-          <span className="text-sm font-medium text-primary">Online & Ready</span>
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+      <div className="space-y-3 flex-1">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 w-fit">
+            <div className="size-2 bg-primary rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium text-primary">Online & Ready</span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {dayOfWeek}, {dateStr}
+          </div>
         </div>
         
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold">
             {getGreeting()}, {user?.firstName}!
           </h1>
-          <p className="text-muted-foreground text-sm md:text-base">
-            Book doctor appointments and get instant advice. Your personal AI healthcare assistant is ready to help you maintain your health.
-          </p>
         </div>
-
-        <Link href="/patient/appointments/book">
-          <Button size="lg" className="mt-4">
-            <CalendarIcon className="w-4 h-4 mr-2" />
-            Book Appointment
-          </Button>
-        </Link>
       </div>
 
-      <div className="hidden lg:flex items-center justify-center size-24 md:size-32 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full mt-4 md:mt-0 md:ml-8">
-        <Image src="/logo.png" alt="Medibook" width={64} height={64} className="w-16 h-16" />
+      <div className="mt-4 md:mt-0">
+        <Link href="/patient/appointments?tab=find-book">
+          <Button size="lg" variant="default">
+            <Stethoscope className="w-4 h-4 mr-2" />
+            Find & Book Doctor
+          </Button>
+        </Link>
       </div>
     </div>
   );
 }
-

@@ -6,7 +6,7 @@ import AdminSettingsClient from "./AdminSettingsClient";
 async function AdminSettingsPage() {
   const authResult = await requireRole("admin");
   if ("response" in authResult) {
-    redirect("/");
+    redirect("/sign-in");
   }
 
   return (

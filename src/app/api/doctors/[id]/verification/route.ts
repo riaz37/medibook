@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { doctorVerificationSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
+import { requireAuth } from "@/lib/server/rbac";
+import { createForbiddenResponse, createServerErrorResponse, createErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * GET /api/doctors/[id]/verification - Get verification status
@@ -15,7 +17,6 @@ export async function GET(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
     
-    const { requireAuth } = await import("@/lib/server/rbac");
     const authResult = await requireAuth();
     if ("response" in authResult) {
       return authResult.response;
@@ -24,10 +25,7 @@ export async function GET(
     const { context } = authResult;
 
     if (context.role !== "admin" && context.doctorId !== id) {
-      return NextResponse.json(
-        { error: "Forbidden: You can only access your own verification" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("You can only access your own verification");
     }
 
     const verification = await prisma.doctorVerification.findUnique({
@@ -36,11 +34,8 @@ export async function GET(
 
     return NextResponse.json(verification || null);
   } catch (error) {
-    console.error("Error fetching verification:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch verification status" },
-      { status: 500 }
-    );
+    console.error("[GET /api/doctors/[id]/verification] Error:", error);
+    return createServerErrorResponse("Failed to fetch verification status");
   }
 }
 
@@ -55,7 +50,6 @@ export async function POST(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
     
-    const { requireAuth } = await import("@/lib/server/rbac");
     const authResult = await requireAuth();
     if ("response" in authResult) {
       return authResult.response;
@@ -64,20 +58,14 @@ export async function POST(
     const { context } = authResult;
 
     if (context.role !== "admin" && context.doctorId !== id) {
-      return NextResponse.json(
-        { error: "Forbidden: You can only submit verification for your own profile" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("You can only submit verification for your own profile");
     }
 
     let body;
     try {
       body = await request.json();
     } catch (error) {
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
+      return createErrorResponse("Invalid JSON in request body", 400, undefined, "INVALID_JSON");
     }
 
     // Validate request body
@@ -111,13 +99,10 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(verification);
+    return NextResponse.json(verification, { status: 201 });
   } catch (error) {
-    console.error("Error submitting verification:", error);
-    return NextResponse.json(
-      { error: "Failed to submit verification documents" },
-      { status: 500 }
-    );
+    console.error("[POST /api/doctors/[id]/verification] Error:", error);
+    return createServerErrorResponse("Failed to submit verification documents");
   }
 }
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { z } from "zod";
+import { createErrorResponse, createValidationErrorResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1),
@@ -14,10 +15,11 @@ export async function POST(req: Request) {
     const result = resetPasswordSchema.safeParse(body);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: result.error.issues },
-        { status: 400 }
-      );
+      const details = result.error.issues.map((issue) => ({
+        field: issue.path.join("."),
+        message: issue.message,
+      }));
+      return createValidationErrorResponse(details);
     }
 
     const { token, password } = result.data;
@@ -29,10 +31,7 @@ export async function POST(req: Request) {
     });
 
     if (!resetToken) {
-      return NextResponse.json(
-        { error: "Invalid or expired reset link" },
-        { status: 400 }
-      );
+      return createErrorResponse("Invalid or expired reset link", 400, undefined, "INVALID_TOKEN");
     }
 
     // Check if token has expired
@@ -41,18 +40,12 @@ export async function POST(req: Request) {
       await prisma.passwordResetToken.delete({
         where: { id: resetToken.id },
       });
-      return NextResponse.json(
-        { error: "Reset link has expired. Please request a new one." },
-        { status: 400 }
-      );
+      return createErrorResponse("Reset link has expired. Please request a new one.", 400, undefined, "TOKEN_EXPIRED");
     }
 
     // Check if token has already been used
     if (resetToken.usedAt) {
-      return NextResponse.json(
-        { error: "This reset link has already been used" },
-        { status: 400 }
-      );
+      return createErrorResponse("This reset link has already been used", 400, undefined, "TOKEN_USED");
     }
 
     // Hash the new password
@@ -85,10 +78,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Reset password error:", error);
-    return NextResponse.json(
-      { error: "An error occurred. Please try again later." },
-      { status: 500 }
-    );
+    return createServerErrorResponse("Failed to reset password");
   }
 }
 
@@ -124,9 +114,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ valid: true });
   } catch (error) {
     console.error("Token validation error:", error);
-    return NextResponse.json(
-      { valid: false, error: "An error occurred" },
-      { status: 500 }
-    );
+    return createServerErrorResponse("Failed to validate token");
   }
 }

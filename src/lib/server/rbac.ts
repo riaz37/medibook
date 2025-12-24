@@ -1,7 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { Role, Permission, RolePermissions } from "@/lib/types/rbac";
-import { UserRole } from "@/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { rolePermissions } from "@/lib/constants/permissions";
 
@@ -17,15 +16,9 @@ export type AuthContext = {
  */
 export async function checkRole(role: Role): Promise<boolean> {
   const user = await getCurrentUser();
-  if (!user) return false;
+  if (!user || !user.role) return false;
   
-  // Check if user has the role (using the new role relation)
-  if (user.role && user.role.name === role) return true;
-  
-  // Fallback to legacy role enum for migration
-  // Map UserRole enum to Role string
-  const legacyRole = user.userRole.toLowerCase() as Role;
-  return legacyRole === role;
+  return user.role.name === role;
 }
 
 /**
@@ -33,36 +26,41 @@ export async function checkRole(role: Role): Promise<boolean> {
  */
 export async function getUserRoleFromSession(): Promise<Role | null> {
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user || !user.role) return null;
 
-  if (user.role) {
-    return user.role.name as Role;
-  }
-  
-  return user.userRole.toLowerCase() as Role;
+  return user.role.name as Role;
 }
 
 /**
  * Get full auth context
+ * 
+ * Role-based access:
+ * - patient: Regular patients
+ * - doctor_pending: Doctors pending admin approval (can access doctor routes but limited)
+ * - doctor: Verified doctors with full access
+ * - admin: Administrators
  */
 export async function getAuthContext(includeDbUser = false): Promise<AuthContext | null> {
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user || !user.role) return null;
 
-  const role = user.role?.name || user.userRole.toLowerCase();
+  const role = user.role.name as Role;
   let doctorId: string | null = null;
 
-  if (role === "doctor") {
+  // If user has doctor_pending or doctor role, get doctor profile ID
+  if (role === "doctor_pending" || role === "doctor") {
     const doctorProfile = await prisma.doctor.findUnique({
       where: { userId: user.id },
       select: { id: true },
     });
-    doctorId = doctorProfile?.id || null;
+    if (doctorProfile) {
+      doctorId = doctorProfile.id;
+    }
   }
 
   const context: AuthContext = {
     userId: user.id,
-    role: role as Role,
+    role: role,
     doctorId,
   };
 
@@ -96,7 +94,16 @@ export async function requireRole(role: Role): Promise<{ context: AuthContext } 
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };
   }
-  if (context.role !== role && context.role !== "admin") {
+  // Admin has access to everything
+  if (context.role === "admin") {
+    return { context };
+  }
+  // For "doctor" role requirement, also allow "doctor_pending"
+  if (role === "doctor" && (context.role === "doctor" || context.role === "doctor_pending")) {
+    return { context };
+  }
+  // Exact role match
+  if (context.role !== role) {
     return {
       response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
     };
@@ -114,7 +121,16 @@ export async function requireAnyRole(roles: Role[]): Promise<{ context: AuthCont
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };
   }
-  if (!roles.includes(context.role) && context.role !== "admin") {
+  // Admin has access to everything
+  if (context.role === "admin") {
+    return { context };
+  }
+  // If "doctor" is in required roles, also allow "doctor_pending"
+  const allowedRoles = roles.includes("doctor") 
+    ? [...roles, "doctor_pending"] 
+    : roles;
+  
+  if (!allowedRoles.includes(context.role)) {
     return {
       response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
     };
@@ -124,14 +140,15 @@ export async function requireAnyRole(roles: Role[]): Promise<{ context: AuthCont
 
 /**
  * Check permission based on rolePermissions mapping
+ * Uses effective role (accounts for doctorProfile)
  */
 export async function checkPermission(resource: Permission["resource"], action: Permission["action"]): Promise<boolean> {
-  const role = await getUserRoleFromSession();
-  if (!role) return false;
-  if (role === "admin") return true;
+  const context = await getAuthContext();
+  if (!context) return false;
+  if (context.role === "admin") return true;
 
   const permissions: RolePermissions = rolePermissions;
-  const allowed = permissions[role].some((perm) => perm.resource === resource && perm.action === action);
+  const allowed = permissions[context.role].some((perm) => perm.resource === resource && perm.action === action);
   return allowed;
 }
 
@@ -159,57 +176,6 @@ export async function requirePermission(
   return { context };
 }
 
-/**
- * Sync user role (Used for admin actions)
- * This is now a database update instead of Clerk sync
- */
-export async function syncUserRole(
-  userId: string,
-  role: Role,
-  doctorId?: string | null
-): Promise<void> {
-  // Map Role string to UserRole enum for legacy support
-  const userRoleEnum = role.toUpperCase() as UserRole;
-  
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      userRole: userRoleEnum, // Update legacy column
-      // We would also update roleId here if we had the Role ID
-    },
-  });
-  
-  // Also find the Role record and link it if it exists
-  const roleRecord = await prisma.role.findUnique({
-    where: { name: role },
-  });
-  
-  if (roleRecord) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        roleId: roleRecord.id,
-      },
-    });
-  }
-}
-
-/**
- * Validate role transition
- */
-export function validateRoleTransition(
-  oldRole: UserRole,
-  newRole: UserRole,
-  changedByRole: Role
-): { valid: boolean; reason?: string } {
-  if (changedByRole !== "admin") {
-    return { valid: false, reason: "Only admin can change roles" };
-  }
-  if (oldRole === "ADMIN" && newRole !== "ADMIN") {
-    return { valid: false, reason: "Admin cannot be demoted" };
-  }
-  return { valid: true };
-}
 
 /**
  * Require access to a specific appointment
@@ -256,9 +222,3 @@ export async function requireAppointmentAccess(appointmentId: string): Promise<{
   return { context };
 }
 
-/**
- * Convert role string to UserRole enum
- */
-export function roleToUserRole(role: Role): UserRole {
-  return role.toUpperCase() as UserRole;
-}

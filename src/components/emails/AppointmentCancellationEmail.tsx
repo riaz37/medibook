@@ -57,7 +57,7 @@ function AppointmentCancellationEmail({
           )}
 
           <Section style={buttonContainer}>
-            <Link style={button} href={process.env.NEXT_PUBLIC_APP_URL + "/appointments"}>
+            <Link style={button} href={process.env.NEXT_PUBLIC_APP_URL + "/patient/appointments/book"}>
               Book New Appointment
             </Link>
           </Section>

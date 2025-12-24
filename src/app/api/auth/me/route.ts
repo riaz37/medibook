@@ -1,18 +1,22 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getAuthContext } from "@/lib/server/rbac";
+import { createUnauthorizedResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * Get current authenticated user
+ * Returns effective role (accounts for doctorProfile)
  */
 export async function GET() {
   try {
     const user = await getCurrentUser();
     
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user || !user.role) {
+      return createUnauthorizedResponse();
     }
 
-    const roleName = user.role?.name || user.userRole.toLowerCase();
+    // Return the actual role (already set correctly in database)
+    const effectiveRole = user.role.name;
 
     return NextResponse.json({
       id: user.id,
@@ -20,10 +24,10 @@ export async function GET() {
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone,
-      role: roleName,
+      role: effectiveRole,
     });
   } catch (error) {
-    console.error("Get current user error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("[GET /api/auth/me] Error:", error);
+    return createServerErrorResponse("Failed to get current user");
   }
 }

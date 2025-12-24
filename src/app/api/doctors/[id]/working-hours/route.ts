@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { updateWorkingHoursSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
+import { requireAuth } from "@/lib/server/rbac";
+import { createForbiddenResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * GET /api/doctors/[id]/working-hours - Get working hours (doctor only)
@@ -15,7 +17,6 @@ export async function GET(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
     
-    const { requireAuth } = await import("@/lib/server/rbac");
     const authResult = await requireAuth();
     if ("response" in authResult) {
       return authResult.response;
@@ -24,20 +25,14 @@ export async function GET(
     const { context } = authResult;
 
     if (context.role !== "admin" && context.doctorId !== id) {
-      return NextResponse.json(
-        { error: "Forbidden: You can only access your own working hours" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("You can only access your own working hours");
     }
 
     const workingHours = await doctorsConfigService.getWorkingHours(id);
     return NextResponse.json(workingHours);
   } catch (error) {
-    console.error("Error fetching working hours:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch working hours" },
-      { status: 500 }
-    );
+    console.error("[GET /api/doctors/[id]/working-hours] Error:", error);
+    return createServerErrorResponse("Failed to fetch working hours");
   }
 }
 
@@ -52,7 +47,6 @@ export async function PUT(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
     
-    const { requireAuth } = await import("@/lib/server/rbac");
     const authResult = await requireAuth();
     if ("response" in authResult) {
       return authResult.response;
@@ -61,10 +55,7 @@ export async function PUT(
     const { context } = authResult;
 
     if (context.role !== "admin" && context.doctorId !== id) {
-      return NextResponse.json(
-        { error: "Forbidden: You can only update your own working hours" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("You can only update your own working hours");
     }
 
     const body = await request.json();
@@ -78,11 +69,8 @@ export async function PUT(
     const result = await doctorsConfigService.updateWorkingHours(id, validation.data.workingHours);
     return NextResponse.json({ success: true, result });
   } catch (error) {
-    console.error("Error updating working hours:", error);
-    return NextResponse.json(
-      { error: "Failed to update working hours" },
-      { status: 500 }
-    );
+    console.error("[PUT /api/doctors/[id]/working-hours] Error:", error);
+    return createServerErrorResponse("Failed to update working hours");
   }
 }
 

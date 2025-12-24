@@ -86,7 +86,7 @@ function Pricing() {
                 </li>
               </ul>
 
-              <Link href="/sign-up" className="w-full">
+              <Link href="/sign-up/select-role" className="w-full">
                 <Button className="w-full" size="lg">
                   Get Started Free
                 </Button>
@@ -152,7 +152,7 @@ function Pricing() {
                 </li>
               </ul>
 
-              <Link href="/sign-up" className="w-full">
+              <Link href="/sign-up/select-role" className="w-full">
                 <Button className="w-full" size="lg" variant="outline">
                   Join as Doctor
                 </Button>

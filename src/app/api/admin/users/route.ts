@@ -22,7 +22,11 @@ export async function GET(request: NextRequest) {
         email: true,
         firstName: true,
         lastName: true,
-        role: true,
+        role: {
+          select: {
+            name: true,
+          },
+        },
         createdAt: true,
       },
       orderBy: {
@@ -30,7 +34,17 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ users });
+    // Transform users to return role as string instead of object
+    const transformedUsers = users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role.name as string,
+      createdAt: user.createdAt,
+    }));
+
+    return NextResponse.json({ users: transformedUsers });
   } catch (error) {
     console.error("Error fetching users:", error);
     return NextResponse.json(

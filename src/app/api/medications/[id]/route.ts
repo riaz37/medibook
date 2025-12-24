@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/server/rbac";
+import { createNotFoundResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * GET /api/medications/[id] - Get medication details
@@ -34,10 +35,7 @@ export async function GET(
     });
 
     if (!medication) {
-      return NextResponse.json(
-        { error: "Medication not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("Medication");
     }
 
     // Parse JSON fields
@@ -49,11 +47,8 @@ export async function GET(
 
     return NextResponse.json(formattedMedication);
   } catch (error) {
-    console.error("Error fetching medication:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch medication" },
-      { status: 500 }
-    );
+    console.error("[GET /api/medications/[id]] Error:", error);
+    return createServerErrorResponse("Failed to fetch medication");
   }
 }
 

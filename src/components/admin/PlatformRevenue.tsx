@@ -10,7 +10,7 @@ import { LoadingSpinner } from "@/components/ui/loading-skeleton";
 import { showErrorToast } from "@/components/shared/ErrorToast";
 import { handleApiError } from "@/lib/utils/toast";
 import { useEffect } from "react";
-import { StatCard } from "@/components/ui/stat-card";
+import { StatCard } from "@/components/shared/cards/StatCard";
 import type { AdminRevenueData } from "@/lib/types";
 
 export function PlatformRevenue() {

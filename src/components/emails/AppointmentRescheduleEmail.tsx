@@ -66,7 +66,7 @@ function AppointmentRescheduleEmail({
           </Section>
 
           <Section style={buttonContainer}>
-            <Link style={button} href={process.env.NEXT_PUBLIC_APP_URL + "/appointments"}>
+            <Link style={button} href={process.env.NEXT_PUBLIC_APP_URL + "/patient/appointments"}>
               View My Appointments
             </Link>
           </Section>

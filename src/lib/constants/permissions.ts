@@ -18,7 +18,17 @@ const patientPermissions: Permission[] = [
 ];
 
 /**
- * Doctor permissions
+ * Doctor pending permissions (limited - can access doctor routes but see pending message)
+ */
+const doctorPendingPermissions: Permission[] = [
+  // Same as patient permissions for now
+  ...patientPermissions,
+  // Can view doctor dashboard but with limited features
+  { resource: "appointments", action: "read" },
+];
+
+/**
+ * Doctor permissions (full doctor access)
  */
 const doctorPermissions: Permission[] = [
   // Inherit patient permissions
@@ -55,6 +65,7 @@ const adminPermissions: Permission[] = [
  */
 export const rolePermissions: RolePermissions = {
   patient: patientPermissions,
+  doctor_pending: doctorPendingPermissions,
   doctor: doctorPermissions,
   admin: adminPermissions,
 };
@@ -63,7 +74,7 @@ export const rolePermissions: RolePermissions = {
  * Check if a role has a specific permission
  */
 export function hasPermission(
-  role: "patient" | "doctor" | "admin",
+  role: "patient" | "doctor_pending" | "doctor" | "admin",
   resource: Permission["resource"],
   action: Permission["action"]
 ): boolean {
@@ -76,6 +87,6 @@ export function hasPermission(
 /**
  * Get all permissions for a role
  */
-export function getRolePermissions(role: "patient" | "doctor" | "admin"): Permission[] {
+export function getRolePermissions(role: "patient" | "doctor_pending" | "doctor" | "admin"): Permission[] {
   return rolePermissions[role];
 }

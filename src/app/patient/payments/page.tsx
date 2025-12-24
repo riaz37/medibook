@@ -2,25 +2,31 @@ import { redirect } from "next/navigation";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import PatientPaymentsClient from "./PatientPaymentsClient";
 import { getCurrentUser } from "@/lib/auth";
+import { getAuthContext } from "@/lib/server/rbac";
 
 async function PatientPaymentsPage() {
   const user = await getCurrentUser();
 
-  if (!user) {
+  if (!user || !user.role) {
     redirect("/sign-in");
   }
 
-  const role = user.role?.name || user.userRole.toLowerCase();
+  // Check email verification
+  if (!user.emailVerified) {
+    redirect("/verify-email");
+  }
 
-  if (role !== "patient") {
-    if (role === "doctor") {
-      redirect("/doctor/dashboard");
-    } else if (role === "admin") {
-      redirect("/admin");
-    } else {
-      // No role or unknown role - redirect to home
-      redirect("/");
-    }
+  const context = await getAuthContext();
+
+  if (!context) {
+    redirect("/sign-in");
+  }
+
+  // Redirect doctors (pending or verified) and admins to their dashboards
+  if (context.role === "doctor" || context.role === "doctor_pending") {
+    redirect("/doctor/dashboard");
+  } else if (context.role === "admin") {
+    redirect("/admin");
   }
 
   return (

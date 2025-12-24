@@ -3,6 +3,7 @@ import { prescriptionsServerService } from "@/lib/services/server";
 import { createPrescriptionSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { requireAnyRole } from "@/lib/server/rbac";
+import { createNotFoundResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * POST /api/prescriptions - Create prescription (doctor only)
@@ -29,10 +30,7 @@ export async function POST(request: NextRequest) {
     // Get doctor ID from context
     const doctorId = context.doctorId;
     if (!doctorId) {
-      return NextResponse.json(
-        { error: "Doctor profile not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("Doctor profile");
     }
 
     // Create prescription with items (service handles validation and audit)
@@ -58,11 +56,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(prescription, { status: 201 });
   } catch (error) {
-    console.error("Error creating prescription:", error);
-    return NextResponse.json(
-      { error: "Failed to create prescription" },
-      { status: 500 }
-    );
+    console.error("[POST /api/prescriptions] Error:", error);
+    return createServerErrorResponse("Failed to create prescription");
   }
 }
 

@@ -74,8 +74,37 @@ export function showLoading(message: string = toastMessages.info.loading) {
 
 /**
  * Handle API errors with consistent messaging
+ * Supports both old format (Error.message) and new format (ApiException with details)
  */
 export function handleApiError(error: unknown, defaultMessage?: string): string {
+  // Handle ApiException from BaseService
+  if (error && typeof error === "object" && "message" in error && "originalError" in error) {
+    const apiException = error as { message: string; originalError?: unknown; status?: number };
+    
+    // Check status codes
+    if (apiException.status === 401) {
+      return toastMessages.error.unauthorized;
+    }
+    if (apiException.status === 404) {
+      return toastMessages.error.notFound;
+    }
+    if (apiException.status === 400) {
+      // Validation error - message already includes details from BaseService
+      return apiException.message || toastMessages.error.validationError;
+    }
+    
+    // Check for common error patterns in message
+    if (apiException.message.includes("network") || apiException.message.includes("fetch")) {
+      return toastMessages.error.networkError;
+    }
+    if (apiException.message.includes("validation") || apiException.message.includes("invalid")) {
+      return apiException.message || toastMessages.error.validationError;
+    }
+    
+    return apiException.message || defaultMessage || toastMessages.error.generic;
+  }
+  
+  // Handle standard Error objects
   if (error instanceof Error) {
     // Check for common error patterns
     if (error.message.includes("network") || error.message.includes("fetch")) {
@@ -92,6 +121,7 @@ export function handleApiError(error: unknown, defaultMessage?: string): string 
     }
     return error.message || defaultMessage || toastMessages.error.generic;
   }
+  
   return defaultMessage || toastMessages.error.generic;
 }
 

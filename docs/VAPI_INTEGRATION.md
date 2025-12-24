@@ -21,7 +21,7 @@ Ensure the following Environment Variables are set in your `.env`:
 NEXT_PUBLIC_APP_URL=https://your-domain.com
 
 # VAPI Keys (Get these from Vapi Dashboard)
-NEXT_PUBLIC_VAPI_PUBLIC_KEY=your_public_key
+NEXT_PUBLIC_VAPI_API_KEY=your_vapi_api_key
 VAPI_WEBHOOK_SECRET=your_webhook_secret (Optional but recommended)
 NEXT_PUBLIC_VAPI_ASSISTANT_ID=your_assistant_id
 ```

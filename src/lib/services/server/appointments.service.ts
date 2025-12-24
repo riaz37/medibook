@@ -668,8 +668,16 @@ class AppointmentsServerService extends BaseServerService {
   /**
    * Get appointment with appointment type details
    */
-  async findUniqueWithType(id: string): Promise<Appointment & { appointmentType?: unknown }> {
-    const appointment = await this.findUnique(id);
+  async findUniqueWithType(id: string): Promise<Appointment & { appointmentType?: unknown; prescription?: unknown }> {
+    const appointment = await this.findUnique(id, {
+      prescription: {
+        select: {
+          id: true,
+          status: true,
+          issueDate: true,
+        },
+      },
+    });
 
     if (!appointment) {
       throw new ServerServiceError("Appointment not found", 404, "NOT_FOUND");
@@ -692,7 +700,7 @@ class AppointmentsServerService extends BaseServerService {
     return {
       ...appointment,
       appointmentType,
-    } as Appointment & { appointmentType?: unknown };
+    } as Appointment & { appointmentType?: unknown; prescription?: unknown };
   }
 }
 

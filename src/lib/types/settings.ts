@@ -28,7 +28,7 @@ export interface DoctorVerificationData {
   licenseUrl: string | null;
   certificateUrl: string | null;
   idDocumentUrl: string | null;
-  submittedAt: Date | null;
+  submittedAt: string | null; // ISO string when passed from server to client
   rejectionReason: string | null;
 }
 

@@ -17,6 +17,7 @@
     "db:seed": "prisma db seed",
     "db:format": "prisma format",
     "db:validate": "prisma validate",
+    "create-admin": "tsx scripts/create-admin.ts",
     "warm-cache": "tsx scripts/warm-cache.ts",
     "warm-cache:critical": "tsx scripts/warm-cache.ts --critical"
   },

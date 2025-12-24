@@ -132,7 +132,7 @@ function HowItWorks() {
 
       {/* BOTTOM CTA */}
       <div className="text-center mt-16">
-        <Link href="/sign-up">
+        <Link href="/sign-up/select-role">
           <Button size="lg">
             <ArrowRightIcon className="mr-2 size-5" />
             Get started now

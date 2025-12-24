@@ -1,13 +1,12 @@
 import { redirect } from "next/navigation";
 import { DoctorDashboardLayout } from "@/components/doctor/layout/DoctorDashboardLayout";
 import DoctorDashboardHero from "@/components/doctor/dashboard/DoctorDashboardHero";
+import TodaysSchedule from "@/components/doctor/dashboard/TodaysSchedule";
 import DoctorStatsGrid from "@/components/doctor/dashboard/DoctorStatsGrid";
-import UpcomingAppointments from "@/components/doctor/dashboard/UpcomingAppointments";
-import ActivityFeed from "@/components/doctor/dashboard/ActivityFeed";
-import { DoctorAnalyticsSection } from "@/components/doctor/dashboard/DoctorAnalyticsSection";
 import { Suspense } from "react";
 import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
-import { getUserRoleFromSession, getAuthContext } from "@/lib/server/rbac";
+import { getAuthContext } from "@/lib/server/rbac";
+import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 /**
@@ -18,16 +17,23 @@ import prisma from "@/lib/prisma";
  * - Only queries DB for doctor profile data (needed for dashboard)
  */
 async function DoctorDashboardPage() {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  // Check email verification
+  if (!user.emailVerified) {
+    redirect("/verify-email");
+  }
+
   const context = await getAuthContext(true);
   if (!context) {
     redirect("/");
   }
 
-  // Get role from session claims with database fallback
-  const role = await getUserRoleFromSession();
-
-  // Check if user is a doctor
-  if (role !== "doctor" && role !== "admin") {
+  // Check if user is a doctor (pending or verified) or admin
+  if (context.role !== "doctor" && context.role !== "doctor_pending" && context.role !== "admin") {
     redirect("/patient/dashboard");
   }
 
@@ -46,7 +52,7 @@ async function DoctorDashboardPage() {
     redirect("/doctor/setup");
   }
 
-  // Check if doctor needs to complete profile or verification
+  // Check if doctor needs to complete profile
   const doctor = dbUser.doctorProfile;
   const needsSetup = !doctor.speciality || !doctor.gender || doctor.speciality === "";
   
@@ -54,52 +60,46 @@ async function DoctorDashboardPage() {
     redirect("/doctor/setup");
   }
 
-  // Get verification status (after migration, use: prisma.doctorVerification)
-  const verification = await (prisma as any).doctorVerification?.findUnique({
-    where: { doctorId: doctor.id },
-  }).catch(() => null);
-
-  // Check verification status - redirect if rejected
-  if (verification?.status === "REJECTED") {
-    redirect("/doctor/setup");
-  }
-
-  // Check if doctor is verified (for new doctors, they need to be verified)
-  if (!doctor.isVerified && verification?.status !== "PENDING") {
-    // If verification doesn't exist or is not pending, redirect to setup
-    if (!verification || verification.status !== "PENDING") {
-      redirect("/doctor/setup");
-    }
-  }
-
-  // Get doctorId for analytics
-  const ctx2 = await getAuthContext();
-  const doctorId = ctx2?.doctorId || doctor.id;
+  // If doctor is pending approval, show pending message (no redirect)
+  // Check both role and doctor verification status
+  const isPendingApproval = context.role === "doctor_pending" && !doctor.isVerified;
 
   return (
     <DoctorDashboardLayout>
-      <div className="w-full">
-        <Suspense fallback={<div className="h-32 bg-muted animate-pulse rounded-3xl mb-8" />}>
+      <div className="max-w-7xl mx-auto w-full">
+        {/* Show pending approval banner only if doctor is not verified */}
+        {isPendingApproval && (
+          <div className="mb-6 bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-grow">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Pending Admin Approval</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Your doctor application is currently under review. You'll receive an email notification once your application has been approved. Until then, you have limited access to doctor features.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Hero Section - Compact */}
+        <Suspense fallback={<div className="h-20 bg-muted animate-pulse rounded-lg mb-6" />}>
           <DoctorDashboardHero />
         </Suspense>
-        <Suspense fallback={<StatCardGridSkeleton count={4} />}>
+
+        {/* Today's Schedule - Primary Focus */}
+        <Suspense fallback={<CardLoading />}>
+          <TodaysSchedule />
+        </Suspense>
+
+        {/* Essential Stats - Minimal */}
+        <Suspense fallback={<StatCardGridSkeleton count={2} />}>
           <DoctorStatsGrid />
         </Suspense>
-        <Suspense fallback={<CardLoading />}>
-          <DoctorAnalyticsSection doctorId={doctorId} />
-        </Suspense>
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div>
-            <Suspense fallback={<CardLoading />}>
-              <UpcomingAppointments />
-            </Suspense>
-          </div>
-          <div className="lg:col-span-2">
-            <Suspense fallback={<CardLoading />}>
-              <ActivityFeed />
-            </Suspense>
-          </div>
-        </div>
       </div>
     </DoctorDashboardLayout>
   );

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     let appointments;
     if (context.role === "patient") {
       appointments = await appointmentsServerService.getByUser(context.userId);
-    } else if (context.role === "doctor" && context.doctorId) {
+    } else if ((context.role === "doctor" || context.role === "doctor_pending") && context.doctorId) {
       appointments = await appointmentsServerService.getByDoctor(context.doctorId);
     } else {
       // Admin sees all

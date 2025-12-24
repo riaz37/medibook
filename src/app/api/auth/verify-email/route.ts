@@ -1,24 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { validateRequest } from "@/lib/utils/validation";
+import { createErrorResponse, createServerErrorResponse, createNotFoundResponse } from "@/lib/utils/api-response";
 import { z } from "zod";
 
 const verifyEmailSchema = z.object({
-  token: z.string().min(1),
+  token: z.string().min(1, "Token is required"),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const result = verifyEmailSchema.safeParse(body);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid token" },
-        { status: 400 }
-      );
+    
+    // Validate request body
+    const validation = validateRequest(verifyEmailSchema, body);
+    if (!validation.success) {
+      return validation.response;
     }
 
-    const { token } = result.data;
+    const { token } = validation.data;
 
     // Find the verification token
     const verificationToken = await prisma.emailVerificationToken.findUnique({
@@ -27,18 +27,12 @@ export async function POST(req: Request) {
     });
 
     if (!verificationToken) {
-      return NextResponse.json(
-        { error: "Invalid verification link" },
-        { status: 400 }
-      );
+      return createErrorResponse("Invalid verification link", 400, undefined, "INVALID_TOKEN");
     }
 
     // Check if token has expired
     if (verificationToken.expiresAt < new Date()) {
-      return NextResponse.json(
-        { error: "Verification link has expired. Please request a new one." },
-        { status: 400 }
-      );
+      return createErrorResponse("Verification link has expired. Please request a new one.", 400, undefined, "TOKEN_EXPIRED");
     }
 
     // Check if already verified
@@ -70,25 +64,19 @@ export async function POST(req: Request) {
       message: "Email verified successfully!",
     });
   } catch (error) {
-    console.error("Email verification error:", error);
-    return NextResponse.json(
-      { error: "An error occurred. Please try again later." },
-      { status: 500 }
-    );
+    console.error("[POST /api/auth/verify-email] Error:", error);
+    return createServerErrorResponse("Failed to verify email");
   }
 }
 
 // Verify token validity via GET
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get("token");
 
     if (!token) {
-      return NextResponse.json(
-        { valid: false, error: "Token is required" },
-        { status: 400 }
-      );
+      return createErrorResponse("Token is required", 400, undefined, "MISSING_TOKEN");
     }
 
     const verificationToken = await prisma.emailVerificationToken.findUnique({
@@ -113,10 +101,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ valid: true });
   } catch (error) {
-    console.error("Token validation error:", error);
-    return NextResponse.json(
-      { valid: false, error: "An error occurred" },
-      { status: 500 }
-    );
+    console.error("[GET /api/auth/verify-email] Error:", error);
+    return createServerErrorResponse("Failed to validate token");
   }
 }

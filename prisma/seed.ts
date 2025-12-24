@@ -11,7 +11,7 @@ const prisma = new PrismaClient({ adapter })
 
 async function main() {
   console.log('Seeding roles and permissions...')
-  const roles = ["patient", "doctor", "admin"];
+  const roles = ["patient", "doctor_pending", "doctor", "admin"];
   
   for (const roleName of roles) {
     console.log(`Processing role: ${roleName}`)

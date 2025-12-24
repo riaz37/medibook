@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
 import { AdminDashboardLayout } from "@/components/admin/layout/AdminDashboardLayout";
 import AdminDashboardHero from "@/components/admin/dashboard/AdminDashboardHero";
 import AdminStatsGrid from "@/components/admin/dashboard/AdminStatsGrid";
@@ -6,10 +7,17 @@ import DoctorVerificationsCard from "@/components/admin/dashboard/DoctorVerifica
 import RecentActivity from "@/components/admin/dashboard/RecentActivity";
 import QuickActions from "@/components/admin/dashboard/QuickActions";
 import RecentAppointments from "@/components/admin/RecentAppointments";
-import { RevenueChart } from "@/components/admin/dashboard/RevenueChart";
 import { Suspense } from "react";
-import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
+import { StatCardGridSkeleton, CardLoading, ChartSkeleton } from "@/components/ui/loading-skeleton";
 import { requireRole } from "@/lib/server/rbac";
+
+// Lazy load chart component (heavy recharts dependency)
+const RevenueChart = dynamic(
+  () => import("@/components/admin/dashboard/RevenueChart").then((mod) => ({ default: mod.RevenueChart })),
+  {
+    loading: () => <ChartSkeleton height={300} />,
+  }
+);
 
 /**
  * Admin Dashboard
@@ -21,7 +29,7 @@ import { requireRole } from "@/lib/server/rbac";
 async function AdminPage() {
   const authResult = await requireRole("admin");
   if ("response" in authResult) {
-    redirect("/");
+    redirect("/sign-in");
   }
 
   return (
@@ -33,7 +41,7 @@ async function AdminPage() {
         <Suspense fallback={<StatCardGridSkeleton count={4} />}>
           <AdminStatsGrid />
         </Suspense>
-        <Suspense fallback={<CardLoading />}>
+        <Suspense fallback={<ChartSkeleton height={300} />}>
           <RevenueChart />
         </Suspense>
         <QuickActions />

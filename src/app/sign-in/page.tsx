@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react";
 
 const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -23,6 +24,7 @@ type SignInFormData = z.infer<typeof signInSchema>;
 export default function SignInPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
@@ -53,7 +55,7 @@ export default function SignInPage() {
       // Redirect based on role
       if (result.user?.role === "admin") {
         router.push("/admin");
-      } else if (result.user?.role === "doctor") {
+      } else if (result.user?.role === "doctor" || result.user?.role === "doctor_pending") {
         router.push("/doctor/dashboard");
       } else {
         router.push("/patient/dashboard");
@@ -112,12 +114,28 @@ export default function SignInPage() {
                       </Link>
                     </div>
                     <FormControl>
-                      <Input
-                        placeholder="Enter your password"
-                        type="password"
-                        disabled={isLoading}
-                        {...field}
-                      />
+                      <div className="relative">
+                        <Input
+                          placeholder="Enter your password"
+                          type={showPassword ? "text" : "password"}
+                          disabled={isLoading}
+                          {...field}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={isLoading}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -132,7 +150,7 @@ export default function SignInPage() {
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-muted-foreground">
             Don't have an account?{" "}
-            <Link href="/sign-up" className="text-primary hover:underline font-medium">
+            <Link href="/sign-up/select-role" className="text-primary hover:underline font-medium">
               Sign up
             </Link>
           </div>

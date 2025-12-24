@@ -77,7 +77,7 @@ function Header() {
               Login
             </Button>
           </Link>
-          <Link href="/sign-up">
+          <Link href="/sign-up/select-role">
             <Button size="sm" className="bg-primary hover:bg-primary/90">
               Get Started
             </Button>

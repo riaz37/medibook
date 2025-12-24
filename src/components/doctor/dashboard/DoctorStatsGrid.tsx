@@ -1,6 +1,5 @@
-import { StatCard } from "@/components/ui/stat-card";
-import { Calendar, CheckCircle2, List, AlertCircle } from "lucide-react";
-import prisma from "@/lib/prisma";
+import { StatCard } from "@/components/shared/cards/StatCard";
+import { Calendar, AlertCircle } from "lucide-react";
 import { requireAuth } from "@/lib/server/rbac";
 import { getDoctorStats } from "@/lib/utils/appointments";
 
@@ -9,11 +8,10 @@ export default async function DoctorStatsGrid() {
   let stats = { total: 0, pending: 0, upcoming: 0, completed: 0 };
 
   if ("response" in authResult) {
-    // If auth fails, return default stats (component will still render with zeros)
+    // If auth fails, return default stats
   } else {
     const { context } = authResult;
     try {
-      // context.doctorId is already available if the user is a doctor
       if (context.doctorId) {
         stats = await getDoctorStats(context.doctorId);
       }
@@ -23,36 +21,21 @@ export default async function DoctorStatsGrid() {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
       <StatCard
-        title="Total Appointments"
-        value={stats.total}
-        description="All time appointments"
-        icon={List}
-        href="/doctor/appointments"
-      />
-      <StatCard
-        title="Pending"
+        title="Pending Appointments"
         value={stats.pending}
-        description="Awaiting confirmation"
+        description="Awaiting your confirmation"
         icon={AlertCircle}
         href="/doctor/appointments?status=pending"
       />
       <StatCard
-        title="Upcoming"
+        title="Upcoming This Week"
         value={stats.upcoming}
         description="Scheduled appointments"
         icon={Calendar}
         href="/doctor/appointments?status=upcoming"
       />
-      <StatCard
-        title="Completed"
-        value={stats.completed}
-        description="Finished appointments"
-        icon={CheckCircle2}
-        href="/doctor/appointments?status=completed"
-      />
     </div>
   );
 }
-

@@ -32,13 +32,19 @@ export async function createSession(userId: string) {
   const sessionExpiresAt = new Date(Date.now() + SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
   const refreshExpiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
   
-  // Get user role for the token
+  // Get user role for the token (use effective role - check for doctorProfile)
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: { role: true },
   });
   
-  const roleName = user?.role?.name || user?.userRole?.toLowerCase() || "patient";
+  if (!user || !user.role) {
+    throw new Error("User or role not found");
+  }
+  
+  // Use the actual role from database (no need to check doctorProfile.isVerified)
+  // Role is already set correctly: "doctor_pending" or "doctor"
+  const roleName = user.role.name;
 
   // Create access token (short-lived)
   const accessToken = await signToken({ userId, role: roleName, type: "access" }, ACCESS_TOKEN_EXPIRY);
@@ -126,7 +132,13 @@ export async function refreshAccessToken(refreshTokenValue: string) {
   }
 
   const user = refreshToken.user;
-  const roleName = user?.role?.name || user?.userRole?.toLowerCase() || "patient";
+  if (!user.role) {
+    return { error: "User role not found" };
+  }
+  
+  // Use the actual role from database (no need to check doctorProfile.isVerified)
+  // Role is already set correctly: "doctor_pending" or "doctor"
+  const roleName = user.role.name;
 
   // Create new access token
   const newAccessToken = await signToken(
@@ -228,8 +240,16 @@ export async function deleteSession() {
     }
   }
 
-  cookieStore.delete("session");
-  cookieStore.delete("refresh_token");
+  // Delete cookies by setting them with expired date and same path settings
+  // This ensures cookies are properly deleted even with path restrictions
+  cookieStore.set("session", "", {
+    expires: new Date(0),
+    path: "/",
+  });
+  cookieStore.set("refresh_token", "", {
+    expires: new Date(0),
+    path: "/api/auth",
+  });
 }
 
 export async function getCurrentUser() {

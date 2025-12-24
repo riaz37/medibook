@@ -1,10 +1,11 @@
 "use client";
 
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { Calendar, Clock, User, X } from "lucide-react";
+import { Calendar, Clock, User, X, CreditCard, FileText, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -13,12 +14,19 @@ export interface AppointmentCardProps {
     id: string;
     doctorName: string;
     doctorImageUrl?: string;
+    doctorSpeciality?: string | null;
     reason?: string | null;
     date: string;
     time: string;
     status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
     duration?: number;
-    price?: number;
+    price?: number | null;
+    appointmentTypeName?: string | null;
+    paymentStatus?: string | null;
+    patientPaid?: boolean;
+    refunded?: boolean;
+    hasPrescription?: boolean;
+    prescriptionId?: string | null;
   };
   onCancel?: (id: string) => void;
   onViewDetails?: (id: string) => void;
@@ -38,7 +46,7 @@ const statusLabels = {
   CANCELLED: "Cancelled",
 };
 
-export default function AppointmentCard({
+function AppointmentCard({
   appointment,
   onCancel,
   onViewDetails,
@@ -73,7 +81,21 @@ export default function AppointmentCard({
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-lg truncate">{appointment.doctorName}</h3>
-                <p className="text-sm text-muted-foreground truncate">{appointment.reason}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {appointment.doctorSpeciality && (
+                    <Badge variant="secondary" className="text-xs">
+                      {appointment.doctorSpeciality}
+                    </Badge>
+                  )}
+                  {appointment.appointmentTypeName && (
+                    <Badge variant="outline" className="text-xs">
+                      {appointment.appointmentTypeName}
+                    </Badge>
+                  )}
+                </div>
+                {appointment.reason && (
+                  <p className="text-sm text-muted-foreground truncate mt-1">{appointment.reason}</p>
+                )}
               </div>
               <Badge
                 variant="outline"
@@ -100,12 +122,49 @@ export default function AppointmentCard({
               )}
             </div>
 
-            {/* Price (if available) */}
-            {appointment.price && appointment.status !== "CANCELLED" && (
-              <p className="text-sm font-medium text-foreground mb-4">
-                Price: ${appointment.price}
-              </p>
-            )}
+            {/* Payment Status & Price */}
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              {appointment.price && appointment.status !== "CANCELLED" && (
+                <div className="flex items-center gap-1 text-sm font-medium text-foreground">
+                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                  <span>${appointment.price}</span>
+                </div>
+              )}
+              {appointment.paymentStatus && (
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${
+                    appointment.patientPaid
+                      ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+                      : appointment.paymentStatus === "PENDING"
+                      ? "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20"
+                      : "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20"
+                  }`}
+                >
+                  {appointment.refunded ? (
+                    <>
+                      <X className="w-3 h-3 mr-1" />
+                      Refunded
+                    </>
+                  ) : appointment.patientPaid ? (
+                    <>
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Paid
+                    </>
+                  ) : (
+                    "Unpaid"
+                  )}
+                </Badge>
+              )}
+              {appointment.hasPrescription && (
+                <Link href={`/patient/prescriptions/${appointment.prescriptionId}`}>
+                  <Badge variant="outline" className="text-xs cursor-pointer hover:bg-primary/10">
+                    <FileText className="w-3 h-3 mr-1" />
+                    Prescription
+                  </Badge>
+                </Link>
+              )}
+            </div>
 
             {/* Actions */}
             <div className="flex items-center gap-2">
@@ -117,7 +176,7 @@ export default function AppointmentCard({
                   asChild
                   className="min-h-[44px] touch-manipulation"
                 >
-                  <Link href={`/appointments/${appointment.id}`}>View Details</Link>
+                  <Link href={`/patient/appointments/${appointment.id}`}>View Details</Link>
                 </Button>
               )}
               {canCancel && onCancel && (
@@ -138,4 +197,7 @@ export default function AppointmentCard({
     </Card>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export default React.memo(AppointmentCard);
 

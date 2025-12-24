@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     let whereClause: any = {};
     if (context.role === "patient") {
       whereClause.userId = context.userId;
-    } else if (context.role === "doctor" && context.doctorId) {
+    } else if ((context.role === "doctor" || context.role === "doctor_pending") && context.doctorId) {
       whereClause.doctorId = context.doctorId;
     }
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         TO_CHAR("createdAt", 'YYYY-MM-DD') as date_key,
         "status",
         COUNT(*)::int as count
-      FROM "Appointment"
+      FROM "appointments"
       WHERE "createdAt" >= ${startDate}
       ${userId ? Prisma.sql`AND "userId" = ${userId}` : Prisma.empty}
       ${doctorId ? Prisma.sql`AND "doctorId" = ${doctorId}` : Prisma.empty}

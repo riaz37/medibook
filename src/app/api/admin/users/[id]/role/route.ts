@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
-import { UserRole } from "@/generated/prisma/client";
-import { validateRoleTransition, roleToUserRole } from "@/lib/server/rbac";
+import type { Role } from "@/lib/types/rbac";
+import { createErrorResponse, createNotFoundResponse, createForbiddenResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * PUT /api/admin/users/[id]/role
  * 
  * Update user role
  * Admin only
+ * 
+ * Allows changing roles between: patient, doctor_pending, doctor
+ * Does NOT allow creating new admins (admin role is protected)
  */
 export async function PUT(
   request: NextRequest,
@@ -21,99 +24,102 @@ export async function PUT(
       return authResult.response;
     }
 
-    const { userId: adminUserId, role: adminRole } = authResult.context;
+    const { context } = authResult;
     const { id: userId } = await params;
+    const body = await request.json();
+    const { newRole, reason } = body;
+
+    // Validate newRole
+    const allowedRoles: Role[] = ["patient", "doctor_pending", "doctor"];
+    if (!newRole || !allowedRoles.includes(newRole)) {
+      return createErrorResponse(
+        `Invalid role. Allowed roles: ${allowedRoles.join(", ")}`,
+        400,
+        undefined,
+        "INVALID_ROLE"
+      );
+    }
 
     // Get user
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      include: { role: true },
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("User");
     }
 
-    const body = await request.json();
-    const { newRole, reason } = body;
-
-    if (!newRole) {
-      return NextResponse.json(
-        { error: "New role is required" },
-        { status: 400 }
-      );
+    // Prevent changing admin roles
+    if (user.role.name === "admin") {
+      return createForbiddenResponse("Cannot change admin role");
     }
 
-    // Validate role value
-    const validRoles = ["PATIENT", "DOCTOR", "ADMIN"];
-    if (!validRoles.includes(newRole)) {
-      return NextResponse.json(
-        { error: "Invalid role" },
-        { status: 400 }
-      );
+    // Prevent creating new admins
+    if (newRole === "admin") {
+      return createForbiddenResponse("Admin role cannot be assigned through this endpoint. Use the create-admin script.");
     }
 
-    const newUserRole = newRole as UserRole;
-
-    // Validate role transition
-    const validation = validateRoleTransition(
-      user.userRole,
-      newUserRole,
-      adminRole
-    );
-
-    if (!validation.valid) {
-      return NextResponse.json(
-        { error: validation.reason },
-        { status: 400 }
-      );
+    // If role is the same, return success
+    if (user.role.name === newRole) {
+      return NextResponse.json({
+        message: "Role unchanged",
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role.name,
+        },
+      });
     }
 
-    // Prevent changing to admin role (should be via email whitelist)
-    if (newUserRole === "ADMIN" && user.userRole !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Admin role can only be assigned via email whitelist" },
-        { status: 400 }
-      );
+    // Get the new role
+    const targetRole = await prisma.role.findUnique({
+      where: { name: newRole },
+    });
+
+    if (!targetRole) {
+      return createNotFoundResponse(`Role '${newRole}'`);
     }
 
     // Update user role
-    const oldRole = user.userRole;
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        userRole: newUserRole,
+        roleId: targetRole.id,
+      },
+      include: {
+        role: true,
       },
     });
 
-    // No external metadata sync required in custom auth
+    // If changing to/from doctor role, update doctor profile verification status
+    if (newRole === "doctor" && user.role.name === "doctor_pending") {
+      // Approving doctor - mark as verified
+      await prisma.doctor.updateMany({
+        where: { userId: userId },
+        data: { isVerified: true },
+      });
+    } else if (newRole === "doctor_pending" && user.role.name === "doctor") {
+      // Reverting to pending - mark as unverified
+      await prisma.doctor.updateMany({
+        where: { userId: userId },
+        data: { isVerified: false },
+      });
+    }
 
-    // Log role change
-    await prisma.roleChangeAudit.create({
-      data: {
-        userId: user.id,
-        oldRole,
-        newRole: newUserRole,
-        changedBy: adminUserId,
-        reason: reason || undefined,
-      },
-    });
+    // Log the role change (reason is optional)
+    console.log(`[PUT /api/admin/users/[id]/role] Role changed for user ${userId}: ${user.role.name} -> ${newRole}${reason ? ` (Reason: ${reason})` : ""} by admin ${context.userId}`);
 
     return NextResponse.json({
       message: "User role updated successfully",
       user: {
         id: updatedUser.id,
         email: updatedUser.email,
-        role: updatedUser.userRole,
+        role: updatedUser.role.name,
       },
     });
   } catch (error) {
-    console.error("Error updating user role:", error);
-    return NextResponse.json(
-      { error: "Failed to update user role" },
-      { status: 500 }
-    );
+    console.error("[PUT /api/admin/users/[id]/role] Error:", error);
+    return createServerErrorResponse("Failed to update user role");
   }
 }

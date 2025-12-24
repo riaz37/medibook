@@ -8,6 +8,15 @@ const isPublicRoute = (path: string) => {
     "/",
     "/sign-in",
     "/sign-up",
+    "/forgot-password",
+    "/reset-password",
+    "/verify-email",
+    "/api/auth/sign-up",
+    "/api/auth/sign-in",
+    "/api/auth/forgot-password",
+    "/api/auth/reset-password",
+    "/api/auth/verify-email",
+    "/api/auth/resend-verification",
     "/api/webhooks/stripe",
     "/api/vapi-get-user-appointments",
     "/api/vapi-book-appointment",
@@ -15,14 +24,14 @@ const isPublicRoute = (path: string) => {
     "/api/vapi-get-available-times",
     "/api/send-appointment-email",
   ];
-  return publicRoutes.some(route => path === route || path.startsWith("/sign-up/"));
+  return publicRoutes.some(route => path === route || path.startsWith("/sign-up"));
 };
 
 const isAdminRoute = (path: string) => path.startsWith("/admin");
 const isDoctorRoute = (path: string) => path.startsWith("/doctor");
 const isPatientRoute = (path: string) => path.startsWith("/patient");
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Skip static files and images
@@ -74,7 +83,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
-  if (isDoctorRoute(pathname) && role !== "doctor" && role !== "admin") {
+  if (isDoctorRoute(pathname) && role !== "doctor" && role !== "doctor_pending" && role !== "admin") {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
@@ -97,3 +106,4 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
 };
+

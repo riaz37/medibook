@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/server/rbac";
 import type { DoctorApplicationData } from "@/lib/types/rbac";
+import { createErrorResponse, createNotFoundResponse, createServerErrorResponse, successResponse } from "@/lib/utils/api-response";
 
 /**
  * POST /api/doctors/apply
@@ -26,33 +27,25 @@ export async function POST(request: NextRequest) {
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
       include: {
+        role: true,
         doctorApplication: true,
         doctorProfile: true,
       },
     });
 
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+    if (!dbUser || !dbUser.role) {
+      return createNotFoundResponse("User");
     }
 
-    // Check if user is already a doctor
-    if (dbUser.userRole === "DOCTOR" || dbUser.doctorProfile) {
-      return NextResponse.json(
-        { error: "You are already a doctor on the platform" },
-        { status: 400 }
-      );
+    // Check if user is already a doctor (has doctor or doctor_pending role)
+    if (dbUser.role.name === "doctor" || dbUser.role.name === "doctor_pending") {
+      return createErrorResponse("You are already a doctor on the platform", 400, undefined, "ALREADY_DOCTOR");
     }
 
     // Check if user already has a pending application
     if (dbUser.doctorApplication) {
       if (dbUser.doctorApplication.status === "PENDING") {
-        return NextResponse.json(
-          { error: "You already have a pending application" },
-          { status: 400 }
-        );
+        return createErrorResponse("You already have a pending application", 400, undefined, "PENDING_APPLICATION_EXISTS");
       }
       
       // If previous application was rejected, allow new application
@@ -69,10 +62,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!body.speciality || body.speciality.trim() === "") {
-      return NextResponse.json(
-        { error: "Speciality is required" },
-        { status: 400 }
-      );
+      return createErrorResponse("Speciality is required", 400, [{ field: "speciality", message: "Speciality is required" }], "VALIDATION_ERROR");
     }
 
     // Create doctor application
@@ -90,22 +80,17 @@ export async function POST(request: NextRequest) {
     // TODO: Send notification to admins about new application
     // This could be done via email, in-app notification, or webhook
 
-    return NextResponse.json(
+    return successResponse(
       {
-        message: "Application submitted successfully",
-        application: {
-          id: application.id,
-          status: application.status,
-          submittedAt: application.submittedAt,
-        },
+        id: application.id,
+        status: application.status,
+        submittedAt: application.submittedAt,
       },
-      { status: 201 }
+      "Application submitted successfully",
+      201
     );
   } catch (error) {
     console.error("Error submitting doctor application:", error);
-    return NextResponse.json(
-      { error: "Failed to submit application" },
-      { status: 500 }
-    );
+    return createServerErrorResponse("Failed to submit application");
   }
 }

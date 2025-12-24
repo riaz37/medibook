@@ -1,23 +1,26 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyPassword, createSession } from "@/lib/auth";
+import { validateRequest } from "@/lib/utils/validation";
+import { createErrorResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 import { z } from "zod";
 
 const signInSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(1, "Password is required"),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const result = signInSchema.safeParse(body);
     
-    if (!result.success) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+    // Validate request body
+    const validation = validateRequest(signInSchema, body);
+    if (!validation.success) {
+      return validation.response;
     }
 
-    const { email, password } = result.data;
+    const { email, password } = validation.data;
 
     const user = await prisma.user.findUnique({ 
       where: { email },
@@ -25,23 +28,29 @@ export async function POST(req: Request) {
     });
 
     if (!user || !user.passwordHash) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      return createErrorResponse("Invalid credentials", 401, undefined, "INVALID_CREDENTIALS");
     }
 
     const isValid = await verifyPassword(password, user.passwordHash);
     
     if (!isValid) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      return createErrorResponse("Invalid credentials", 401, undefined, "INVALID_CREDENTIALS");
     }
 
-    // Create session
+    // Create session (this will use effective role in JWT)
     await createSession(user.id);
     
-    const roleName = user.role?.name || user.userRole.toLowerCase();
+    if (!user.role) {
+      console.error("[POST /api/auth/sign-in] User role not found for user:", user.id);
+      return createServerErrorResponse("User role not found", "MISSING_ROLE");
+    }
 
-    return NextResponse.json({ success: true, user: { id: user.id, email: user.email, role: roleName } });
+    // Return the actual role (already set correctly in database)
+    const effectiveRole = user.role.name;
+
+    return NextResponse.json({ success: true, user: { id: user.id, email: user.email, role: effectiveRole } });
   } catch (error) {
-    console.error("Sign in error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("[POST /api/auth/sign-in] Error:", error);
+    return createServerErrorResponse("Failed to sign in");
   }
 }

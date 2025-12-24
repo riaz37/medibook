@@ -11,7 +11,7 @@ import DoctorApplicationsClient from "./DoctorApplicationsClient";
 async function AdminDoctorApplicationsPage() {
   const authResult = await requireRole("admin");
   if ("response" in authResult) {
-    redirect("/");
+    redirect("/sign-in");
   }
 
   return (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import { createServerErrorResponse, createErrorResponse } from "@/lib/utils/api-response";
 
 export interface DoctorSearchParams {
   query?: string;           // Search by name, speciality
@@ -236,11 +237,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error searching doctors:", error);
-    return NextResponse.json(
-      { error: "Failed to search doctors" },
-      { status: 500 }
-    );
+    console.error("[GET /api/doctors/search] Error:", error);
+    return createServerErrorResponse("Failed to search doctors");
   }
 }
 
@@ -285,12 +283,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    return createErrorResponse("Invalid action", 400, undefined, "INVALID_ACTION");
   } catch (error) {
-    console.error("Error fetching filter options:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch filter options" },
-      { status: 500 }
-    );
+    console.error("[POST /api/doctors/search] Error:", error);
+    return createServerErrorResponse("Failed to fetch filter options");
   }
 }

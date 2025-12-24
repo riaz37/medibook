@@ -2,6 +2,7 @@
 
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, User as UserIcon } from "lucide-react";
 import {
   DropdownMenu,
@@ -20,11 +21,15 @@ import { toast } from "sonner";
 export function UserButton() {
   const { user } = useCurrentUser();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" });
       if (res.ok) {
+        // Clear all React Query cache to remove any cached user data
+        queryClient.clear();
+        
         toast.success("Logged out successfully");
         router.push("/sign-in");
         router.refresh();

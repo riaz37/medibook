@@ -1,29 +1,28 @@
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
 import { AdminDashboardLayout } from "@/components/admin/layout/AdminDashboardLayout";
-import AdminAnalyticsClient from "./AdminAnalyticsClient";
-import { getCurrentUser } from "@/lib/auth";
+import { requireRole } from "@/lib/server/rbac";
+import { ChartSkeleton } from "@/components/ui/loading-skeleton";
+
+// Lazy load analytics client (contains heavy chart components)
+const AdminAnalyticsClient = dynamic(() => import("./AdminAnalyticsClient"), {
+  loading: () => <ChartSkeleton height={400} />,
+});
 
 async function AdminAnalyticsPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
+  const authResult = await requireRole("admin");
+  
+  if ("response" in authResult) {
     redirect("/sign-in");
-  }
-
-  const role = user.role?.name || user.userRole.toLowerCase();
-
-  if (role !== "admin") {
-    if (role === "doctor") {
-      redirect("/doctor/dashboard");
-    } else {
-      redirect("/patient/dashboard");
-    }
   }
 
   return (
     <AdminDashboardLayout>
       <div className="max-w-7xl mx-auto w-full">
-        <AdminAnalyticsClient />
+        <Suspense fallback={<ChartSkeleton height={400} />}>
+          <AdminAnalyticsClient />
+        </Suspense>
       </div>
     </AdminDashboardLayout>
   );

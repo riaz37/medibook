@@ -21,14 +21,14 @@ import { User, Mail, Search, Edit, History } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityListSkeleton } from "@/components/ui/loading-skeleton";
-import { UserRole } from "@/generated/prisma/client";
+import type { Role } from "@/lib/types/rbac";
 
 interface UserWithRole {
   id: string;
   email: string;
   firstName: string | null;
   lastName: string | null;
-  role: UserRole;
+  role: Role;
   createdAt: Date;
 }
 
@@ -36,10 +36,10 @@ export default function UsersManagementClient() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
+  const [roleFilter, setRoleFilter] = useState<Role | "all">("all");
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newRole, setNewRole] = useState<UserRole | "">("");
+  const [newRole, setNewRole] = useState<Role | "">("");
   const [reason, setReason] = useState("");
 
   useEffect(() => {
@@ -88,8 +88,14 @@ export default function UsersManagementClient() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update role");
+        const errorData = await response.json();
+        const errorMessage = errorData.error || errorData.message || "Failed to update role";
+        // Format validation errors if present
+        if (errorData.details && errorData.details.length > 0) {
+          const detailMessages = errorData.details.map((d: { field: string; message: string }) => d.message).join(", ");
+          throw new Error(`${errorMessage}. ${detailMessages}`);
+        }
+        throw new Error(errorMessage);
       }
 
       toast.success("User role updated successfully");
@@ -115,9 +121,10 @@ export default function UsersManagementClient() {
 
   const roleCounts = {
     all: users.length,
-    PATIENT: users.filter((u) => u.role === "PATIENT").length,
-    DOCTOR: users.filter((u) => u.role === "DOCTOR").length,
-    ADMIN: users.filter((u) => u.role === "ADMIN").length,
+    patient: users.filter((u) => u.role === "patient").length,
+    doctor_pending: users.filter((u) => u.role === "doctor_pending").length,
+    doctor: users.filter((u) => u.role === "doctor").length,
+    admin: users.filter((u) => u.role === "admin").length,
   };
 
   if (isLoading) {
@@ -143,7 +150,7 @@ export default function UsersManagementClient() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{roleCounts.PATIENT}</div>
+            <div className="text-2xl font-bold">{roleCounts.patient}</div>
           </CardContent>
         </Card>
         <Card>
@@ -152,7 +159,10 @@ export default function UsersManagementClient() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{roleCounts.DOCTOR}</div>
+            <div className="text-2xl font-bold">{roleCounts.doctor}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {roleCounts.doctor_pending} pending approval
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -161,7 +171,7 @@ export default function UsersManagementClient() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{roleCounts.ADMIN}</div>
+            <div className="text-2xl font-bold">{roleCounts.admin}</div>
           </CardContent>
         </Card>
       </div>
@@ -183,15 +193,16 @@ export default function UsersManagementClient() {
                 className="pl-10"
               />
             </div>
-            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as UserRole | "all")}>
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as Role | "all")}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="PATIENT">Patient</SelectItem>
-                <SelectItem value="DOCTOR">Doctor</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
+                <SelectItem value="patient">Patient</SelectItem>
+                <SelectItem value="doctor_pending">Doctor (Pending)</SelectItem>
+                <SelectItem value="doctor">Doctor</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -233,14 +244,14 @@ export default function UsersManagementClient() {
                       <TableCell>
                         <Badge
                           variant={
-                            user.role === "ADMIN"
+                            user.role === "admin"
                               ? "default"
-                              : user.role === "DOCTOR"
+                              : user.role === "doctor" || user.role === "doctor_pending"
                               ? "secondary"
                               : "outline"
                           }
                         >
-                          {user.role}
+                          {user.role === "doctor_pending" ? "Doctor (Pending)" : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -278,22 +289,27 @@ export default function UsersManagementClient() {
             <div className="space-y-2">
               <Label>Current Role</Label>
               <div className="text-sm text-muted-foreground">
-                {selectedUser?.role}
+                {selectedUser?.role === "doctor_pending" 
+                  ? "Doctor (Pending)" 
+                  : selectedUser?.role 
+                    ? selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)
+                    : "N/A"}
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="newRole">New Role *</Label>
               <Select
                 value={newRole}
-                onValueChange={(v) => setNewRole(v as UserRole)}
+                onValueChange={(v) => setNewRole(v as Role)}
               >
                 <SelectTrigger id="newRole">
                   <SelectValue placeholder="Select new role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PATIENT">Patient</SelectItem>
-                  <SelectItem value="DOCTOR">Doctor</SelectItem>
-                  <SelectItem value="ADMIN" disabled>
+                  <SelectItem value="patient">Patient</SelectItem>
+                  <SelectItem value="doctor_pending">Doctor (Pending)</SelectItem>
+                  <SelectItem value="doctor">Doctor</SelectItem>
+                  <SelectItem value="admin" disabled>
                     Admin (email whitelist only)
                   </SelectItem>
                 </SelectContent>

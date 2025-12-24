@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ const statusColors = {
   COMPLETED: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
 };
 
-export function PatientPrescriptionList() {
+function PatientPrescriptionListComponent() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -153,4 +153,7 @@ export function PatientPrescriptionList() {
     </div>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const PatientPrescriptionList = React.memo(PatientPrescriptionListComponent);
 

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
-import { getAuthContext } from "@/lib/server/rbac";
+import { requireRole } from "@/lib/server/rbac";
 import { redirect } from "next/navigation";
+import { AdminDashboardLayout } from "@/components/admin/layout/AdminDashboardLayout";
 import CacheDashboardClient from "./CacheDashboardClient";
 
 // Mark page as dynamic (uses auth which requires headers)
@@ -12,22 +13,22 @@ export const metadata: Metadata = {
 };
 
 export default async function CacheManagementPage() {
-  const context = await getAuthContext();
-
-  if (!context || context.role !== "admin") {
-    redirect("/login");
+  const authResult = await requireRole("admin");
+  if ("response" in authResult) {
+    redirect("/sign-in");
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Cache Management</h1>
-        <p className="text-muted-foreground mt-2">
-          Monitor cache performance and manage cache entries.
-        </p>
+    <AdminDashboardLayout>
+      <div className="max-w-7xl mx-auto w-full">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Cache Management</h1>
+          <p className="text-muted-foreground">
+            Monitor cache performance and manage cache entries.
+          </p>
+        </div>
+        <CacheDashboardClient />
       </div>
-
-      <CacheDashboardClient />
-    </div>
+    </AdminDashboardLayout>
   );
 }

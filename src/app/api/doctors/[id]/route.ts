@@ -3,6 +3,8 @@ import { Gender } from "@/generated/prisma/client";
 import { doctorsServerService } from "@/lib/services/server";
 import { updateDoctorSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
+import { requireAuth } from "@/lib/server/rbac";
+import { createForbiddenResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 // PUT /api/doctors/[id] - Update a doctor (Admin or doctor themselves)
 export async function PUT(
@@ -13,7 +15,6 @@ export async function PUT(
     // Await params (Next.js 15 requirement)
     const { id } = await params;
     
-    const { requireAuth } = await import("@/lib/server/rbac");
     const authResult = await requireAuth();
     if ("response" in authResult) {
       return authResult.response;
@@ -23,10 +24,7 @@ export async function PUT(
     
     // Check if user is admin or owns this doctor profile
     if (context.role !== "admin" && context.doctorId !== id) {
-      return NextResponse.json(
-        { error: "Forbidden: You can only update your own profile" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("You can only update your own profile");
     }
 
     const body = await request.json();
@@ -50,11 +48,8 @@ export async function PUT(
 
     return NextResponse.json(doctor);
   } catch (error) {
-    console.error("Error updating doctor:", error);
-    return NextResponse.json(
-      { error: "Failed to update doctor" },
-      { status: 500 }
-    );
+    console.error("[PUT /api/doctors/[id]] Error:", error);
+    return createServerErrorResponse("Failed to update doctor");
   }
 }
 

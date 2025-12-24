@@ -9,6 +9,9 @@ import {
   Settings,
   Wallet,
   BarChart3,
+  FileText,
+  Database,
+  UserCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -42,9 +45,21 @@ const menuItems = [
     title: "Management",
     items: [
       {
+        title: "Users",
+        url: "/admin/users",
+        icon: UserCheck,
+        badge: null,
+      },
+      {
         title: "Doctors",
         url: "/admin/doctors",
         icon: Users,
+        badge: null,
+      },
+      {
+        title: "Applications",
+        url: "/admin/doctors/applications",
+        icon: FileText,
         badge: null,
       },
       {
@@ -79,6 +94,12 @@ const menuItems = [
         title: "Settings",
         url: "/admin/settings",
         icon: Settings,
+        badge: null,
+      },
+      {
+        title: "Cache",
+        url: "/admin/cache",
+        icon: Database,
         badge: null,
       },
     ],
@@ -142,7 +163,7 @@ export function AdminSidebar() {
               {user?.firstName} {user?.lastName}
             </span>
             <span className="truncate text-xs text-muted-foreground">
-              {user?.emailAddresses?.[0]?.emailAddress}
+              {user?.email}
             </span>
           </div>
         </div>

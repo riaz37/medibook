@@ -26,7 +26,7 @@ function getEmptyStateMessage(filter: AppointmentFilter, hasSearch: boolean) {
       title: "No appointments found",
       description: "Try adjusting your search or filters to find what you're looking for.",
       cta: "Clear Filters",
-      href: "/appointments",
+      href: "/patient/appointments",
     };
   }
 
@@ -35,19 +35,19 @@ function getEmptyStateMessage(filter: AppointmentFilter, hasSearch: boolean) {
       title: "No appointments yet",
       description: "You haven't booked any appointments. Book your first appointment to get started.",
       cta: "Book Appointment",
-      href: "/appointments/book",
+      href: "/patient/appointments/book",
     },
     upcoming: {
       title: "No upcoming appointments",
       description: "You don't have any upcoming appointments scheduled.",
       cta: "Book Appointment",
-      href: "/appointments/book",
+      href: "/patient/appointments/book",
     },
     completed: {
       title: "No completed appointments",
       description: "You haven't completed any appointments yet.",
       cta: "Book Appointment",
-      href: "/appointments/book",
+      href: "/patient/appointments/book",
     },
   };
 

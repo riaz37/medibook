@@ -3,6 +3,7 @@ import { prescriptionsServerService } from "@/lib/services/server";
 import { updatePrescriptionSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { requirePrescriptionAccess } from "@/lib/server/prescription-utils";
+import { createNotFoundResponse, createServerErrorResponse, createForbiddenResponse } from "@/lib/utils/api-response";
 
 /**
  * GET /api/prescriptions/[id] - Get prescription details
@@ -24,19 +25,13 @@ export async function GET(
     const prescription = await prescriptionsServerService.findUnique(id);
 
     if (!prescription) {
-      return NextResponse.json(
-        { error: "Prescription not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("Prescription");
     }
 
     return NextResponse.json(prescription);
   } catch (error) {
-    console.error("Error fetching prescription:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch prescription" },
-      { status: 500 }
-    );
+    console.error("[GET /api/prescriptions/[id]] Error:", error);
+    return createServerErrorResponse("Failed to fetch prescription");
   }
 }
 
@@ -58,12 +53,9 @@ export async function PUT(
 
     const { context } = accessResult;
 
-    // Only doctor or admin can update
+    // Only verified doctors (not pending) or admin can update
     if (context.role !== "doctor" && context.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only doctors can update prescriptions" },
-        { status: 403 }
-      );
+      return createForbiddenResponse("Only verified doctors can update prescriptions");
     }
 
     const body = await request.json();
@@ -89,11 +81,8 @@ export async function PUT(
 
     return NextResponse.json(updatedPrescription);
   } catch (error) {
-    console.error("Error updating prescription:", error);
-    return NextResponse.json(
-      { error: "Failed to update prescription" },
-      { status: 500 }
-    );
+    console.error("[PUT /api/prescriptions/[id]] Error:", error);
+    return createServerErrorResponse("Failed to update prescription");
   }
 }
 

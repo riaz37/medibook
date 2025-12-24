@@ -5,6 +5,8 @@ import AppointmentRescheduleEmail from "@/components/emails/AppointmentReschedul
 import PaymentLinkEmail from "@/components/emails/PaymentLinkEmail";
 import PasswordResetEmail from "@/components/emails/PasswordResetEmail";
 import EmailVerificationEmail from "@/components/emails/EmailVerificationEmail";
+import DoctorApplicationApprovalEmail from "@/components/emails/DoctorApplicationApprovalEmail";
+import DoctorApplicationRejectionEmail from "@/components/emails/DoctorApplicationRejectionEmail";
 import transporter from "@/lib/nodemailer";
 import { pdfService } from "@/lib/services/pdf.service";
 import { render } from "@react-email/render";
@@ -313,6 +315,66 @@ export class EmailService {
       console.log("Verification email sent to:", email);
     } catch (error) {
       console.error("Failed to send verification email:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send doctor application approval email
+   */
+  async sendDoctorApplicationApproval(
+    email: string,
+    doctorName: string,
+    speciality?: string
+  ) {
+    try {
+      const emailHtml = await render(
+        DoctorApplicationApprovalEmail({
+          doctorName,
+          speciality,
+        })
+      );
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `Medibook <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Doctor Application Approved - Welcome to Medibook!",
+        html: emailHtml,
+      });
+
+      console.log("Doctor application approval email sent to:", email);
+    } catch (error) {
+      console.error("Failed to send doctor application approval email:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send doctor application rejection email
+   */
+  async sendDoctorApplicationRejection(
+    email: string,
+    doctorName: string,
+    rejectionReason?: string
+  ) {
+    try {
+      const emailHtml = await render(
+        DoctorApplicationRejectionEmail({
+          doctorName,
+          rejectionReason,
+        })
+      );
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `Medibook <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Doctor Application Update - Medibook",
+        html: emailHtml,
+      });
+
+      console.log("Doctor application rejection email sent to:", email);
+    } catch (error) {
+      console.error("Failed to send doctor application rejection email:", error);
       throw error;
     }
   }

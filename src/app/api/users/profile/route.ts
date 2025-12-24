@@ -3,6 +3,7 @@ import { usersServerService } from "@/lib/services/server";
 import { updateUserProfileSchema } from "@/lib/validations";
 import { validateRequest } from "@/lib/utils/validation";
 import { requireAuth } from "@/lib/server/rbac";
+import { createNotFoundResponse, createServerErrorResponse } from "@/lib/utils/api-response";
 
 /**
  * GET /api/users/profile - Get current user profile
@@ -26,22 +27,16 @@ export async function GET() {
         createdAt: true,
         updatedAt: true,
       },
-    } as any);
+    });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("User");
     }
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch user profile" },
-      { status: 500 }
-    );
+    console.error("[GET /api/users/profile] Error:", error);
+    return createServerErrorResponse("Failed to fetch user profile");
   }
 }
 
@@ -70,10 +65,7 @@ export async function PUT(request: NextRequest) {
     // Get user ID first
     const user = await usersServerService.findUnique(context.userId);
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return createNotFoundResponse("User");
     }
 
     // Update user profile
@@ -85,10 +77,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error("Error updating user profile:", error);
-    return NextResponse.json(
-      { error: "Failed to update user profile" },
-      { status: 500 }
-    );
+    console.error("[PUT /api/users/profile] Error:", error);
+    return createServerErrorResponse("Failed to update user profile");
   }
 }
