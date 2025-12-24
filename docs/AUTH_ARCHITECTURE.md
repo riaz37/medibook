@@ -2,33 +2,32 @@
 
 ## Overview
 
-This document describes the complete authentication and authorization architecture for the Medibook application. The system uses **Clerk** for authentication and **Prisma Database** as the single source of truth for roles.
+This document describes the complete authentication and authorization architecture for the Medibook application. The system uses **Custom JWT-based Authentication** with **Prisma Database** as the single source of truth for roles and user data.
 
 ## Core Principles
 
-1. **Database is the Single Source of Truth**: All role information is stored in the database (`User.role` field)
-2. **Session Claims as Performance Optimization**: Clerk session claims are used for fast lookups but always fall back to database
+1. **Database is the Single Source of Truth**: All user data and role information is stored in the database
+2. **JWT Sessions**: Secure, HTTP-only cookies with JWT tokens for session management
 3. **Defense in Depth**: Multiple layers of protection (middleware, route handlers, business logic)
-4. **Self-Healing**: System automatically syncs metadata when inconsistencies are detected
+4. **RBAC System**: Role-based and permission-based access control
 
 ## Architecture Layers
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    CLIENT LAYER                              │
-│  - ClerkProvider (React Context)                             │
-│  - useAuth(), useUser() hooks                                │
+│  - useCurrentUser() hook (custom)                            │
+│  - useRole() hook (custom)                                   │
 │  - Client-side role checks (UI only, not security)           │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    MIDDLEWARE LAYER                          │
-│  - proxy.ts (Clerk Middleware)                              │
+│  - middleware.ts (JWT verification)                          │
 │  - Route protection (public/private)                        │
 │  - Role-based route access                                  │
-│  - Fast path: Session claims                                │
-│  - Note: Currently no DB fallback (acceptable for UX)      │
+│  - JWT token validation                                     │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
@@ -37,145 +36,132 @@ This document describes the complete authentication and authorization architectu
 │  - getAuthContext() - Primary auth utility                  │
 │  - requireAuth() - Require authentication                   │
 │  - requireRole() - Require specific role                    │
-│  - Fast path: Session claims                                │
-│  - Fallback: Database (source of truth)                     │
-│  - Auto-sync: Updates Clerk metadata if missing             │
+│  - requirePermission() - Permission-based checks            │
+│  - Database lookups for user and role data                  │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    DATABASE LAYER                             │
-│  - Prisma User.role (PATIENT | DOCTOR | ADMIN)              │
-│  - Single source of truth                                    │
+│  - User table (id, email, passwordHash, etc.)               │
+│  - Role table (patient, doctor, admin)                      │
+│  - Permission table (resource-action pairs)                 │
+│  - Session table (active sessions)                          │
 │  - RoleChangeAudit table (audit trail)                      │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    CLERK METADATA LAYER                      │
-│  - publicMetadata.role (cached copy)                        │
-│  - Synced FROM database (not authoritative)                │
-│  - Used in session claims for performance                   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Authentication Flow
 
-### 1. User Sign-Up/Sign-In
+### 1. User Sign-Up
 ```
-User → Clerk Authentication
+User → POST /api/auth/sign-up
   ↓
-Clerk Webhook → /api/webhooks/clerk
+Validate input (email, password, name, role)
   ↓
-Create/Update User in Database
+Hash password with bcryptjs
   ↓
-Set role: PATIENT (default) or ADMIN (if email in whitelist)
+Create User in Database
   ↓
-Sync role to Clerk publicMetadata
+Assign role (patient/doctor/admin)
   ↓
-Session token includes metadata (if configured)
+Create session with JWT token
+  ↓
+Set HTTP-only session cookie
 ```
 
-### 2. Request Authentication
+### 2. User Sign-In
 ```
-Request → Middleware (proxy.ts)
-  ├─ Check if authenticated (userId exists)
-  ├─ Get role from sessionClaims.metadata.role
+User → POST /api/auth/sign-in
+  ↓
+Validate email and password
+  ↓
+Verify password hash
+  ↓
+Create session with JWT token
+  ↓
+Set HTTP-only session cookie
+  ↓
+Return user data (without sensitive info)
+```
+
+### 3. Request Authentication
+```
+Request → Middleware (middleware.ts)
+  ├─ Check if authenticated (session cookie exists)
+  ├─ Verify JWT token
+  ├─ Extract role from token
   └─ Protect routes based on role
        ↓
 API Route Handler
   ├─ getAuthContext() or requireAuth()
-  ├─ Try session claims (fast path)
-  ├─ If missing → Query database (source of truth)
-  ├─ Auto-sync to Clerk metadata (async)
+  ├─ Query database for user data
+  ├─ Verify role and permissions
   └─ Return auth context
 ```
 
 ## Key Components
 
-### 1. `getAuthContext()` - Primary Auth Utility
-**Location**: `src/lib/server/auth-utils.ts`
+### 1. `lib/auth.ts` - Authentication Utilities
+
+**Functions**:
+- `hashPassword(password)` - Hash password with bcrypt
+- `verifyPassword(password, hash)` - Verify password
+- `createSession(userId)` - Create JWT session
+- `getSession()` - Get current session from cookie
+- `deleteSession()` - Logout (delete session)
+- `getCurrentUser()` - Get authenticated user
+
+### 2. `lib/jwt.ts` - JWT Token Management
+
+**Functions**:
+- `signToken(payload, expiresIn)` - Create JWT token
+- `verifyToken(token)` - Verify and decode JWT token
+
+### 3. `lib/server/rbac.ts` - RBAC System
 
 **Features**:
-- ✅ Fast path: Reads from session claims
-- ✅ Fallback: Queries database if role missing
-- ✅ Auto-sync: Updates Clerk metadata asynchronously
-- ✅ Optional DB user: Can include full user object
+- ✅ Role-based access control
+- ✅ Permission-based access control
+- ✅ Resource ownership checks
+- ✅ Database as source of truth
 
-**Usage**:
+**Functions**:
+- `getAuthContext(includeDbUser?)` - Get full auth context
+- `requireAuth()` - Require authentication
+- `requireRole(role)` - Require specific role
+- `requireAnyRole(roles[])` - Require any of specified roles
+- `requirePermission(resource, action)` - Require permission
+- `checkPermission(resource, action)` - Check if user has permission
+- `requireDoctorOwnership(doctorId)` - Verify doctor owns resource
+- `requireAppointmentAccess(appointmentId)` - Verify access to appointment
+
+### 4. Custom React Hooks
+
+**`useCurrentUser()`** - Get authenticated user
 ```typescript
-const context = await getAuthContext();
-if (!context) {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-// context.role, context.clerkUserId, context.doctorId available
+const { user, isLoaded, isSignedIn } = useCurrentUser();
 ```
 
-### 2. `requireAuth()` - Require Authentication
-**Location**: `src/lib/server/auth-utils.ts`
-
-**Features**:
-- Wraps `getAuthContext()` with error response
-- Returns 401 if not authenticated
-
-**Usage**:
+**`useRole()`** - Get user's role
 ```typescript
-const authResult = await requireAuth();
-if ("response" in authResult) {
-  return authResult.response; // 401 error
-}
-const { context } = authResult;
+const role = useRole(); // "patient" | "doctor" | "admin" | null
 ```
-
-### 3. `requireRole()` - Require Specific Role
-**Location**: `src/lib/server/auth-utils.ts` and `src/lib/server/rbac.ts`
-
-**Features**:
-- Two implementations (use `auth-utils.ts` version - has DB fallback)
-- Admin has access to everything
-- Returns 403 if wrong role
-
-**Usage**:
-```typescript
-const authResult = await requireRole("admin");
-if ("response" in authResult) {
-  return authResult.response; // 401 or 403 error
-}
-const { context } = authResult;
-```
-
-### 4. `getUserRoleFromSession()` - RBAC Utility
-**Location**: `src/lib/server/rbac.ts`
-
-**Features**:
-- ✅ Now has DB fallback (fixed)
-- Used by permission system
-- Returns role or null
-
-### 5. Middleware (`proxy.ts`)
-**Location**: `src/proxy.ts`
-
-**Features**:
-- First line of defense
-- Protects routes before handlers
-- Fast path only (session claims)
-- Note: No DB fallback (acceptable - UX layer, not security)
 
 ## Role Management
 
 ### Role Sources (Priority Order)
-1. **Database** (`User.role`) - Single source of truth
-2. **Clerk Metadata** (`publicMetadata.role`) - Cached copy
-3. **Session Claims** (`sessionClaims.metadata.role`) - Performance optimization
+1. **Database** (`User.role` relation) - Primary source
+2. **Legacy Enum** (`User.userRole`) - Backward compatibility
 
 ### Role Updates
-All role changes must:
+All role changes:
 1. Update database first
-2. Sync to Clerk metadata
-3. Log to RoleChangeAudit table
+2. Log to RoleChangeAudit table
+3. Create new session with updated role
 
 **Places where roles are updated**:
-- Webhook handler (`/api/webhooks/clerk`)
+- Signup (`/api/auth/sign-up`)
 - Admin role change (`/api/admin/users/[id]/role`)
 - Doctor application approval (`/api/admin/doctors/applications/[id]`)
 
@@ -183,27 +169,30 @@ All role changes must:
 
 ### ✅ Implemented
 - Database as source of truth
-- Automatic fallback to database
+- Secure password hashing with bcrypt (12 rounds)
+- HTTP-only session cookies
+- JWT token expiration (7 days)
+- Session validation in database
 - Role change audit trail
 - Admin role protection (can't be demoted)
-- Admin assignment via email whitelist only
-- Multiple layers of protection
+- RBAC with granular permissions
 
-### ⚠️ Considerations
-1. **Session Token Customization**: Should be configured in Clerk Dashboard
-   - Go to Sessions → Customize session token
-   - Add: `{ "metadata": "{{user.public_metadata}}" }`
-   - Without this, session claims won't have role (but DB fallback handles it)
+### 🔒 Security Measures
+1. **Password Security**:
+   - Minimum 8 characters required
+   - Bcrypt hashing with salt rounds of 12
+   - Passwords never stored in plain text
 
-2. **Middleware Performance**: Currently no DB fallback in middleware
-   - Acceptable: Middleware is UX layer, not security
-   - Security is enforced in API route handlers
-   - Users without role in session will see redirects but API calls will work
+2. **Session Security**:
+   - HTTP-only cookies (not accessible via JavaScript)
+   - Secure flag in production
+   - SameSite=Lax for CSRF protection
+   - 7-day expiration
 
-3. **Rate Limiting**: Consider adding rate limiting for:
-   - Authentication endpoints
-   - Role change endpoints
-   - Metadata sync operations
+3. **JWT Security**:
+   - Signed with secret key (HS256)
+   - Contains minimal payload (userId, role)
+   - Verified on every request
 
 ## Common Patterns
 
@@ -213,7 +202,7 @@ const context = await getAuthContext();
 if (!context) {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
-// Use context.clerkUserId, context.role
+// Use context.userId, context.role
 ```
 
 ### Pattern 2: Role-Based Access
@@ -227,10 +216,11 @@ const { context } = authResult;
 
 ### Pattern 3: Permission-Based Access
 ```typescript
-const permissionCheck = await checkPermission("appointments", "read");
-if (!permissionCheck.allowed) {
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+const permissionCheck = await requirePermission("appointments", "read");
+if ("response" in permissionCheck) {
+  return permissionCheck.response;
 }
+const { context } = permissionCheck;
 ```
 
 ### Pattern 4: Ownership Check
@@ -259,77 +249,63 @@ const { context } = authResult;
 
 ## Testing Checklist
 
-- [ ] User without role in session claims can access API (DB fallback works)
-- [ ] Role changes sync to Clerk metadata
-- [ ] Admin routes protected
-- [ ] Doctor routes protected
-- [ ] Patient routes protected
-- [ ] Role change audit trail works
-- [ ] Admin can't be demoted
-- [ ] Admin can only be assigned via email whitelist
-
-## Migration Notes
-
-### If Session Token Not Configured
-- System will work (DB fallback handles it)
-- Performance slightly slower (DB query on first request)
-- Metadata auto-syncs for future requests
-
-### If Switching Auth Systems
-1. Ensure all role data is in database
-2. Run sync script to update Clerk metadata
-3. Configure session token customization
-4. Test all endpoints
+- [x] User can sign up with email and password
+- [x] User can sign in with credentials
+- [x] User can log out
+- [x] Session persists across page refreshes
+- [x] Session expires after 7 days
+- [x] Role changes are logged
+- [x] Admin routes are protected
+- [x] Doctor routes are protected
+- [x] Patient routes are protected
+- [x] Admin cannot be demoted
+- [x] RBAC permissions work correctly
 
 ## Performance Considerations
 
-### Fast Path (Session Claims Available)
-- No database query
-- ~1-5ms response time
-- Used for 99% of requests after initial sync
-
-### Fallback Path (DB Query)
-- Single database query
-- ~10-50ms response time
-- Auto-syncs metadata for future requests
-- Only happens when session claims missing
+### Session Management
+- JWT verification: ~1-5ms
+- Database session lookup: ~10-50ms
+- Session is verified once per request
 
 ### Optimization Tips
-1. Configure session token customization (reduces DB queries)
-2. Cache role in session claims
-3. Use `includeDbUser` only when needed
-4. Batch role checks when possible
+1. Cache user role in JWT payload
+2. Use `includeDbUser` only when needed
+3. Batch permission checks when possible
+4. Consider Redis for session storage (future improvement)
 
 ## Monitoring & Observability
 
 ### Key Metrics to Track
 - Authentication success/failure rates
-- Role fallback frequency (DB queries)
-- Metadata sync failures
+- Session creation/expiration
 - Role change events
 - Permission denied events
+- Password reset requests
 
 ### Logging
 - All authentication failures logged
 - Role changes logged to RoleChangeAudit
-- Metadata sync failures logged (non-critical)
+- Failed login attempts tracked
 
 ## Future Improvements
 
-1. **Redis Caching**: Cache role lookups for even faster access
+1. **Redis Caching**: Cache sessions and role lookups
 2. **Rate Limiting**: Add rate limiting to auth endpoints
-3. **Session Refresh**: Force session refresh after role changes
-4. **Monitoring Dashboard**: Track auth metrics
-5. **Multi-Factor Auth**: Add MFA support via Clerk
+3. **Multi-Factor Auth**: Add MFA support
+4. **Password Reset**: Email-based password reset flow
+5. **Email Verification**: Verify email addresses on signup
+6. **Refresh Tokens**: Implement refresh token rotation
 
 ## Summary
 
 The authentication system is **production-ready** with:
+- ✅ Custom JWT-based authentication
+- ✅ Secure password hashing
+- ✅ HTTP-only session cookies
 - ✅ Database as single source of truth
-- ✅ Automatic fallback mechanisms
-- ✅ Self-healing metadata sync
-- ✅ Comprehensive audit trail
+- ✅ Comprehensive RBAC system
+- ✅ Audit trail for role changes
 - ✅ Multiple security layers
-- ✅ Performance optimizations
 
-The system gracefully handles edge cases and automatically recovers from inconsistencies, making it robust and reliable for production use.
+The system provides a secure, scalable foundation for authentication and authorization without external dependencies.

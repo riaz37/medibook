@@ -22,3 +22,7 @@ export * from "./use-file-upload";
 // Payments & Analytics
 export * from "./use-payments";
 
+// Authentication
+export * from "./use-role";
+export * from "./use-current-user";
+

@@ -12,15 +12,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { parseISO, isPast, isToday, isAfter } from "date-fns";
 import { Calendar, CheckCircle2, List } from "lucide-react";
 import { toast } from "sonner";
-import { useUser } from "@clerk/nextjs";
-import { useRole } from "@/lib/hooks/use-role";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useRole } from "@/hooks/use-role";
 import { useEffect } from "react";
 import { PageLoading } from "@/components/ui/loading-skeleton";
 
 function AppointmentsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isLoaded } = useUser();
+  const { isLoaded } = useCurrentUser();
   const role = useRole();
 
   // Get initial tab from URL or default to "all"

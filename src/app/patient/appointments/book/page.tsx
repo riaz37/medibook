@@ -13,13 +13,13 @@ import { useAppointmentBookingStore } from "@/lib/stores/appointment-booking.sto
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useRole } from "@/lib/hooks/use-role";
-import { useUser } from "@clerk/nextjs";
+import { useRole } from "@/hooks/use-role";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { showError, handleApiError, toastMessages } from "@/lib/utils/toast";
 
 function BookAppointmentPage() {
   const router = useRouter();
-  const { isLoaded } = useUser();
+  const { isLoaded } = useCurrentUser();
   const role = useRole();
 
   // Redirect doctors away from appointments page

@@ -2,17 +2,15 @@
 
 ## Summary
 
-All RBAC functionality has been unified into a single system: `src/lib/server/rbac.ts`
+All RBAC functionality has been unified into a single system: `src/lib/server/rbac.ts` with full custom authentication support (Clerk has been completely removed).
 
-## Files Removed
+## Authentication System
 
-The following unused/duplicate files have been removed:
-
-1. ✅ `src/lib/server/auth-utils.ts` - Replaced by unified RBAC
-2. ✅ `src/lib/server/roles.ts` - Functionality merged into unified RBAC
-3. ✅ `src/lib/utils/auth-utils.ts` - No longer needed
-4. ✅ `src/lib/utils/roles.ts` - No longer needed
-5. ✅ `src/lib/utils/role-check.ts` - No longer needed
+The system now uses:
+- **Custom JWT-based authentication** (no external providers)
+- **HTTP-only session cookies** for secure session management
+- **Bcrypt password hashing** for security
+- **Database as the single source of truth** for all user data
 
 ## Unified RBAC System
 
@@ -92,11 +90,11 @@ const { context } = authResult;
 
 ## Architecture
 
-- **Database is source of truth** for roles
-- **Clerk session claims** used as fast path (performance optimization)
-- **Automatic fallback** to database if role missing in session
-- **Auto-sync** role back to Clerk metadata for future requests
+- **Database is source of truth** for roles and authentication
+- **JWT tokens** stored in HTTP-only cookies
+- **Role and permission checks** against database
 - **Permission-based** access control for fine-grained authorization
+- **No external authentication dependencies**
 
 ## Benefits
 

@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
 import PatientProfileClient from "./PatientProfileClient";
@@ -11,12 +10,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import Link from "next/link";
+import { getCurrentUser } from "@/lib/auth";
 
 async function PatientProfilePage() {
-  const { userId } = await auth();
+  const user = await getCurrentUser();
 
-  if (!userId) {
-    redirect("/");
+  if (!user) {
+    redirect("/sign-in");
   }
 
   return (

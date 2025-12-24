@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, Clock, CheckCircle2, AlertCircle, Phone, Mail, SearchIcon, XCircleIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useUser } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { useDoctorAppointments, useUpdateAppointmentStatus } from "@/hooks";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageLoading } from "@/components/ui/loading-skeleton";
@@ -25,7 +25,7 @@ type AppointmentStatus = "all" | "pending" | "upcoming" | "completed";
 function DoctorAppointmentsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useUser();
+  const { user, isLoaded } = useCurrentUser();
 
   // Get initial tab from URL or default to "all"
   const initialTab = (searchParams.get("status") as AppointmentStatus) || "all";
