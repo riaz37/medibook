@@ -33,7 +33,7 @@ class UsersServerService extends BaseServerService {
       const where: Prisma.UserWhereInput = {};
 
       if (options.role) {
-        where.role = options.role;
+        (where as any).userRole = options.role;
       }
 
       return await this.prisma.user.findMany({
@@ -62,20 +62,15 @@ class UsersServerService extends BaseServerService {
   }
 
   /**
-   * Find user by Clerk ID
+   * Backward-compat: find by Clerk ID (deprecated)
+   * In custom auth, we use internal user ID. Map clerkId to userId.
    */
   async findUniqueByClerkId(
     clerkId: string,
     include?: Prisma.UserInclude
   ): Promise<User | null> {
     this.validateRequired({ clerkId }, ["clerkId"]);
-
-    return this.execute(async () => {
-      return await this.prisma.user.findUnique({
-        where: { clerkId },
-        include,
-      });
-    }, "Failed to find user by Clerk ID");
+    return this.findUnique(clerkId, include);
   }
 
   /**
@@ -112,7 +107,7 @@ class UsersServerService extends BaseServerService {
       if (data.firstName !== undefined) updateData.firstName = data.firstName;
       if (data.lastName !== undefined) updateData.lastName = data.lastName;
       if (data.phone !== undefined) updateData.phone = data.phone;
-      if (data.role !== undefined) updateData.role = data.role;
+      if (data.role !== undefined) (updateData as any).userRole = data.role;
 
       return await this.prisma.user.update({
         where: { id },
@@ -132,64 +127,6 @@ class UsersServerService extends BaseServerService {
     }, "Failed to update user role");
   }
 
-  /**
-   * Sync user from Clerk (upsert operation)
-   * This is a wrapper around the existing syncUserDirect function
-   * but can be extended with service layer patterns
-   */
-  async syncFromClerk(clerkId: string, userData: {
-    email: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    phone?: string | null;
-    role?: UserRole;
-  }): Promise<User> {
-    this.validateRequired({ clerkId, email: userData.email }, ["clerkId", "email"]);
-
-    return this.execute(async () => {
-      // Check if email is in admin list
-      const adminEmails = process.env.ADMIN_EMAILS?.split(",").map(e => e.trim().toLowerCase()) || [];
-      const isAdminEmail = adminEmails.includes(userData.email.toLowerCase());
-      
-      // Get signup intent from Clerk metadata
-      const { clerkClient } = await import("@clerk/nextjs/server");
-      const client = await clerkClient();
-      const clerkUser = await client.users.getUser(clerkId);
-      const metadata = clerkUser.publicMetadata as { signupIntent?: string; role?: string } | undefined;
-      const signupIntent = metadata?.signupIntent;
-      
-      // Determine role based on signup intent or admin email
-      let assignedRole: UserRole;
-      if (isAdminEmail) {
-        assignedRole = "ADMIN";
-      } else if (signupIntent === "doctor") {
-        assignedRole = "DOCTOR";
-      } else {
-        assignedRole = userData.role || "PATIENT";
-      }
-
-      // Upsert user
-      return await this.prisma.user.upsert({
-        where: { clerkId },
-        update: {
-          email: userData.email,
-          firstName: userData.firstName || undefined,
-          lastName: userData.lastName || undefined,
-          phone: userData.phone || undefined,
-          ...(isAdminEmail && { role: "ADMIN" }),
-          ...(signupIntent === "doctor" && { role: "DOCTOR" }),
-        },
-        create: {
-          clerkId,
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          phone: userData.phone,
-          role: assignedRole,
-        },
-      });
-    }, "Failed to sync user from Clerk");
-  }
 
   /**
    * Get user with doctor profile
@@ -213,4 +150,3 @@ class UsersServerService extends BaseServerService {
 
 // Export singleton instance
 export const usersServerService = new UsersServerService();
-

@@ -11,7 +11,6 @@
 
 export * from "./base.service";
 export * from "./api-client.service";
-export * from "./auth.service";
 export * from "./doctors.service";
 export * from "./appointments.service";
 export * from "./users.service";
@@ -47,4 +46,3 @@ export type {
   User,
   AuthUser,
 } from "@/lib/types";
-

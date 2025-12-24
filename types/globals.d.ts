@@ -1,5 +1,4 @@
 export {};
-
 // Create a type for the roles
 export type Roles = "patient" | "doctor" | "admin";
 
@@ -11,4 +10,3 @@ declare global {
     };
   }
 }
-

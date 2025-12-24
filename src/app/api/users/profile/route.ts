@@ -16,7 +16,7 @@ export async function GET() {
     
     const { context } = authResult;
 
-    const user = await usersServerService.findUniqueByClerkId(context.clerkUserId, {
+    const user = await usersServerService.findUnique(context.userId, {
       select: {
         id: true,
         email: true,
@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest) {
     const { firstName, lastName, phone } = validation.data;
 
     // Get user ID first
-    const user = await usersServerService.findUniqueByClerkId(context.clerkUserId);
+    const user = await usersServerService.findUnique(context.userId);
     if (!user) {
       return NextResponse.json(
         { error: "User not found" },
@@ -92,4 +92,3 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-

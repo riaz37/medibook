@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { syncUserDirect } from "@/lib/server/users";
 import { requireAuth } from "@/lib/server/rbac";
+import prisma from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,18 +12,17 @@ export async function POST(request: NextRequest) {
     
     const { context } = authResult;
 
-    // Sync user from Clerk to database
-    const syncedUser = await syncUserDirect();
-    
-    if (!syncedUser) {
-      console.error(`Failed to sync user: ${context.userId}`);
+    // In custom auth, user is already in DB; return current user
+    const user = await prisma.user.findUnique({
+      where: { id: context.userId },
+    });
+    if (!user) {
       return NextResponse.json(
-        { error: "Failed to sync user. User may not exist in Clerk or missing email." },
-        { status: 500 }
+        { error: "User not found" },
+        { status: 404 }
       );
     }
-
-    return NextResponse.json(syncedUser);
+    return NextResponse.json(user);
   } catch (error) {
     console.error("Error in syncUser API route:", error);
     return NextResponse.json(
@@ -35,4 +34,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

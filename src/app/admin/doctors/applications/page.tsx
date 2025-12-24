@@ -1,8 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/server/rbac";
 import { AdminDashboardLayout } from "@/components/admin/layout/AdminDashboardLayout";
 import DoctorApplicationsClient from "./DoctorApplicationsClient";
-import { getUserRoleFromSession } from "@/lib/server/rbac";
 
 /**
  * Admin Doctor Applications Page
@@ -10,16 +9,9 @@ import { getUserRoleFromSession } from "@/lib/server/rbac";
  * Allows admins to review and approve/reject doctor applications
  */
 async function AdminDoctorApplicationsPage() {
-  const { userId } = await auth();
-
-  if (!userId) {
+  const authResult = await requireRole("admin");
+  if ("response" in authResult) {
     redirect("/");
-  }
-
-  const role = await getUserRoleFromSession();
-
-  if (role !== "admin") {
-    redirect("/admin");
   }
 
   return (
@@ -28,7 +20,8 @@ async function AdminDoctorApplicationsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Doctor Applications</h1>
           <p className="text-muted-foreground">
-            Review and manage doctor applications. Approve or reject applications based on qualifications.
+            Review and manage doctor applications.
+            Approve or reject applications based on qualifications.
           </p>
         </div>
         <DoctorApplicationsClient />

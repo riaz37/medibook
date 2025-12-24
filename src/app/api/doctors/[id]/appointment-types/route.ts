@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { doctorsConfigService } from "@/lib/services/doctors-config.service";
 import { createAppointmentTypeSchema } from "@/lib/validations";
@@ -88,4 +87,3 @@ export async function POST(
     );
   }
 }
-

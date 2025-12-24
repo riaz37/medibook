@@ -1,13 +1,13 @@
 import Image from "next/image";
-import { currentUser } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/server/rbac";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function DoctorDashboardHero() {
-  const user = await currentUser();
+  const user = await getCurrentUser();
   const authResult = await requireAuth();
   
   let doctor = null;
@@ -22,7 +22,7 @@ export default async function DoctorDashboardHero() {
 
   try {
     const dbUser = await prisma.user.findUnique({
-      where: { clerkId: context.clerkUserId },
+      where: { id: context.userId },
       include: { doctorProfile: true },
     });
 

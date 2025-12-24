@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     
     const { context } = authResult;
 
-    // Get DB user from Clerk user ID
-    const dbUser = await usersServerService.findUniqueByClerkId(context.clerkUserId);
+    // Get DB user by ID
+    const dbUser = await usersServerService.findUnique(context.userId);
 
     if (!dbUser) {
       return NextResponse.json(
@@ -53,4 +53,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

@@ -13,27 +13,68 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  firstName String?
-  lastName  String?
-  phone     String?
-  role      UserRole @default(PATIENT)
-  createdAt DateTime @default(now()) // member since sep 2025
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String?
+  firstName    String?
+  lastName     String?
+  phone        String?
+  
+  // Custom RBAC
+  roleId       String?
+  role         Role?    @relation(fields: [roleId], references: [id])
+  
+  // Legacy role enum (kept for backward compatibility during migration)
+  userRole     UserRole @default(PATIENT) @map("role")
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // relationships
-  appointments  Appointment[]
-  doctorProfile Doctor? // If user is a doctor, link to their doctor profile
-  prescriptions Prescription[] // Prescriptions issued to this patient
-  doctorApplication DoctorApplication? // Doctor application if user applied to be a doctor
-  roleChanges RoleChangeAudit[] // Audit trail of role changes
+  sessions     Session[]
+  appointments Appointment[]
+  doctorProfile Doctor?
+  prescriptions Prescription[]
+  doctorApplication DoctorApplication?
+  roleChanges   RoleChangeAudit[]
 
-  @@index([clerkId])
   @@index([email])
-  @@index([role, createdAt])
   @@map("users")
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique // "admin", "doctor", "patient"
+  description String?
+  permissions Permission[]
+  users       User[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique // "appointment:create", "user:read"
+  description String?
+  roles       Role[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("permissions")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
 }
 
 model Doctor {

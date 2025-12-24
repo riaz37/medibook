@@ -7,12 +7,10 @@ import DoctorVerifications from "@/components/admin/DoctorVerifications";
 import Navbar from "@/components/Navbar";
 import { useGetAppointments } from "@/hooks/use-appointment";
 import { useGetDoctors } from "@/hooks/use-doctors";
-import { useUser } from "@clerk/nextjs";
 import { SettingsIcon } from "lucide-react";
 import { PageLoading } from "@/components/ui/loading-skeleton";
 
 function AdminDashboardClient() {
-  const { user } = useUser();
   const { data: doctors = [], isLoading: doctorsLoading } = useGetDoctors();
   const { data: appointments = [], isLoading: appointmentsLoading } = useGetAppointments();
 

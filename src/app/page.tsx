@@ -5,9 +5,9 @@ import Hero from "@/components/landing/Hero";
 import HowItWorks from "@/components/landing/HowItWorks";
 import WhatToAsk from "@/components/landing/WhatToAsk";
 import Pricing from "@/components/landing/Pricing";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getUserRoleFromSession } from "@/lib/server/rbac";
+import { getCurrentUser } from "@/lib/auth";
 
 /**
  * Home/Landing Page
@@ -18,10 +18,10 @@ import { getUserRoleFromSession } from "@/lib/server/rbac";
  * - Only redirects authenticated users, no sync on every page load
  */
 export default async function Home() {
-  const { userId } = await auth();
+  const user = await getCurrentUser();
 
   // If user is authenticated, redirect based on role
-  if (userId) {
+  if (user) {
     const role = await getUserRoleFromSession();
     
     // Redirect based on role (from Clerk metadata with DB fallback)
@@ -33,7 +33,6 @@ export default async function Home() {
       redirect("/dashboard");
     }
     // If no role, default to patient dashboard
-    // New users will have PATIENT role assigned via webhook
     redirect("/dashboard");
   }
 

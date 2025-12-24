@@ -15,15 +15,7 @@ export async function GET(request: NextRequest) {
     // Filter based on role
     let appointments;
     if (context.role === "patient") {
-      // Get DB user ID for patient
-      const dbUser = await usersServerService.findUniqueByClerkId(context.clerkUserId);
-      if (!dbUser) {
-        return NextResponse.json(
-          { error: "User not found" },
-          { status: 404 }
-        );
-      }
-      appointments = await appointmentsServerService.getByUser(dbUser.id);
+      appointments = await appointmentsServerService.getByUser(context.userId);
     } else if (context.role === "doctor" && context.doctorId) {
       appointments = await appointmentsServerService.getByDoctor(context.doctorId);
     } else {
@@ -49,4 +41,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

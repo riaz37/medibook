@@ -6,7 +6,6 @@
 
 import { apiClient } from "./api-client.service";
 import { BaseService, ApiException } from "./base.service";
-import { AuthService } from "./auth.service";
 import type { User } from "@/lib/types";
 
 class UsersService extends BaseService {
@@ -36,14 +35,8 @@ class UsersService extends BaseService {
    */
   async getCurrentUser(): Promise<User | null> {
     try {
-      const clerkUser = await AuthService.getCurrentUser();
-      if (!clerkUser) {
-        return null;
-      }
-
-      // In a real app, you might want to fetch from your database
-      // For now, we'll return the synced user
-      return await this.syncUser();
+      const me = await apiClient.getMe();
+      return (me as any)?.user || null;
     } catch (error) {
       console.error("Error getting current user:", error);
       return null;
@@ -105,4 +98,3 @@ class UsersService extends BaseService {
 
 // Export singleton instance
 export const usersService = new UsersService();
-

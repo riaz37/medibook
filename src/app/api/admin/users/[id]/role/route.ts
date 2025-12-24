@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
-import { clerkClient } from "@clerk/nextjs/server";
 import { UserRole } from "@/generated/prisma/client";
 import { validateRoleTransition, roleToUserRole } from "@/lib/server/rbac";
 
@@ -22,7 +21,7 @@ export async function PUT(
       return authResult.response;
     }
 
-    const { userId: adminUserId, role: adminRole } = authResult;
+    const { userId: adminUserId, role: adminRole } = authResult.context;
     const { id: userId } = await params;
 
     // Get user
@@ -60,7 +59,7 @@ export async function PUT(
 
     // Validate role transition
     const validation = validateRoleTransition(
-      user.role,
+      user.userRole,
       newUserRole,
       adminRole
     );
@@ -73,7 +72,7 @@ export async function PUT(
     }
 
     // Prevent changing to admin role (should be via email whitelist)
-    if (newUserRole === "ADMIN" && user.role !== "ADMIN") {
+    if (newUserRole === "ADMIN" && user.userRole !== "ADMIN") {
       return NextResponse.json(
         { error: "Admin role can only be assigned via email whitelist" },
         { status: 400 }
@@ -81,45 +80,15 @@ export async function PUT(
     }
 
     // Update user role
-    const oldRole = user.role;
+    const oldRole = user.userRole;
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        role: newUserRole,
+        userRole: newUserRole,
       },
     });
 
-    // Update Clerk metadata
-    try {
-      const client = await clerkClient();
-      const roleForClerk = newUserRole === "ADMIN" ? "admin" : 
-                          newUserRole === "DOCTOR" ? "doctor" : "patient";
-      
-      // Get doctorId if user is a doctor
-      let doctorId: string | null = null;
-      if (newUserRole === "DOCTOR") {
-        const doctorProfile = await prisma.doctor.findUnique({
-          where: { userId: userId },
-          select: { id: true },
-        });
-        doctorId = doctorProfile?.id || null;
-      }
-      
-      const metadataToSync: { role: string; doctorId?: string } = {
-        role: roleForClerk,
-      };
-      
-      if (doctorId) {
-        metadataToSync.doctorId = doctorId;
-      }
-      
-      await client.users.updateUserMetadata(user.clerkId, {
-        publicMetadata: metadataToSync,
-      });
-    } catch (error) {
-      console.error("Error updating Clerk metadata:", error);
-      // Continue even if metadata update fails
-    }
+    // No external metadata sync required in custom auth
 
     // Log role change
     await prisma.roleChangeAudit.create({
@@ -137,7 +106,7 @@ export async function PUT(
       user: {
         id: updatedUser.id,
         email: updatedUser.email,
-        role: updatedUser.role,
+        role: updatedUser.userRole,
       },
     });
   } catch (error) {

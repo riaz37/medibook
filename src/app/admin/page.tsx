@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { AdminDashboardLayout } from "@/components/admin/layout/AdminDashboardLayout";
 import AdminDashboardHero from "@/components/admin/dashboard/AdminDashboardHero";
@@ -10,7 +9,7 @@ import RecentAppointments from "@/components/admin/RecentAppointments";
 import { RevenueChart } from "@/components/admin/dashboard/RevenueChart";
 import { Suspense } from "react";
 import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
-import { getUserRoleFromSession } from "@/lib/server/rbac";
+import { requireRole } from "@/lib/server/rbac";
 
 /**
  * Admin Dashboard
@@ -20,24 +19,9 @@ import { getUserRoleFromSession } from "@/lib/server/rbac";
  * - Middleware already handles admin route protection
  */
 async function AdminPage() {
-  const { userId } = await auth();
-
-  // User is not logged in
-  if (!userId) {
+  const authResult = await requireRole("admin");
+  if ("response" in authResult) {
     redirect("/");
-  }
-
-  // Get role from session claims with database fallback
-  const role = await getUserRoleFromSession();
-
-  // If user doesn't have ADMIN role, redirect
-  if (role !== "admin") {
-    // Redirect based on user's actual role
-    if (role === "doctor") {
-      redirect("/doctor/dashboard");
-    } else {
-      redirect("/patient/dashboard");
-    }
   }
 
   return (

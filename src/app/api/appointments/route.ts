@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { appointmentsServerService } from "@/lib/services/server";
 import { bookAppointmentSchema, appointmentQuerySchema } from "@/lib/validations";
 import { validateRequest, validateQuery } from "@/lib/utils/validation";
@@ -56,13 +55,8 @@ export async function GET(request: NextRequest) {
     // Filter based on role
     let appointments;
     if (context.role === "patient") {
-      // Patients can only see their own appointments - need DB user ID
-      const dbUser = await prisma.user.findUnique({
-        where: { clerkId: context.clerkUserId },
-        select: { id: true },
-      });
-      if (dbUser) {
-        appointments = await appointmentsServerService.getByUser(dbUser.id, {
+      // Patients can only see their own appointments - use context.userId
+      appointments = await appointmentsServerService.getByUser(context.userId, {
           status: queryValidation.data.status as any,
           date: queryValidation.data.date,
           include: {
@@ -76,12 +70,6 @@ export async function GET(request: NextRequest) {
             doctor: { select: { name: true, imageUrl: true } },
           },
         });
-      } else {
-        return NextResponse.json(
-          { error: "User not found" },
-          { status: 404 }
-        );
-      }
     } else if (context.role === "doctor") {
       // Doctors can see their own appointments
       if (context.doctorId) {
@@ -167,9 +155,14 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Middleware ensures user is authenticated
-      const { userId: clerkUserId } = await auth();
+      const { requireAuth } = await import("@/lib/server/rbac");
+      const authResult = await requireAuth();
+      if ("response" in authResult) {
+        return authResult.response;
+      }
+      const { context } = authResult;
       const { usersServerService } = await import("@/lib/services/server");
-      user = await usersServerService.findUniqueByClerkId(clerkUserId || "");
+      user = await usersServerService.findUnique(context.userId);
       if (!user) {
         return NextResponse.json(
           { error: "User not found. Please ensure your account is properly set up." },
@@ -287,4 +280,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

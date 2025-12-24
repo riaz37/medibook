@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { DoctorDashboardLayout } from "@/components/doctor/layout/DoctorDashboardLayout";
 import DoctorDashboardHero from "@/components/doctor/dashboard/DoctorDashboardHero";
@@ -19,9 +18,8 @@ import prisma from "@/lib/prisma";
  * - Only queries DB for doctor profile data (needed for dashboard)
  */
 async function DoctorDashboardPage() {
-  const { userId } = await auth();
-  
-  if (!userId) {
+  const context = await getAuthContext(true);
+  if (!context) {
     redirect("/");
   }
 
@@ -35,7 +33,7 @@ async function DoctorDashboardPage() {
 
   // Get user from database (only for doctor profile data)
   const dbUser = await prisma.user.findUnique({
-    where: { clerkId: userId },
+    where: { id: context.userId },
     include: { doctorProfile: true },
   });
 
@@ -75,8 +73,8 @@ async function DoctorDashboardPage() {
   }
 
   // Get doctorId for analytics
-  const context = await getAuthContext();
-  const doctorId = context?.doctorId || doctor.id;
+  const ctx2 = await getAuthContext();
+  const doctorId = ctx2?.doctorId || doctor.id;
 
   return (
     <DoctorDashboardLayout>
@@ -108,4 +106,3 @@ async function DoctorDashboardPage() {
 }
 
 export default DoctorDashboardPage;
-

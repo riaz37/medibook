@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
-import UserSync from "@/components/UserSync";
 import TanStackProvider from "@/components/providers/TanStackProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Toaster } from "sonner";
@@ -40,27 +38,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TanStackProvider>
-            <ClerkProvider
-              appearance={{
-                variables: {
-                  colorPrimary: "#e78a53",
-                },
-                elements: {
-                  rootBox: "dark:bg-background",
-                  card: "dark:bg-card dark:text-card-foreground",
-                  headerTitle: "dark:text-foreground",
-                  headerSubtitle: "dark:text-muted-foreground",
-                  socialButtonsBlockButton: "dark:bg-input dark:text-foreground dark:hover:bg-accent",
-                  formButtonPrimary: "dark:bg-primary dark:text-primary-foreground",
-                  formFieldInput: "dark:bg-input dark:text-foreground dark:border-border",
-                  footerActionLink: "dark:text-primary",
-                },
-              }}
-            >
               <Toaster />
-              <UserSync />
               {children}
-            </ClerkProvider>
           </TanStackProvider>
         </ThemeProvider>
       </body>

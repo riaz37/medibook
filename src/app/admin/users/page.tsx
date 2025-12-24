@@ -1,8 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { AdminDashboardLayout } from "@/components/admin/layout/AdminDashboardLayout";
 import UsersManagementClient from "./UsersManagementClient";
-import { getUserRoleFromSession } from "@/lib/server/rbac";
+import { requireRole } from "@/lib/server/rbac";
 
 /**
  * Admin Users Management Page
@@ -10,16 +9,9 @@ import { getUserRoleFromSession } from "@/lib/server/rbac";
  * Allows admins to view and manage user roles
  */
 async function AdminUsersPage() {
-  const { userId } = await auth();
-
-  if (!userId) {
+  const authResult = await requireRole("admin");
+  if ("response" in authResult) {
     redirect("/");
-  }
-
-  const role = await getUserRoleFromSession();
-
-  if (role !== "admin") {
-    redirect("/admin");
   }
 
   return (

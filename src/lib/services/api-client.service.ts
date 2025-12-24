@@ -201,6 +201,10 @@ class ApiClientService extends BaseService {
     return this.post("/api/users/sync");
   }
 
+  async getMe() {
+    return this.get("/api/auth/me");
+  }
+
   async getUserProfile() {
     return this.get("/api/users/profile");
   }
@@ -317,4 +321,3 @@ class ApiClientService extends BaseService {
 
 // Export singleton instance
 export const apiClient = new ApiClientService();
-
