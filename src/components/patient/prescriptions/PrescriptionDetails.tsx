@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Download, ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { PageLoading } from "@/components/ui/loading-skeleton";
+import { PrescriptionDetailsSkeleton } from "@/components/shared";
 import { useState } from "react";
 import {
   Dialog,
@@ -42,7 +42,7 @@ export function PatientPrescriptionDetails({ prescriptionId }: PrescriptionDetai
   const [refillNotes, setRefillNotes] = useState("");
 
   if (isLoading) {
-    return <PageLoading message="Loading prescription details..." />;
+    return <PrescriptionDetailsSkeleton />;
   }
 
   if (error || !prescription) {

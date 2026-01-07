@@ -36,7 +36,10 @@ export const queryKeys = {
     config: (doctorId: string) => [...queryKeys.doctors.detail(doctorId), "config"] as const,
     workingHours: (doctorId: string) => [...queryKeys.doctors.detail(doctorId), "workingHours"] as const,
     appointmentTypes: (doctorId: string) => [...queryKeys.doctors.detail(doctorId), "appointmentTypes"] as const,
-    availableSlots: (doctorId: string, date: string) => [...queryKeys.doctors.detail(doctorId), "availableSlots", date] as const,
+    availableSlots: (doctorId: string, date: string, duration?: number) => {
+      const key = [...queryKeys.doctors.detail(doctorId), "availableSlots", date] as const;
+      return duration !== undefined ? [...key, duration] as const : key;
+    },
   },
 
   // Admin

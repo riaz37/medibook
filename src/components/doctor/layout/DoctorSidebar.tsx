@@ -10,6 +10,7 @@ import {
   FileText,
   CreditCard,
   BarChart3,
+  Clock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,6 +51,17 @@ const menuItems = [
         url: "/doctor/appointments",
         icon: Calendar,
         badge: "pending", // Will show pending count
+      },
+    ],
+  },
+  {
+    title: "Schedule",
+    items: [
+      {
+        title: "Schedule",
+        url: "/doctor/schedule",
+        icon: Clock,
+        badge: null,
       },
     ],
   },

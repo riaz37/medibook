@@ -9,10 +9,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ExternalLink, FileText, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { LoadingSpinner } from "@/components/ui/loading-skeleton";
+import { VerificationCardSkeleton, VerificationStatusBadge, DocumentLink } from "@/components/shared";
 import type { ViewDoctorDocumentsDialogProps } from "@/lib/types";
 
 export default function ViewDoctorDocumentsDialog({
@@ -25,31 +24,9 @@ export default function ViewDoctorDocumentsDialog({
 
   const getStatusBadge = () => {
     if (!verification) {
-      return <Badge variant="secondary">No Documents Submitted</Badge>;
+      return <VerificationStatusBadge status="PENDING" />;
     }
-
-    switch (verification.status) {
-      case "APPROVED":
-        return (
-          <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-            APPROVED
-          </Badge>
-        );
-      case "REJECTED":
-        return (
-          <Badge className="bg-red-500/10 text-red-600 border-red-500/20">
-            REJECTED
-          </Badge>
-        );
-      case "PENDING":
-        return (
-          <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-            PENDING
-          </Badge>
-        );
-      default:
-        return <Badge variant="secondary">{verification.status}</Badge>;
-    }
+    return <VerificationStatusBadge status={verification.status} showIcon />;
   };
 
   const parseOtherDocuments = (): string[] => {
@@ -75,11 +52,8 @@ export default function ViewDoctorDocumentsDialog({
         </DialogHeader>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center space-y-2">
-              <LoadingSpinner size="md" className="mx-auto" />
-              <p className="text-sm text-muted-foreground">Loading documents...</p>
-            </div>
+          <div className="py-6">
+            <VerificationCardSkeleton />
           </div>
         ) : error ? (
           <Alert variant="destructive">
@@ -132,7 +106,7 @@ export default function ViewDoctorDocumentsDialog({
             {/* Documents Grid */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Documents</h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Medical License */}
                 {verification.licenseUrl ? (

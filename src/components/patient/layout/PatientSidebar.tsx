@@ -9,7 +9,6 @@ import {
   CreditCard,
   FileText,
   Heart,
-  Stethoscope,
 } from "lucide-react";
 import {
   Sidebar,
@@ -45,12 +44,6 @@ const menuItems = [
   {
     title: "Appointments",
     items: [
-      {
-        title: "Find & Book Doctor",
-        url: "/patient/appointments?tab=find-book",
-        icon: Stethoscope,
-        badge: null,
-      },
       {
         title: "My Appointments",
         url: "/patient/appointments?tab=my-appointments",

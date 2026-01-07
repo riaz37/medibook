@@ -37,10 +37,10 @@ export async function GET(request: NextRequest) {
     if ("response" in authResult) {
       return authResult.response;
     }
-    
+
     const { context } = authResult;
     const { searchParams } = new URL(request.url);
-    
+
     // Validate query parameters
     const queryParams: Record<string, string | undefined> = {};
     if (searchParams.get("doctorId")) {
@@ -66,35 +66,35 @@ export async function GET(request: NextRequest) {
     if (context.role === "patient") {
       // Patients can only see their own appointments - use context.userId
       appointments = await appointmentsServerService.getByUser(context.userId, {
-          status: queryValidation.data.status as any,
-          date: queryValidation.data.date,
-          include: {
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            doctor: { select: { name: true, imageUrl: true, speciality: true } },
-            payment: {
-              select: {
-                id: true,
-                appointmentPrice: true,
-                status: true,
-                patientPaid: true,
-                refunded: true,
-                refundAmount: true,
-              },
-            },
-            prescription: {
-              select: {
-                id: true,
-                status: true,
-              },
+        status: queryValidation.data.status as any,
+        date: queryValidation.data.date,
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
             },
           },
-        });
+          doctor: { select: { name: true, imageUrl: true, speciality: true } },
+          payment: {
+            select: {
+              id: true,
+              appointmentPrice: true,
+              status: true,
+              patientPaid: true,
+              refunded: true,
+              refundAmount: true,
+            },
+          },
+          prescription: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
+      });
     } else if (context.role === "doctor" || context.role === "doctor_pending") {
       // Doctors can see their own appointments
       if (context.doctorId) {
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Validate request body
     const validation = validateRequest(bookAppointmentSchema, body);
     if (!validation.success) {
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const appointment = await appointmentsServerService.create({
+    let appointment = await appointmentsServerService.create({
       userId: user.id,
       doctorId,
       date: new Date(date),
@@ -268,6 +268,22 @@ export async function POST(request: NextRequest) {
 
     // Check if payment is required
     const requiresPayment = appointmentType?.price && Number(appointmentType.price) > 0;
+
+    // Auto-confirm free appointments (no payment required)
+    // Paid appointments will be auto-confirmed when payment succeeds via webhook
+    if (!requiresPayment && appointment.status === "PENDING") {
+      try {
+        const updatedAppointment = await appointmentsServerService.updateStatus(
+          appointment.id,
+          "CONFIRMED" as any
+        );
+        // Update local appointment object for response
+        appointment = updatedAppointment;
+      } catch (error) {
+        console.error("[POST /api/appointments] Failed to auto-confirm free appointment:", error);
+        // Don't fail the booking if confirmation fails
+      }
+    }
 
     // Only send confirmation email if payment is not required
     // If payment is required, email will be sent after payment is confirmed via webhook

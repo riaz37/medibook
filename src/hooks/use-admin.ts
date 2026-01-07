@@ -6,7 +6,7 @@ import { queryKeys } from "@/lib/constants/query-keys";
 import { handleApiError } from "@/lib/utils/toast";
 import { showErrorToast } from "@/components/shared/ErrorToast";
 import type { VerificationWithDoctor } from "@/lib/types";
-import type { DoctorApplication } from "@/lib/types/rbac";
+import type { ApplicationWithUser } from "@/lib/types/rbac";
 
 export function useAdminDoctorVerifications(status?: "PENDING" | "APPROVED" | "REJECTED") {
   return useQuery<VerificationWithDoctor[]>({
@@ -18,8 +18,8 @@ export function useAdminDoctorVerifications(status?: "PENDING" | "APPROVED" | "R
 }
 
 export function useAdminDoctorApplications() {
-  return useQuery<DoctorApplication[]>({
-    queryKey: queryKeys.admin.applications,
+  return useQuery<ApplicationWithUser[]>({
+    queryKey: queryKeys.admin.applications(),
     queryFn: async () => {
       const response = await fetch("/api/admin/doctors/applications");
       if (!response.ok) {
@@ -35,9 +35,9 @@ export function useUpdateVerificationStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ verificationId, data }: { 
-      verificationId: string; 
-      data: Parameters<typeof adminService.updateVerificationStatus>[1] 
+    mutationFn: ({ verificationId, data }: {
+      verificationId: string;
+      data: Parameters<typeof adminService.updateVerificationStatus>[1]
     }) =>
       adminService.updateVerificationStatus(verificationId, data),
     onSuccess: () => {

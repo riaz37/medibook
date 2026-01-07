@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { useAdminDoctorVerifications, useAdminDoctorApplications } from "@/hooks";
 import type { VerificationStatus, VerificationWithDoctor } from "@/lib/types";
-import type { DoctorApplication } from "@/lib/types/rbac";
+import type { ApplicationWithUser } from "@/lib/types/rbac";
 import { ApplicationStatus } from "@/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,21 +26,11 @@ import {
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 
-interface ApplicationWithUser extends DoctorApplication {
-  user: {
-    id: string;
-    email: string;
-    firstName: string | null;
-    lastName: string | null;
-    phone: string | null;
-  };
-}
-
 export default function AdminVerificationsPageClient() {
   const [activeTab, setActiveTab] = useState<"applications" | "verifications">("applications");
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("all");
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | "all">("all");
-  
+
   // Selected items for dialogs
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithUser | null>(null);
   const [selectedVerification, setSelectedVerification] = useState<VerificationWithDoctor | null>(null);
@@ -339,8 +329,8 @@ export default function AdminVerificationsPageClient() {
                                         application.status === "APPROVED"
                                           ? "default"
                                           : application.status === "REJECTED"
-                                          ? "destructive"
-                                          : "secondary"
+                                            ? "destructive"
+                                            : "secondary"
                                       }
                                     >
                                       {application.status}
@@ -507,8 +497,8 @@ export default function AdminVerificationsPageClient() {
                                       verification.status === "APPROVED"
                                         ? "bg-green-500/10 text-green-600 border-green-500/20"
                                         : verification.status === "REJECTED"
-                                        ? "bg-red-500/10 text-red-600 border-red-500/20"
-                                        : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                                          ? "bg-red-500/10 text-red-600 border-red-500/20"
+                                          : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
                                     }
                                   >
                                     {verification.status}
@@ -563,8 +553,8 @@ export default function AdminVerificationsPageClient() {
                     ? "Approve Application"
                     : "Approve Verification"
                   : selectedApplication
-                  ? "Reject Application"
-                  : "Reject Verification"}
+                    ? "Reject Application"
+                    : "Reject Verification"}
               </DialogTitle>
               <DialogDescription>
                 {action === "approve"
@@ -572,8 +562,8 @@ export default function AdminVerificationsPageClient() {
                     ? "Are you sure you want to approve this application? The user will be assigned the DOCTOR role."
                     : "Are you sure you want to approve this doctor's verification? They will be able to accept appointments."
                   : "Please provide a reason for rejecting this " +
-                    (selectedApplication ? "application" : "verification") +
-                    "."}
+                  (selectedApplication ? "application" : "verification") +
+                  "."}
               </DialogDescription>
             </DialogHeader>
             {action === "reject" && (

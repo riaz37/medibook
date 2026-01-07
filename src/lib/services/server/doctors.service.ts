@@ -457,10 +457,13 @@ class DoctorsServerService extends BaseServerService {
    * Check if doctor exists and is verified
    */
   async isVerified(doctorId: string): Promise<boolean> {
-    const doctor = await this.findUnique(doctorId, {
-      select: { isVerified: true },
-    } as any);
-    return doctor?.isVerified || false;
+    return this.execute(async () => {
+      const doctor = await this.prisma.doctor.findUnique({
+        where: { id: doctorId },
+        select: { isVerified: true },
+      });
+      return doctor?.isVerified || false;
+    }, "Failed to check doctor verification status");
   }
 }
 

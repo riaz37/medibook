@@ -6,7 +6,8 @@ import AppointmentCard, { AppointmentCardProps } from "./AppointmentCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Calendar } from "lucide-react";
 import Link from "next/link";
-import { AppointmentsListSkeleton } from "./AppointmentsListSkeleton";
+import { AppointmentListSkeleton } from "@/components/shared";
+
 
 export type AppointmentFilter = "all" | "upcoming" | "completed";
 
@@ -118,17 +119,17 @@ export default function AppointmentsList({
     return [...filteredAppointments].sort((a, b) => {
       const dateA = parseISO(a.date);
       const dateB = parseISO(b.date);
-      
+
       if (dateA.getTime() !== dateB.getTime()) {
         return dateA.getTime() - dateB.getTime();
       }
-      
+
       return a.time.localeCompare(b.time);
     });
   }, [filteredAppointments]);
 
   if (isLoading) {
-    return <AppointmentsListSkeleton count={5} />;
+    return <AppointmentListSkeleton count={5} />;
   }
 
   if (sortedAppointments.length === 0) {

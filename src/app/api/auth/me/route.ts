@@ -18,6 +18,10 @@ export async function GET() {
     // Return the actual role (already set correctly in database)
     const effectiveRole = user.role.name;
 
+    // Get doctorId if user has a doctor profile
+    const context = await getAuthContext();
+    const doctorId = context?.doctorId || null;
+
     return NextResponse.json({
       id: user.id,
       email: user.email,
@@ -25,6 +29,7 @@ export async function GET() {
       lastName: user.lastName,
       phone: user.phone,
       role: effectiveRole,
+      doctorId,
     });
   } catch (error) {
     console.error("[GET /api/auth/me] Error:", error);

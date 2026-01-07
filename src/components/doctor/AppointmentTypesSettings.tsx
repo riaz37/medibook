@@ -67,7 +67,9 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
       {
         doctorId,
         data: {
-          ...newAppointmentType,
+          name: newAppointmentType.name,
+          duration: newAppointmentType.duration,
+          description: newAppointmentType.description?.trim() || undefined,
           price: newAppointmentType.price ? parseFloat(newAppointmentType.price) : undefined,
         },
       },
@@ -95,7 +97,7 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
         data: {
           name: editingAppointmentType.name,
           duration: editingAppointmentType.duration,
-          description: editingAppointmentType.description,
+          description: editingAppointmentType.description?.trim() || undefined,
           price: editingAppointmentType.price ? parseFloat(editingAppointmentType.price) : undefined,
           isActive: editingAppointmentType.isActive,
         },
@@ -119,6 +121,9 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Loading Appointment Types</DialogTitle>
+          </DialogHeader>
           <div className="flex items-center justify-center py-8">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
@@ -130,7 +135,7 @@ export default function AppointmentTypesSettings({ doctorId, open, onOpenChange 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Stethoscope className="w-5 h-5" />

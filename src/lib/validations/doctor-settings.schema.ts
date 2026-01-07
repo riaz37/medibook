@@ -117,6 +117,12 @@ export const availableSlotsQuerySchema = z.object({
         message: "Date must be today or in the future",
       }
     ),
+  duration: z.coerce
+    .number()
+    .int("Duration must be an integer")
+    .min(15, "Minimum duration is 15 minutes")
+    .max(240, "Maximum duration is 240 minutes")
+    .optional(),
 });
 
 export type DoctorAvailabilityInput = z.infer<typeof doctorAvailabilitySchema>;

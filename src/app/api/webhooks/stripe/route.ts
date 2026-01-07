@@ -110,6 +110,26 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   );
 
   if (payment && payment.appointment) {
+    // Auto-confirm appointment when payment succeeds (no doctor acceptance needed)
+    if (payment.appointment.status === "PENDING") {
+      try {
+        const { appointmentsServerService } = await import("@/lib/services/server/appointments.service");
+        await appointmentsServerService.updateStatus(
+          payment.appointmentId,
+          "CONFIRMED"
+        );
+        logger.info("Appointment auto-confirmed after payment", {
+          appointmentId: payment.appointmentId,
+        });
+      } catch (error) {
+        logger.error("Failed to auto-confirm appointment after payment", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          appointmentId: payment.appointmentId,
+        });
+        // Don't fail webhook if confirmation fails - payment is still processed
+      }
+    }
+
     // Hold payout until after appointment
     await paymentService.holdDoctorPayout(
       payment.id,

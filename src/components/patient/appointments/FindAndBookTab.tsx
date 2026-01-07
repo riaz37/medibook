@@ -4,14 +4,13 @@ import { useState, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDoctorSearch } from "@/hooks/use-doctor-search";
 import { DoctorSearchFilters } from "@/components/shared/DoctorSearchFilters";
-import { DoctorCard } from "@/components/shared/DoctorCard";
+import { DoctorCard, DoctorListSkeleton } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Stethoscope, 
-  ChevronLeft, 
+import {
+  Stethoscope,
+  ChevronLeft,
   ChevronRight,
   LayoutGrid,
   List,
@@ -24,12 +23,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 
-function DoctorComparisonView({ 
-  doctors, 
-  onRemove, 
-  onClear 
-}: { 
-  doctors: SearchedDoctor[]; 
+function DoctorComparisonView({
+  doctors,
+  onRemove,
+  onClear
+}: {
+  doctors: SearchedDoctor[];
   onRemove: (id: string) => void;
   onClear: () => void;
 }) {
@@ -124,7 +123,7 @@ function FindAndBookContent() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [compareMode, setCompareMode] = useState(false);
   const [selectedDoctors, setSelectedDoctors] = useState<Set<string>>(new Set());
-  
+
   const initialFilters = {
     query: searchParams.get("query") || undefined,
     speciality: searchParams.get("speciality") || undefined,
@@ -253,23 +252,7 @@ function FindAndBookContent() {
 
       {/* Results */}
       {isLoading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="flex gap-6">
-                  <Skeleton className="h-32 w-32 rounded-full" />
-                  <div className="flex-1 space-y-4">
-                    <Skeleton className="h-6 w-1/3" />
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-2/3" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <DoctorListSkeleton count={3} />
       ) : isError ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -303,8 +286,8 @@ function FindAndBookContent() {
               </p>
             </div>
           )}
-          <div className={viewMode === "grid" 
-            ? "grid grid-cols-1 sm:grid-cols-2 gap-4" 
+          <div className={viewMode === "grid"
+            ? "grid grid-cols-1 sm:grid-cols-2 gap-4"
             : "space-y-4"
           }>
             {doctors.map((doctor) => (
@@ -320,7 +303,7 @@ function FindAndBookContent() {
                   </div>
                 )}
                 <div className={compareMode && selectedDoctors.has(doctor.id) ? "ring-2 ring-primary rounded-lg" : ""}>
-                  <DoctorCard 
+                  <DoctorCard
                     doctor={doctor}
                     variant={viewMode === "grid" ? "compact" : "default"}
                   />
@@ -351,9 +334,9 @@ function FindAndBookContent() {
                     page - 2
                   )
                 ) + i;
-                
+
                 if (pageNum > pagination.totalPages) return null;
-                
+
                 return (
                   <Button
                     key={pageNum}
@@ -386,17 +369,7 @@ function FindAndBookContent() {
 
 export default function FindAndBookTab() {
   return (
-    <Suspense fallback={
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <Skeleton className="h-32 w-full" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    }>
+    <Suspense fallback={<DoctorListSkeleton count={3} />}>
       <FindAndBookContent />
     </Suspense>
   );

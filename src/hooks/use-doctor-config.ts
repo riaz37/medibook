@@ -26,13 +26,16 @@ export function useDoctorAppointmentTypes(doctorId: string | null) {
 
 /**
  * Hook to fetch doctor's available time slots for a specific date
+ * @param doctorId - Doctor ID
+ * @param date - Date in YYYY-MM-DD format
+ * @param duration - Optional appointment duration in minutes. If provided, only returns slots that can accommodate this duration.
  */
-export function useDoctorAvailableSlots(doctorId: string | null, date: string | null) {
+export function useDoctorAvailableSlots(doctorId: string | null, date: string | null, duration?: number) {
   return useQuery<string[]>({
-    queryKey: queryKeys.doctors.availableSlots(doctorId || "", date || ""),
+    queryKey: queryKeys.doctors.availableSlots(doctorId || "", date || "", duration),
     queryFn: async () => {
       if (!doctorId || !date) return [];
-      return (await doctorsService.getAvailableSlots(doctorId, date)) as string[];
+      return (await doctorsService.getAvailableSlots(doctorId, date, duration)) as string[];
     },
     enabled: !!doctorId && !!date,
   });

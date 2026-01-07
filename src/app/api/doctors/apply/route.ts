@@ -65,6 +65,11 @@ export async function POST(request: NextRequest) {
       return createErrorResponse("Speciality is required", 400, [{ field: "speciality", message: "Speciality is required" }], "VALIDATION_ERROR");
     }
 
+    // Validate required documents
+    if (!body.licenseUrl || body.licenseUrl.trim() === "") {
+      return createErrorResponse("Medical license document is required", 400, [{ field: "licenseUrl", message: "Medical license document is required" }], "VALIDATION_ERROR");
+    }
+
     // Create doctor application
     const application = await prisma.doctorApplication.create({
       data: {
@@ -74,6 +79,49 @@ export async function POST(request: NextRequest) {
         yearsOfExperience: body.yearsOfExperience || null,
         bio: body.bio?.trim() || null,
         status: "PENDING",
+      },
+    });
+
+    // Create doctor profile if it doesn't exist
+    let doctor = await prisma.doctor.findUnique({
+      where: { userId: dbUser.id },
+    });
+
+    if (!doctor) {
+      doctor = await prisma.doctor.create({
+        data: {
+          userId: dbUser.id,
+          name: `${dbUser.firstName || ""} ${dbUser.lastName || ""}`.trim() || dbUser.email,
+          email: dbUser.email,
+          phone: dbUser.phone || "",
+          speciality: body.speciality.trim(),
+          bio: body.bio?.trim() || null,
+          gender: "MALE", // Default, can be updated later
+          imageUrl: "",
+          isVerified: false,
+          yearsOfExperience: body.yearsOfExperience || null,
+        },
+      });
+    }
+
+    // Create verification with documents
+    await prisma.doctorVerification.upsert({
+      where: { doctorId: doctor.id },
+      create: {
+        doctorId: doctor.id,
+        licenseUrl: body.licenseUrl?.trim() || null,
+        certificateUrl: body.certificateUrl?.trim() || null,
+        idDocumentUrl: body.idDocumentUrl?.trim() || null,
+        status: "PENDING",
+        submittedAt: new Date(),
+      },
+      update: {
+        licenseUrl: body.licenseUrl?.trim() || null,
+        certificateUrl: body.certificateUrl?.trim() || null,
+        idDocumentUrl: body.idDocumentUrl?.trim() || null,
+        status: "PENDING",
+        submittedAt: new Date(),
+        rejectionReason: null, // Clear previous rejection reason
       },
     });
 

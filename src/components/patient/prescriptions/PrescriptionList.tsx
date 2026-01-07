@@ -16,7 +16,7 @@ import { usePatientPrescriptions } from "@/hooks/use-prescription";
 import { format } from "date-fns";
 import { FileText, Search, Download, Eye } from "lucide-react";
 import Link from "next/link";
-import { PageLoading } from "@/components/ui/loading-skeleton";
+import { PrescriptionListSkeleton } from "@/components/shared";
 
 const statusColors = {
   ACTIVE: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
@@ -34,7 +34,7 @@ function PatientPrescriptionListComponent() {
   });
 
   if (isLoading) {
-    return <PageLoading message="Loading prescriptions..." />;
+    return <PrescriptionListSkeleton count={5} />;
   }
 
   if (error) {

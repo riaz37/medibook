@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDoctorConfig, useUpdateDoctorConfig } from "@/hooks";
 import { useDoctorSettingsStore } from "@/lib/stores/doctor-settings.store";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,13 +74,20 @@ export default function AvailabilitySettings({ doctorId, open, onOpenChange }: A
   };
 
   const handleSave = () => {
-    updateAvailabilityMutation.mutate(availability);
+    // Ensure timeSlots is always an array
+    updateAvailabilityMutation.mutate({
+      ...availability,
+      timeSlots: availability.timeSlots || [],
+    });
   };
 
   if (queryLoading || storeLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Loading Availability Settings</DialogTitle>
+          </DialogHeader>
           <div className="flex items-center justify-center py-8">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
@@ -102,7 +109,7 @@ export default function AvailabilitySettings({ doctorId, open, onOpenChange }: A
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 mt-4">
+        <div className="space-y-4 mt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="slotDuration">Slot Duration (minutes)</Label>
@@ -182,16 +189,16 @@ export default function AvailabilitySettings({ doctorId, open, onOpenChange }: A
             )}
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={updateAvailabilityMutation.isPending}>
-              <Save className="w-4 h-4 mr-2" />
-              {updateAvailabilityMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
         </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={updateAvailabilityMutation.isPending}>
+            <Save className="w-4 h-4 mr-2" />
+            {updateAvailabilityMutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

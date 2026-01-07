@@ -119,31 +119,6 @@ export interface DoctorDashboardLayoutProps {
 }
 
 /**
- * DoctorDashboardClient component props
- */
-export interface DoctorDashboardClientProps {
-  doctor: {
-    id: string;
-    [key: string]: any;
-  } | null;
-  appointments: Array<{
-    id: string;
-    [key: string]: any;
-    user: {
-      firstName: string | null;
-      lastName: string | null;
-      email: string;
-      phone: string | null;
-    };
-  }>;
-  stats: {
-    total: number;
-    upcoming: number;
-    completed: number;
-  };
-}
-
-/**
  * AdminDashboardLayout component props
  */
 export interface AdminDashboardLayoutProps {

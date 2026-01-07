@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, ArrowRight, FileText } from "lucide-react";
 import Link from "next/link";
 import { useAdminDoctorVerifications, useAdminDoctorApplications } from "@/hooks";
-import { LoadingSpinner } from "@/components/ui/loading-skeleton";
+import { VerificationListSkeleton } from "@/components/shared";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useMemo } from "react";
 
@@ -32,7 +32,7 @@ export default function PendingVerifications() {
         name: v.doctor.name,
         email: v.doctor.email,
         speciality: v.doctor.speciality,
-        submittedAt: v.submittedAt || v.createdAt,
+        submittedAt: v.submittedAt || v.doctor.createdAt,
       }));
 
     const pendingApplications = applications
@@ -60,9 +60,7 @@ export default function PendingVerifications() {
           <CardDescription>Review and approve doctor applications and verifications</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-32">
-            <LoadingSpinner size="md" />
-          </div>
+          <VerificationListSkeleton count={3} />
         </CardContent>
       </Card>
     );
@@ -115,11 +113,10 @@ export default function PendingVerifications() {
           >
             <div className="flex items-start gap-3 flex-1">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  item.type === "verification"
-                    ? "bg-blue-500/10 text-blue-600"
-                    : "bg-purple-500/10 text-purple-600"
-                }`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center ${item.type === "verification"
+                  ? "bg-blue-500/10 text-blue-600"
+                  : "bg-purple-500/10 text-purple-600"
+                  }`}
               >
                 {item.type === "verification" ? (
                   <CheckCircle2 className="w-5 h-5" />

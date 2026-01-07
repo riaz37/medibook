@@ -61,9 +61,35 @@ function PaymentSettingsClient({ doctorId }: PaymentSettingsClientProps) {
     },
   });
 
+  // Express Dashboard link mutation
+  const dashboardMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/doctors/${doctorId}/payment-setup/dashboard`);
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to get dashboard link");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.dashboardUrl) {
+        window.open(data.dashboardUrl, "_blank");
+      }
+    },
+    onError: (error: Error) => {
+      showError(error.message || "Failed to open dashboard");
+    },
+  });
+
   const handleSetup = () => {
     setIsSettingUp(true);
     setupMutation.mutate();
+  };
+
+  const handleOpenDashboard = () => {
+    dashboardMutation.mutate();
   };
 
   if (isLoading) {
@@ -181,13 +207,36 @@ function PaymentSettingsClient({ doctorId }: PaymentSettingsClientProps) {
                 )}
 
                 {isActive && (
-                  <div className="pt-4 border-t space-y-2">
-                    <p className="text-sm font-medium">Account Details</p>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>Account ID: {accountStatus.stripeAccountId}</p>
-                      <p>Status: {accountStatus.accountStatus}</p>
-                      <p>Payouts: {accountStatus.payoutEnabled ? "Enabled" : "Disabled"}</p>
+                  <div className="pt-4 border-t space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Account Details</p>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>Account ID: {accountStatus.stripeAccountId}</p>
+                        <p>Status: {accountStatus.accountStatus}</p>
+                        <p>Payouts: {accountStatus.payoutEnabled ? "Enabled" : "Disabled"}</p>
+                      </div>
                     </div>
+                    <Button
+                      onClick={handleOpenDashboard}
+                      disabled={dashboardMutation.isPending}
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                    >
+                      {dashboardMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Opening...
+                        </>
+                      ) : (
+                        <>
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Manage Account in Stripe Dashboard
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Access your Stripe Express Dashboard to manage bank details, tax information, and payout settings.
+                    </p>
                   </div>
                 )}
               </div>

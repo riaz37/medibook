@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/chart";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { DollarSign, TrendingUp, BarChart3, Target } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/loading-skeleton";
+import { ChartSkeleton, StatCardGridSkeleton } from "@/components/ui/loading-skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -56,8 +56,10 @@ export function DoctorAnalyticsSection({ doctorId }: DoctorAnalyticsSectionProps
 
   if (isLoading || trendsLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <LoadingSpinner size="lg" />
+      <div className="space-y-6">
+        <StatCardGridSkeleton count={4} />
+        <ChartSkeleton height={300} />
+        <ChartSkeleton height={400} />
       </div>
     );
   }
@@ -126,7 +128,7 @@ export function DoctorAnalyticsSection({ doctorId }: DoctorAnalyticsSectionProps
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {trendData.length > 1 
+              {trendData.length > 1
                 ? `${Math.round(((trendData[trendData.length - 1]?.total || 0) - (trendData[0]?.total || 0)) / Math.max(trendData[0]?.total || 1, 1) * 100)}%`
                 : "0%"}
             </div>

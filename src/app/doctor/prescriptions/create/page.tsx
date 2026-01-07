@@ -6,7 +6,12 @@ import { CardLoading } from "@/components/ui/loading-skeleton";
 import { getCurrentUser } from "@/lib/auth";
 import { getAuthContext } from "@/lib/server/rbac";
 
-async function CreatePrescriptionPage() {
+async function CreatePrescriptionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ appointmentId?: string; patientId?: string }>;
+}) {
+  const params = await searchParams;
   const user = await getCurrentUser();
 
   if (!user || !user.role) {
@@ -39,7 +44,10 @@ async function CreatePrescriptionPage() {
           </p>
         </div>
         <Suspense fallback={<CardLoading />}>
-          <CreatePrescriptionForm />
+          <CreatePrescriptionForm
+            appointmentId={params.appointmentId}
+            patientId={params.patientId}
+          />
         </Suspense>
       </div>
     </DoctorDashboardLayout>

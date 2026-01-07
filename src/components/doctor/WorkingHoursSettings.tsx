@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useDoctorSettingsStore } from "@/lib/stores/doctor-settings.store";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,11 +31,20 @@ export default function WorkingHoursSettings({ doctorId, open, onOpenChange }: W
     if (config && open) {
       const defaultHours = DAYS_OF_WEEK.map((day) => {
         const existing = config.workingHours?.find((wh) => wh.dayOfWeek === day.value);
-        return existing || {
+        if (existing) {
+          return {
+            dayOfWeek: existing.dayOfWeek,
+            startTime: existing.startTime || null,
+            endTime: existing.endTime || null,
+            isWorking: existing.isWorking,
+          };
+        }
+        const isWorking = day.value !== 0 && day.value !== 6;
+        return {
           dayOfWeek: day.value,
-          startTime: "09:00",
-          endTime: "17:00",
-          isWorking: day.value !== 0 && day.value !== 6,
+          startTime: isWorking ? "09:00" : null,
+          endTime: isWorking ? "17:00" : null,
+          isWorking,
         };
       });
 
@@ -55,12 +64,27 @@ export default function WorkingHoursSettings({ doctorId, open, onOpenChange }: W
   const updateWorkingHoursMutation = useUpdateDoctorWorkingHours();
 
   const handleUpdateWorkingHours = (dayOfWeek: number, field: string, value: any) => {
-    updateWorkingHour(dayOfWeek, field as any, value);
+    if (field === "isWorking" && !value) {
+      // When setting isWorking to false, clear startTime and endTime
+      updateWorkingHour(dayOfWeek, "isWorking", false);
+      updateWorkingHour(dayOfWeek, "startTime", null);
+      updateWorkingHour(dayOfWeek, "endTime", null);
+    } else {
+      updateWorkingHour(dayOfWeek, field as any, value);
+    }
   };
 
   const handleSave = () => {
+    // Normalize data: ensure non-working days have null for startTime/endTime
+    const normalizedHours = workingHours.map((wh) => ({
+      dayOfWeek: wh.dayOfWeek,
+      isWorking: wh.isWorking,
+      startTime: wh.isWorking ? wh.startTime || null : null,
+      endTime: wh.isWorking ? wh.endTime || null : null,
+    }));
+
     updateWorkingHoursMutation.mutate(
-      { doctorId, data: workingHours },
+      { doctorId, data: normalizedHours },
       {
         onSuccess: () => {
           showSuccess(toastMessages.success.settingsSaved);
@@ -78,6 +102,9 @@ export default function WorkingHoursSettings({ doctorId, open, onOpenChange }: W
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Loading Working Hours</DialogTitle>
+          </DialogHeader>
           <div className="flex items-center justify-center py-8">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
@@ -122,7 +149,7 @@ export default function WorkingHoursSettings({ doctorId, open, onOpenChange }: W
                       <Label className="text-xs">Start Time</Label>
                       <Input
                         type="time"
-                        value={wh.startTime}
+                        value={wh.startTime || ""}
                         onChange={(e) =>
                           handleUpdateWorkingHours(wh.dayOfWeek, "startTime", e.target.value)
                         }
@@ -132,7 +159,7 @@ export default function WorkingHoursSettings({ doctorId, open, onOpenChange }: W
                       <Label className="text-xs">End Time</Label>
                       <Input
                         type="time"
-                        value={wh.endTime}
+                        value={wh.endTime || ""}
                         onChange={(e) =>
                           handleUpdateWorkingHours(wh.dayOfWeek, "endTime", e.target.value)
                         }
@@ -144,16 +171,16 @@ export default function WorkingHoursSettings({ doctorId, open, onOpenChange }: W
             );
           })}
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={updateWorkingHoursMutation.isPending}>
-              <Save className="w-4 h-4 mr-2" />
-              {updateWorkingHoursMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
         </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={updateWorkingHoursMutation.isPending}>
+            <Save className="w-4 h-4 mr-2" />
+            {updateWorkingHoursMutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

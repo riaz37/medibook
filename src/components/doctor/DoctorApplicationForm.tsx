@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileUpload } from "@/components/ui/file-upload";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileText, ExternalLink, X } from "lucide-react";
 import type { DoctorApplicationData } from "@/lib/types/rbac";
 
 /**
@@ -25,6 +26,9 @@ export default function DoctorApplicationForm() {
     licenseNumber: "",
     yearsOfExperience: undefined,
     bio: "",
+    licenseUrl: "",
+    certificateUrl: "",
+    idDocumentUrl: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,7 +127,185 @@ export default function DoctorApplicationForm() {
             />
           </div>
 
-          <Button type="submit" disabled={isSubmitting} className="w-full">
+          {/* Verification Documents Section */}
+          <div className="space-y-6 pt-6 border-t">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Verification Documents</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Please upload your verification documents. These will be reviewed by our admin team.
+              </p>
+            </div>
+
+            {/* Medical License */}
+            <div className="space-y-2">
+              <Label htmlFor="licenseUrl">Medical License *</Label>
+              {formData.licenseUrl ? (
+                <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">Medical License</p>
+                    <p className="text-xs text-muted-foreground truncate">{formData.licenseUrl}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={formData.licenseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      <Button variant="ghost" size="sm" type="button">
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      onClick={() => handleChange("licenseUrl", "")}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <FileUpload
+                  onUploadComplete={(url) => {
+                    handleChange("licenseUrl", url);
+                    toast.success("Medical license uploaded successfully");
+                  }}
+                  onUploadError={(error) => {
+                    toast.error(error.message || "Failed to upload file");
+                  }}
+                  folder="doctor-verifications"
+                  maxSize={10 * 1024 * 1024}
+                  accept="image/*,.pdf,.doc,.docx"
+                  label="Upload Medical License"
+                />
+              )}
+              <Input
+                id="licenseUrl"
+                value={formData.licenseUrl}
+                onChange={(e) => handleChange("licenseUrl", e.target.value)}
+                placeholder="Or enter document URL manually"
+                disabled={!!formData.licenseUrl}
+                className="text-sm mt-2"
+              />
+            </div>
+
+            {/* Professional Certificate */}
+            <div className="space-y-2">
+              <Label htmlFor="certificateUrl">Professional Certificate (Optional)</Label>
+              {formData.certificateUrl ? (
+                <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">Professional Certificate</p>
+                    <p className="text-xs text-muted-foreground truncate">{formData.certificateUrl}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={formData.certificateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      <Button variant="ghost" size="sm" type="button">
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      onClick={() => handleChange("certificateUrl", "")}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <FileUpload
+                  onUploadComplete={(url) => {
+                    handleChange("certificateUrl", url);
+                    toast.success("Certificate uploaded successfully");
+                  }}
+                  onUploadError={(error) => {
+                    toast.error(error.message || "Failed to upload file");
+                  }}
+                  folder="doctor-verifications"
+                  maxSize={10 * 1024 * 1024}
+                  accept="image/*,.pdf,.doc,.docx"
+                  label="Upload Certificate"
+                />
+              )}
+              <Input
+                id="certificateUrl"
+                value={formData.certificateUrl}
+                onChange={(e) => handleChange("certificateUrl", e.target.value)}
+                placeholder="Or enter document URL manually"
+                disabled={!!formData.certificateUrl}
+                className="text-sm mt-2"
+              />
+            </div>
+
+            {/* ID Document */}
+            <div className="space-y-2">
+              <Label htmlFor="idDocumentUrl">ID Document (Optional)</Label>
+              {formData.idDocumentUrl ? (
+                <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">ID Document</p>
+                    <p className="text-xs text-muted-foreground truncate">{formData.idDocumentUrl}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={formData.idDocumentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      <Button variant="ghost" size="sm" type="button">
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      onClick={() => handleChange("idDocumentUrl", "")}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <FileUpload
+                  onUploadComplete={(url) => {
+                    handleChange("idDocumentUrl", url);
+                    toast.success("ID document uploaded successfully");
+                  }}
+                  onUploadError={(error) => {
+                    toast.error(error.message || "Failed to upload file");
+                  }}
+                  folder="doctor-verifications"
+                  maxSize={10 * 1024 * 1024}
+                  accept="image/*,.pdf,.doc,.docx"
+                  label="Upload ID Document"
+                />
+              )}
+              <Input
+                id="idDocumentUrl"
+                value={formData.idDocumentUrl}
+                onChange={(e) => handleChange("idDocumentUrl", e.target.value)}
+                placeholder="Or enter document URL manually"
+                disabled={!!formData.idDocumentUrl}
+                className="text-sm mt-2"
+              />
+            </div>
+          </div>
+
+          <Button type="submit" disabled={isSubmitting || !formData.licenseUrl} className="w-full">
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

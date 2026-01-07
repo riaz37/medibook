@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { FileText, Download, Check, X, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { PageLoading } from "@/components/ui/loading-skeleton";
+import { PrescriptionDetailsSkeleton } from "@/components/shared";
 import {
   Select,
   SelectContent,
@@ -36,7 +36,7 @@ export function PrescriptionDetails({ prescriptionId }: PrescriptionDetailsProps
   const [processingRefill, setProcessingRefill] = useState<string | null>(null);
 
   if (isLoading) {
-    return <PageLoading message="Loading prescription details..." />;
+    return <PrescriptionDetailsSkeleton />;
   }
 
   if (error || !prescription) {

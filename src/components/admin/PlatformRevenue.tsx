@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { DollarSign, TrendingUp } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/loading-skeleton";
+import { PaymentSummarySkeleton, PaymentListSkeleton } from "@/components/shared";
 import { showErrorToast } from "@/components/shared/ErrorToast";
 import { handleApiError } from "@/lib/utils/toast";
 import { useEffect } from "react";
@@ -26,8 +26,9 @@ export function PlatformRevenue() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <LoadingSpinner size="lg" />
+      <div className="space-y-6">
+        <PaymentSummarySkeleton />
+        <PaymentListSkeleton count={5} />
       </div>
     );
   }
@@ -57,64 +58,64 @@ export function PlatformRevenue() {
       </div>
 
       {/* Recent Payments */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Payments</CardTitle>
-            <CardDescription>Platform commission from appointments</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!revenue?.recentPayments || revenue.recentPayments.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No payments yet
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Doctor</TableHead>
-                    <TableHead>Appointment</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Commission</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {revenue.recentPayments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell>
-                        {format(new Date(payment.createdAt), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell>{payment.doctor?.name || "N/A"}</TableCell>
-                      <TableCell>
-                        {payment.appointment?.appointmentType?.name || "Appointment"}
-                      </TableCell>
-                      <TableCell>
-                        ${Number(payment.appointmentPrice).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="font-medium text-primary">
-                        ${Number(payment.commissionAmount).toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            payment.status === "COMPLETED"
-                              ? "default"
-                              : payment.status === "PENDING"
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Payments</CardTitle>
+          <CardDescription>Platform commission from appointments</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!revenue?.recentPayments || revenue.recentPayments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No payments yet
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Doctor</TableHead>
+                  <TableHead>Appointment</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Commission</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {revenue.recentPayments.map((payment) => (
+                  <TableRow key={payment.id}>
+                    <TableCell>
+                      {format(new Date(payment.createdAt), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell>{payment.doctor?.name || "N/A"}</TableCell>
+                    <TableCell>
+                      {payment.appointment?.appointmentType?.name || "Appointment"}
+                    </TableCell>
+                    <TableCell>
+                      ${Number(payment.appointmentPrice).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="font-medium text-primary">
+                      ${Number(payment.commissionAmount).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          payment.status === "COMPLETED"
+                            ? "default"
+                            : payment.status === "PENDING"
                               ? "secondary"
                               : "outline"
-                          }
-                        >
-                          {payment.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                        }
+                      >
+                        {payment.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

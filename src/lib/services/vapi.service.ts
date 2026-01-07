@@ -13,7 +13,7 @@ class VapiService extends BaseService {
     try {
       // Normalize phone number (remove spaces, dashes, etc.)
       const normalizedPhone = phoneNumber.replace(/\D/g, "");
-      
+
       const user = await prisma.user.findFirst({
         where: {
           phone: {
@@ -34,7 +34,7 @@ class VapiService extends BaseService {
   async identifyUserByEmail(email: string) {
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      
+
       const user = await prisma.user.findUnique({
         where: {
           email: normalizedEmail,
@@ -55,7 +55,7 @@ class VapiService extends BaseService {
     try {
       // Try to find by email first
       let user = await this.identifyUserByEmail(email);
-      
+
       if (user) {
         // Update phone if not set
         if (!user.phone && phoneNumber) {
@@ -69,7 +69,7 @@ class VapiService extends BaseService {
 
       // Try to find by phone
       user = await this.identifyUserByPhone(phoneNumber);
-      
+
       if (user) {
         // Update email if not set
         if (!user.email && email) {
@@ -84,17 +84,21 @@ class VapiService extends BaseService {
       // Create new user (they'll need to complete registration later)
       const normalizedEmail = email.toLowerCase().trim();
       const normalizedPhone = phoneNumber.replace(/\D/g, "");
-      
+
       // Find the patient role
       const patientRole = await prisma.role.findUnique({
         where: { name: "patient" },
       });
-      
+
+      if (!patientRole) {
+        throw new Error("Patient role not found");
+      }
+
       user = await prisma.user.create({
         data: {
           email: normalizedEmail,
           phone: normalizedPhone,
-          roleId: patientRole?.id,
+          roleId: patientRole.id,
         },
       });
 

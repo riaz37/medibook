@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { DollarSign } from "lucide-react";
 import type { PaymentHistoryProps } from "@/lib/types";
 import { useDoctorPayments } from "@/hooks";
-import { LoadingSpinner } from "@/components/ui/loading-skeleton";
+import { PaymentListSkeleton } from "@/components/shared";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export function PaymentHistory({ doctorId }: PaymentHistoryProps) {
@@ -21,10 +21,8 @@ export function PaymentHistory({ doctorId }: PaymentHistoryProps) {
           <CardTitle>Payment History</CardTitle>
           <CardDescription>Your appointment payments and payouts</CardDescription>
         </CardHeader>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center py-8">
-            <LoadingSpinner size="md" />
-          </div>
+        <CardContent>
+          <PaymentListSkeleton count={5} />
         </CardContent>
       </Card>
     );
@@ -93,15 +91,15 @@ export function PaymentHistory({ doctorId }: PaymentHistoryProps) {
                       payment.doctorPaid
                         ? "default"
                         : payment.patientPaid
-                        ? "secondary"
-                        : "outline"
+                          ? "secondary"
+                          : "outline"
                     }
                   >
                     {payment.doctorPaid
                       ? "Paid"
                       : payment.patientPaid
-                      ? "Pending"
-                      : "Processing"}
+                        ? "Pending"
+                        : "Processing"}
                   </Badge>
                 </TableCell>
               </TableRow>

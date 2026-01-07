@@ -1,13 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Clock, ArrowRight, User, Mail, Phone, CheckCircle2, XCircle } from "lucide-react";
+import { CalendarIcon, ArrowRight } from "lucide-react";
 import { requireAuth } from "@/lib/server/rbac";
 import prisma from "@/lib/prisma";
-import { format, isSameDay, parseISO } from "date-fns";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
+import { AppointmentStatusBadge, UserAvatar, ContactInfo } from "@/components/shared";
 
 interface TodaysAppointment {
   id: string;
@@ -68,20 +66,7 @@ async function getTodaysAppointments(doctorId: string): Promise<TodaysAppointmen
   }
 }
 
-function getStatusBadge(status: string) {
-  switch (status) {
-    case "CONFIRMED":
-      return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Confirmed</Badge>;
-    case "PENDING":
-      return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Pending</Badge>;
-    case "COMPLETED":
-      return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Completed</Badge>;
-    case "CANCELLED":
-      return <Badge className="bg-red-500/10 text-red-600 border-red-500/20">Cancelled</Badge>;
-    default:
-      return <Badge variant="secondary">{status}</Badge>;
-  }
-}
+
 
 export default async function TodaysSchedule() {
   const authResult = await requireAuth();
@@ -159,11 +144,12 @@ export default async function TodaysSchedule() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <Avatar className="size-10 border-2 border-primary/20">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          src={null}
+                          firstName={appointment.user.firstName}
+                          lastName={appointment.user.lastName}
+                          size="md"
+                        />
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold truncate">{patientName}</h4>
                           <p className="text-sm text-muted-foreground truncate">
@@ -171,22 +157,15 @@ export default async function TodaysSchedule() {
                           </p>
                         </div>
                       </div>
-                      {getStatusBadge(appointment.status)}
+                      <AppointmentStatusBadge status={appointment.status} />
                     </div>
 
-                    {/* Contact Info */}
-                    <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Mail className="size-3" />
-                        <span className="truncate max-w-[200px]">{appointment.user.email}</span>
-                      </div>
-                      {appointment.user.phone && (
-                        <div className="flex items-center gap-1">
-                          <Phone className="size-3" />
-                          <span>{appointment.user.phone}</span>
-                        </div>
-                      )}
-                    </div>
+                    <ContactInfo
+                      email={appointment.user.email}
+                      phone={appointment.user.phone}
+                      compact
+                      className="mt-3 text-xs"
+                    />
 
                     {/* Quick Actions */}
                     {appointment.status !== "COMPLETED" && appointment.status !== "CANCELLED" && (

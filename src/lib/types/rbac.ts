@@ -17,18 +17,18 @@ export type Role = "patient" | "doctor_pending" | "doctor" | "admin";
 /**
  * Permission action types
  */
-export type PermissionAction = 
-  | "read" 
-  | "write" 
-  | "delete" 
-  | "manage" 
-  | "approve" 
+export type PermissionAction =
+  | "read"
+  | "write"
+  | "delete"
+  | "manage"
+  | "approve"
   | "reject";
 
 /**
  * Resource types that can be protected
  */
-export type Resource = 
+export type Resource =
   | "appointments"
   | "patients"
   | "doctors"
@@ -62,6 +62,10 @@ export interface DoctorApplicationData {
   licenseNumber?: string;
   yearsOfExperience?: number;
   bio?: string;
+  // Verification documents
+  licenseUrl?: string;
+  certificateUrl?: string;
+  idDocumentUrl?: string;
 }
 
 /**
@@ -80,13 +84,26 @@ export interface DoctorApplication extends DoctorApplicationData {
 }
 
 /**
+ * Doctor application with user information (returned from API)
+ */
+export interface ApplicationWithUser extends DoctorApplication {
+  user: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    phone: string | null;
+  };
+}
+
+/**
  * Role change audit entry
  */
 export interface RoleChangeAuditEntry {
   id: string;
   userId: string;
-  oldRole: UserRole;
-  newRole: UserRole;
+  oldRole: Role;
+  newRole: Role;
   changedBy: string;
   reason?: string | null;
   changedAt: Date;
@@ -97,7 +114,7 @@ export interface RoleChangeAuditEntry {
  */
 export interface RoleChangeRequest {
   userId: string;
-  newRole: UserRole;
+  newRole: Role;
   reason?: string;
 }
 

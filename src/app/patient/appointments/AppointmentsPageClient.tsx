@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PatientDashboardLayout } from "@/components/patient/layout/PatientDashboardLayout";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Stethoscope, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import AppointmentsTabs from "@/components/patient/appointments/AppointmentsTabs";
 import MyAppointmentsTab, { AppointmentFilter } from "@/components/patient/appointments/MyAppointmentsTab";
 import AppointmentFilters, { StatusFilter } from "@/components/patient/appointments/AppointmentFilters";
@@ -14,31 +13,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { parseISO, isPast, isToday, isAfter } from "date-fns";
 import { CheckCircle2, List } from "lucide-react";
 import { toast } from "sonner";
-import FindAndBookTab from "@/components/patient/appointments/FindAndBookTab";
-import { PageLoading } from "@/components/ui/loading-skeleton";
-
-type MainTab = "find-book" | "my-appointments";
 
 function AppointmentsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Get main tab from URL or default to "find-book" for new users, "my-appointments" for existing
-  const mainTabParam = searchParams.get("tab") as MainTab;
-  const [mainTab, setMainTab] = useState<MainTab>(() => {
-    // If tab is "find-book" or "my-appointments", use it
-    if (mainTabParam === "find-book" || mainTabParam === "my-appointments") {
-      return mainTabParam;
-    }
-    // If it's an old appointment filter (all, upcoming, completed), default to my-appointments
-    if (mainTabParam === "all" || mainTabParam === "upcoming" || mainTabParam === "completed") {
-      return "my-appointments";
-    }
-    // Default to find-book for new users
-    return "find-book";
-  });
-
-  // Get appointment filter from URL for "My Appointments" tab
+  // Get appointment filter from URL
   const appointmentFilterParam = searchParams.get("filter") as AppointmentFilter;
   const [activeAppointmentTab, setActiveAppointmentTab] = useState<AppointmentFilter>(
     appointmentFilterParam || "all"
@@ -106,18 +86,7 @@ function AppointmentsPageContent() {
     };
   }, [transformedAppointments]);
 
-  // Handle main tab change
-  const handleMainTabChange = (tab: MainTab) => {
-    setMainTab(tab);
-    // Update URL without the old filter params when switching tabs
-    if (tab === "find-book") {
-      router.push("/patient/appointments?tab=find-book");
-    } else {
-      router.push(`/patient/appointments?tab=my-appointments&filter=${activeAppointmentTab}`);
-    }
-  };
-
-  // Handle appointment tab change (within My Appointments)
+  // Handle appointment tab change
   const handleAppointmentTabChange = (tab: AppointmentFilter) => {
     setActiveAppointmentTab(tab);
     router.push(`/patient/appointments?tab=my-appointments&filter=${tab}`);
@@ -173,106 +142,64 @@ function AppointmentsPageContent() {
       <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Appointments</h1>
+          <h1 className="text-3xl font-bold mb-2">My Appointments</h1>
           <p className="text-muted-foreground">
-            {mainTab === "find-book" 
-              ? "Find and book appointments with verified healthcare professionals"
-              : "Manage your appointments, view upcoming visits, and track your appointment history"
-            }
+            Manage your appointments, view upcoming visits, and track your appointment history
           </p>
         </div>
 
-        {/* Main Tabs */}
-        <Tabs
-          value={mainTab}
-          onValueChange={(value) => handleMainTabChange(value as MainTab)}
-          className="w-full"
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <StatCard
+            title="Total Appointments"
+            value={counts.all}
+            description="All time appointments"
+            icon={List}
+          />
+          <StatCard
+            title="Upcoming"
+            value={counts.upcoming}
+            description="Scheduled appointments"
+            icon={Calendar}
+          />
+          <StatCard
+            title="Completed"
+            value={counts.completed}
+            description="Past appointments"
+            icon={CheckCircle2}
+          />
+        </div>
+
+        {/* Filters */}
+        <AppointmentFilters
+          search={searchQuery}
+          onSearchChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          onClearFilters={handleClearFilters}
+        />
+
+        {/* Appointment Tabs and List */}
+        <AppointmentsTabs
+          activeTab={activeAppointmentTab}
+          onTabChange={handleAppointmentTabChange}
+          counts={counts}
         >
-          <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8">
-            <TabsTrigger value="find-book" className="relative text-sm md:text-base">
-              <Stethoscope className="w-4 h-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Find & Book</span>
-              <span className="sm:hidden">Find</span>
-            </TabsTrigger>
-            <TabsTrigger value="my-appointments" className="relative text-sm md:text-base">
-              <Calendar className="w-4 h-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">My Appointments</span>
-              <span className="sm:hidden">Appointments</span>
-              {counts.all > 0 && (
-                <span className="ml-1 md:ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                  {counts.all}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Find & Book Tab */}
-          <TabsContent value="find-book" className="mt-0">
-            <Suspense fallback={<PageLoading message="Loading doctors..." />}>
-              <FindAndBookTab />
-            </Suspense>
-          </TabsContent>
-
-          {/* My Appointments Tab */}
-          <TabsContent value="my-appointments" className="mt-0">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <StatCard
-                title="Total Appointments"
-                value={counts.all}
-                description="All time appointments"
-                icon={List}
-              />
-              <StatCard
-                title="Upcoming"
-                value={counts.upcoming}
-                description="Scheduled appointments"
-                icon={Calendar}
-              />
-              <StatCard
-                title="Completed"
-                value={counts.completed}
-                description="Past appointments"
-                icon={CheckCircle2}
-              />
-            </div>
-
-            {/* Filters */}
-            <AppointmentFilters
-              search={searchQuery}
-              onSearchChange={setSearchQuery}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              onClearFilters={handleClearFilters}
-            />
-
-            {/* Appointment Tabs and List */}
-            <AppointmentsTabs
-              activeTab={activeAppointmentTab}
-              onTabChange={handleAppointmentTabChange}
-              counts={counts}
-            >
-              <MyAppointmentsTab
-                appointments={transformedAppointments}
-                filter={activeAppointmentTab}
-                searchQuery={searchQuery}
-                statusFilter={statusFilter}
-                isLoading={isLoading}
-                onCancel={handleCancel}
-                onViewDetails={handleViewDetails}
-              />
-            </AppointmentsTabs>
-          </TabsContent>
-        </Tabs>
+          <MyAppointmentsTab
+            appointments={transformedAppointments}
+            filter={activeAppointmentTab}
+            searchQuery={searchQuery}
+            statusFilter={statusFilter}
+            isLoading={isLoading}
+            onCancel={handleCancel}
+            onViewDetails={handleViewDetails}
+          />
+        </AppointmentsTabs>
       </div>
     </PatientDashboardLayout>
   );
 }
 
 export default function AppointmentsPageClient() {
-  return (
-    <Suspense fallback={<PageLoading message="Loading appointments..." />}>
-      <AppointmentsPageContent />
-    </Suspense>
-  );
+  return <AppointmentsPageContent />;
 }

@@ -186,8 +186,8 @@ class DoctorsService extends BaseService {
    */
   async updateWorkingHours(doctorId: string, data: Array<{
     dayOfWeek: number;
-    startTime: string;
-    endTime: string;
+    startTime?: string | null;
+    endTime?: string | null;
     isWorking: boolean;
   }>) {
     try {
@@ -272,13 +272,16 @@ class DoctorsService extends BaseService {
 
   /**
    * Get doctor available slots for a date
+   * @param doctorId - Doctor ID
+   * @param date - Date in YYYY-MM-DD format
+   * @param duration - Optional appointment duration in minutes. If provided, only returns slots that can accommodate this duration.
    */
-  async getAvailableSlots(doctorId: string, date: string) {
+  async getAvailableSlots(doctorId: string, date: string, duration?: number) {
     try {
       if (!doctorId || !date) {
         throw new ApiException("Doctor ID and date are required");
       }
-      return await apiClient.getDoctorAvailableSlots(doctorId, date);
+      return await apiClient.getDoctorAvailableSlots(doctorId, date, duration);
     } catch (error) {
       throw this.handleError(error, "Failed to fetch available slots");
     }

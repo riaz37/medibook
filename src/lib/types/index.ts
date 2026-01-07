@@ -57,6 +57,13 @@ export interface Appointment {
 
 // Extended Appointment with relations (used when fetching by ID)
 export interface AppointmentWithRelations extends Appointment {
+  user?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    phone?: string | null;
+  };
   doctor?: {
     id: string;
     name: string;
@@ -254,6 +261,7 @@ export type {
   NextAppointmentData,
   DoctorAppointmentListItem,
   UpcomingAppointmentData,
+  BulkCancelResponse,
 } from "./appointments";
 
 // ============================================================================
@@ -331,6 +339,5 @@ export type {
   PatientDashboardLayoutProps,
   DoctorDashboardLayoutProps,
   AdminDashboardLayoutProps,
-  DoctorDashboardClientProps,
 } from "./dashboard";
 

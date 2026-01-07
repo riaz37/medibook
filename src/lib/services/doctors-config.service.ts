@@ -239,8 +239,11 @@ class DoctorsConfigService extends BaseService {
 
   /**
    * Get available time slots for a doctor on a specific date
+   * @param doctorId - Doctor ID
+   * @param date - Date in YYYY-MM-DD format
+   * @param appointmentDuration - Optional appointment duration in minutes. If provided, only returns slots that can accommodate this duration.
    */
-  async getAvailableTimeSlots(doctorId: string, date: string): Promise<string[]> {
+  async getAvailableTimeSlots(doctorId: string, date: string, appointmentDuration?: number): Promise<string[]> {
     try {
       const availability = await this.getAvailability(doctorId);
       const workingHours = await this.getWorkingHours(doctorId);
@@ -279,6 +282,9 @@ class DoctorsConfigService extends BaseService {
       const startMinutes = startHour * 60 + startMin;
       const endMinutes = endHour * 60 + endMin;
       const slotDuration = availability.slotDuration;
+      
+      // Use appointment duration if provided, otherwise use slot duration
+      const requiredDuration = appointmentDuration || slotDuration;
 
       // Generate slots
       for (let minutes = startMinutes; minutes < endMinutes; minutes += slotDuration) {
@@ -288,19 +294,64 @@ class DoctorsConfigService extends BaseService {
 
         // Check if slot is in doctor's available time slots
         if (availability.timeSlots.length === 0 || availability.timeSlots.includes(timeSlot)) {
-          // Check if slot is not booked
+          const slotStart = minutes;
+          const slotEnd = minutes + slotDuration;
+          const appointmentEnd = minutes + requiredDuration;
+
+          // Check if appointment would extend beyond working hours
+          if (appointmentEnd > endMinutes) {
+            continue; // Skip this slot - appointment would extend beyond working hours
+          }
+
+          // Check if slot is not booked (considering duration)
           const isBooked = bookedAppointments.some((apt) => {
             const [aptHour, aptMin] = apt.time.split(":").map(Number);
             const aptStart = aptHour * 60 + aptMin;
             const aptEnd = aptStart + apt.duration;
-            const slotStart = minutes;
-            const slotEnd = minutes + slotDuration;
 
-            // Check for overlap
+            // Check for overlap between requested appointment and existing appointment
             return (slotStart >= aptStart && slotStart < aptEnd) ||
-              (slotEnd > aptStart && slotEnd <= aptEnd) ||
-              (slotStart <= aptStart && slotEnd >= aptEnd);
+              (appointmentEnd > aptStart && appointmentEnd <= aptEnd) ||
+              (slotStart <= aptStart && appointmentEnd >= aptEnd);
           });
+
+          // If appointment duration is longer than slot duration, check if consecutive slots are available
+          if (requiredDuration > slotDuration) {
+            const slotsNeeded = Math.ceil(requiredDuration / slotDuration);
+            let allSlotsAvailable = true;
+
+            // Check each consecutive slot needed for this appointment
+            for (let i = 0; i < slotsNeeded; i++) {
+              const checkSlotStart = minutes + (i * slotDuration);
+              const checkSlotEnd = checkSlotStart + slotDuration;
+
+              // Check if this slot extends beyond working hours
+              if (checkSlotEnd > endMinutes) {
+                allSlotsAvailable = false;
+                break;
+              }
+
+              // Check if this slot overlaps with any booked appointment
+              const slotOverlaps = bookedAppointments.some((apt) => {
+                const [aptHour, aptMin] = apt.time.split(":").map(Number);
+                const aptStart = aptHour * 60 + aptMin;
+                const aptEnd = aptStart + apt.duration;
+
+                return (checkSlotStart >= aptStart && checkSlotStart < aptEnd) ||
+                  (checkSlotEnd > aptStart && checkSlotEnd <= aptEnd) ||
+                  (checkSlotStart <= aptStart && checkSlotEnd >= aptEnd);
+              });
+
+              if (slotOverlaps) {
+                allSlotsAvailable = false;
+                break;
+              }
+            }
+
+            if (!allSlotsAvailable) {
+              continue; // Skip this slot - not enough consecutive free slots
+            }
+          }
 
           if (!isBooked) {
             slots.push(timeSlot);

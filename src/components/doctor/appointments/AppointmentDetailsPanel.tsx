@@ -12,7 +12,6 @@ import type { DoctorAppointmentListItem } from "@/lib/types";
 interface AppointmentDetailsPanelProps {
   appointment: DoctorAppointmentListItem | null;
   onClose?: () => void;
-  onConfirm?: (appointmentId: string) => void;
   onCancel?: (appointmentId: string) => void;
   onComplete?: (appointmentId: string) => void;
   onCreatePrescription?: (appointmentId: string) => void;
@@ -22,7 +21,6 @@ interface AppointmentDetailsPanelProps {
 export function AppointmentDetailsPanel({
   appointment,
   onClose,
-  onConfirm,
   onCancel,
   onComplete,
   onCreatePrescription,
@@ -30,11 +28,15 @@ export function AppointmentDetailsPanel({
 }: AppointmentDetailsPanelProps) {
   if (!appointment) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          <p>Select an appointment to view details</p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center border-2 border-dashed rounded-xl p-8 bg-muted/20">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
+          <User className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="font-semibold text-lg mb-2">Patient Overview</h3>
+        <p className="text-muted-foreground text-sm max-w-[200px]">
+          Select an appointment from the agenda to view patient details and actions.
+        </p>
+      </div>
     );
   }
 
@@ -62,7 +64,7 @@ export function AppointmentDetailsPanel({
   };
 
   return (
-    <Card className="sticky top-4">
+    <Card className="border-none shadow-none bg-background">
       <CardHeader>
         <div className="flex items-start justify-between">
           <CardTitle>Appointment Details</CardTitle>
@@ -146,25 +148,15 @@ export function AppointmentDetailsPanel({
             <Separator />
             <div className="space-y-2">
               {isPending && (
-                <>
-                  <Button
-                    className="w-full"
-                    onClick={() => onConfirm?.(appointment.id)}
-                    disabled={isLoading}
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Confirm Appointment
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="w-full"
-                    onClick={() => onCancel?.(appointment.id)}
-                    disabled={isLoading}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Cancel Appointment
-                  </Button>
-                </>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => onCancel?.(appointment.id)}
+                  disabled={isLoading}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Cancel Appointment
+                </Button>
               )}
               {isConfirmed && isUpcoming && (
                 <>

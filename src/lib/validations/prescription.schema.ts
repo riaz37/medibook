@@ -144,7 +144,7 @@ export const processRefillSchema = z.object({
 export const medicationSearchSchema = z.object({
   query: z.string().min(1, "Search query is required").max(100, "Search query is too long"),
   limit: z
-    .number()
+    .coerce.number()
     .int("Limit must be an integer")
     .min(1, "Limit must be at least 1")
     .max(50, "Limit cannot exceed 50")

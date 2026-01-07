@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +27,10 @@ import {
 import { createPrescriptionSchema, type CreatePrescriptionInput } from "@/lib/validations/prescription.schema";
 import { useCreatePrescription, useSearchMedications } from "@/hooks/use-prescription";
 import { Plus, X, Search, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useAppointmentById } from "@/hooks/use-appointment";
 import type { MedicationSearchResult } from "@/lib/types/prescription";
 
 interface CreatePrescriptionFormProps {
@@ -36,12 +39,23 @@ interface CreatePrescriptionFormProps {
   onSuccess?: () => void;
 }
 
+interface Patient {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+}
+
 export function CreatePrescriptionForm({
-  appointmentId,
+  appointmentId: propAppointmentId,
   patientId: initialPatientId,
   onSuccess,
 }: CreatePrescriptionFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const appointmentIdFromUrl = searchParams.get("appointmentId") || propAppointmentId;
+  const { user } = useCurrentUser();
+  
   const [medicationSearchResults, setMedicationSearchResults] = useState<MedicationSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedMedicationIndex, setSelectedMedicationIndex] = useState<number | null>(null);
@@ -49,11 +63,35 @@ export function CreatePrescriptionForm({
   const createPrescription = useCreatePrescription();
   const searchMedications = useSearchMedications();
 
+  // Fetch appointment if appointmentId is provided
+  const { data: appointment } = useAppointmentById(appointmentIdFromUrl || "");
+  const appointmentPatientId = appointment?.user?.id || initialPatientId;
+
+  // Fetch doctor's patients
+  const { data: patientsData, isLoading: isLoadingPatients } = useQuery<{ patients: Patient[] }>({
+    queryKey: ["doctor-patients", user?.id],
+    queryFn: async () => {
+      // First get doctor profile to get doctorId
+      const userRes = await fetch("/api/auth/me");
+      if (!userRes.ok) throw new Error("Failed to fetch user");
+      const userData = await userRes.json();
+      
+      if (!userData.doctorId) throw new Error("Not a doctor");
+      
+      const res = await fetch(`/api/doctors/${userData.doctorId}/patients`);
+      if (!res.ok) throw new Error("Failed to fetch patients");
+      return res.json();
+    },
+    enabled: !appointmentPatientId && !!user?.id, // Only fetch if no patientId from appointment
+  });
+
+  const patients = patientsData?.patients || [];
+
   const form = useForm<CreatePrescriptionInput>({
     resolver: zodResolver(createPrescriptionSchema) as any,
     defaultValues: {
-      appointmentId: appointmentId || null,
-      patientId: initialPatientId || "",
+      appointmentId: appointmentIdFromUrl || null,
+      patientId: appointmentPatientId || "",
       items: [
         {
           medicationId: null,
@@ -70,6 +108,14 @@ export function CreatePrescriptionForm({
       notes: null,
     },
   });
+
+  // Update patientId when appointment is loaded
+  useEffect(() => {
+    if (appointmentPatientId && appointmentPatientId !== form.getValues("patientId")) {
+      form.setValue("patientId", appointmentPatientId);
+      form.setValue("appointmentId", appointmentIdFromUrl || null);
+    }
+  }, [appointmentPatientId, appointmentIdFromUrl, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -139,12 +185,54 @@ export function CreatePrescriptionForm({
               name="patientId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Patient ID</FormLabel>
+                  <FormLabel>Patient</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={!!initialPatientId} />
+                    {appointmentPatientId ? (
+                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted">
+                        <span className="font-medium">
+                          {appointment?.user?.firstName || ""} {appointment?.user?.lastName || ""}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          ({appointment?.user?.email || appointmentPatientId})
+                        </span>
+                      </div>
+                    ) : (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isLoadingPatients}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={isLoadingPatients ? "Loading patients..." : "Select a patient"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {patients.length === 0 ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              No patients found. Create prescriptions from appointments to see patients here.
+                            </div>
+                          ) : (
+                            patients.map((patient) => {
+                              const displayName = `${patient.firstName || ""} ${patient.lastName || ""}`.trim() || patient.email;
+                              return (
+                                <SelectItem key={patient.id} value={patient.id}>
+                                  <div className="flex flex-col">
+                                    <span>{displayName}</span>
+                                    {patient.firstName && (
+                                      <span className="text-xs text-muted-foreground">{patient.email}</span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </FormControl>
                   <FormDescription>
-                    {initialPatientId ? "Patient ID is pre-filled from appointment" : "Enter patient ID"}
+                    {appointmentPatientId
+                      ? "Patient selected from appointment"
+                      : "Select a patient from your appointments"}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

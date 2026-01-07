@@ -5,8 +5,16 @@ import { cn } from "@/lib/utils";
 
 const PROGRESS_STEPS = ["Select Doctor", "Choose Time", "Confirm", "Payment"];
 
-function ProgressSteps({ currentStep }: { currentStep: number }) {
-  const progressPercentage = ((currentStep - 1) / (PROGRESS_STEPS.length - 1)) * 100;
+function ProgressSteps({ 
+  currentStep, 
+  skipFirstStep = false 
+}: { 
+  currentStep: number;
+  skipFirstStep?: boolean;
+}) {
+  const displaySteps = skipFirstStep ? PROGRESS_STEPS.slice(1) : PROGRESS_STEPS;
+  const adjustedStep = skipFirstStep ? currentStep - 1 : currentStep;
+  const progressPercentage = ((adjustedStep - 1) / (displaySteps.length - 1)) * 100;
 
   return (
     <div className="mb-8 space-y-4">
@@ -20,11 +28,11 @@ function ProgressSteps({ currentStep }: { currentStep: number }) {
 
       {/* Step Indicators */}
       <div className="flex items-center justify-between gap-2 sm:gap-4">
-        {PROGRESS_STEPS.map((stepName, index) => {
+        {displaySteps.map((stepName, index) => {
           const stepNumber = index + 1;
-          const isActive = currentStep >= stepNumber;
-          const isCurrent = currentStep === stepNumber;
-          const isCompleted = currentStep > stepNumber;
+          const isActive = adjustedStep >= stepNumber;
+          const isCurrent = adjustedStep === stepNumber;
+          const isCompleted = adjustedStep > stepNumber;
 
           return (
             <div key={stepNumber} className="flex items-center flex-1 min-w-0">
@@ -68,7 +76,7 @@ function ProgressSteps({ currentStep }: { currentStep: number }) {
       {/* Current Step Label (Mobile) */}
       <div className="sm:hidden text-center">
         <p className="text-sm font-medium text-foreground">
-          Step {currentStep} of {PROGRESS_STEPS.length}: {PROGRESS_STEPS[currentStep - 1]}
+          Step {adjustedStep} of {displaySteps.length}: {displaySteps[adjustedStep - 1]}
         </p>
       </div>
     </div>

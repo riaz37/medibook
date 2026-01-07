@@ -5,9 +5,14 @@ import TodaysSchedule from "@/components/doctor/dashboard/TodaysSchedule";
 import DoctorStatsGrid from "@/components/doctor/dashboard/DoctorStatsGrid";
 import { Suspense } from "react";
 import { StatCardGridSkeleton, CardLoading } from "@/components/ui/loading-skeleton";
+import { DashboardHeroSkeleton } from "@/components/shared";
 import { getAuthContext } from "@/lib/server/rbac";
 import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CalendarDays } from "lucide-react";
+import Link from "next/link";
 
 /**
  * Doctor Dashboard
@@ -55,7 +60,7 @@ async function DoctorDashboardPage() {
   // Check if doctor needs to complete profile
   const doctor = dbUser.doctorProfile;
   const needsSetup = !doctor.speciality || !doctor.gender || doctor.speciality === "";
-  
+
   if (needsSetup) {
     redirect("/doctor/setup");
   }
@@ -87,9 +92,31 @@ async function DoctorDashboardPage() {
         )}
 
         {/* Hero Section - Compact */}
-        <Suspense fallback={<div className="h-20 bg-muted animate-pulse rounded-lg mb-6" />}>
+        <Suspense fallback={<DashboardHeroSkeleton />}>
           <DoctorDashboardHero />
         </Suspense>
+
+        {/* Schedule Action Card */}
+        <Card className="mb-6 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10">
+                  <CalendarDays className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Schedule Management</CardTitle>
+                  <CardDescription>Manage your working hours and availability</CardDescription>
+                </div>
+              </div>
+              <Link href="/doctor/schedule">
+                <Button variant="default">
+                  Manage Schedule
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+        </Card>
 
         {/* Today's Schedule - Primary Focus */}
         <Suspense fallback={<CardLoading />}>

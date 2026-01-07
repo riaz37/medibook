@@ -8,6 +8,8 @@ import { useDoctorAppointmentTypes } from "@/hooks/use-doctor-config";
 import { useGetDoctorById } from "@/hooks/use-doctors";
 import { useAppointmentBookingStore } from "@/lib/stores/appointment-booking.store";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/constants/query-keys";
 import { showSuccess, showError } from "@/lib/utils/toast";
 import { format } from "date-fns";
 import type { PaymentStepProps } from "@/lib/types";
@@ -20,6 +22,7 @@ function PaymentStep({
   onBack,
 }: PaymentStepProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: appointmentTypes = [] } = useDoctorAppointmentTypes(selectedDentistId);
   const { data: doctor } = useGetDoctorById(selectedDentistId);
   const { createdAppointmentId, setBookedAppointment, setShowConfirmationModal, resetBooking } =
@@ -67,13 +70,24 @@ function PaymentStep({
   const handlePaymentSuccess = async () => {
     setIsProcessing(true);
     try {
-      // Fetch the updated appointment with payment info
+      // Fetch the updated appointment with payment info first
       const response = await fetch(`/api/appointments/${createdAppointmentId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch appointment");
       }
 
       const appointment = await response.json();
+      
+      // Invalidate and refetch appointments cache to refresh payment status
+      await queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.appointments.user() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.appointments.detail(createdAppointmentId) });
+      
+      // Wait a moment for backend to process payment, then refetch
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Refetch user appointments to get updated payment status
+      await queryClient.refetchQueries({ queryKey: queryKeys.appointments.user() });
       
       // Set booked appointment for confirmation modal
       setBookedAppointment(appointment);

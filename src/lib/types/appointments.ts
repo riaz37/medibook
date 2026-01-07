@@ -59,3 +59,11 @@ export interface UpcomingAppointmentData {
   };
 }
 
+/**
+ * Response type for bulk cancellation API
+ */
+export interface BulkCancelResponse {
+  cancelledCount: number;
+  failedCount: number;
+  message?: string;
+}

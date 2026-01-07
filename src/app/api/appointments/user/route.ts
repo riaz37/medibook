@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { appointmentsServerService, usersServerService } from "@/lib/services/server";
 import { requireAuth } from "@/lib/server/rbac";
 import { createErrorResponse, createServerErrorResponse, createNotFoundResponse } from "@/lib/utils/api-response";
+import { stripe } from "@/lib/stripe";
+import { paymentService } from "@/lib/services/payment.service";
 
 function transformAppointment(appointment: any) {
   return {
@@ -40,7 +42,7 @@ export async function GET(request: NextRequest) {
       if ("response" in authResult) {
         return authResult.response;
       }
-      
+
       const { context } = authResult;
       // Get user by ID
       user = await usersServerService.findUnique(context.userId);
@@ -61,6 +63,7 @@ export async function GET(request: NextRequest) {
             patientPaid: true,
             refunded: true,
             refundAmount: true,
+            stripePaymentIntentId: true,
           },
         },
         prescription: {
@@ -72,7 +75,47 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const transformedAppointments = appointments.map(transformAppointment);
+    // Sync payment status from Stripe for appointments that show unpaid but have payment intent
+    const syncedAppointments = await Promise.all(
+      appointments.map(async (appointment: any) => {
+        if (
+          appointment.payment &&
+          !appointment.payment.patientPaid &&
+          appointment.payment.stripePaymentIntentId
+        ) {
+          try {
+            const paymentIntent = await stripe.paymentIntents.retrieve(
+              appointment.payment.stripePaymentIntentId
+            );
+
+            // If Stripe confirms payment succeeded, update database
+            if (paymentIntent.status === "succeeded") {
+              await paymentService.confirmPayment(
+                appointment.payment.stripePaymentIntentId,
+                paymentIntent.latest_charge as string,
+                appointment.id
+              );
+
+              // Update the appointment object with synced data
+              return {
+                ...appointment,
+                payment: {
+                  ...appointment.payment,
+                  patientPaid: true,
+                  status: "COMPLETED",
+                },
+              };
+            }
+          } catch (error) {
+            // If Stripe check fails, use original data
+            console.error("Failed to sync payment status from Stripe:", error);
+          }
+        }
+        return appointment;
+      })
+    );
+
+    const transformedAppointments = syncedAppointments.map(transformAppointment);
 
     return NextResponse.json(transformedAppointments);
   } catch (error) {

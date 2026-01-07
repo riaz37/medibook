@@ -11,10 +11,14 @@ import { useBookAppointment } from "@/hooks/use-appointment";
 import { useDoctorAppointmentTypes } from "@/hooks/use-doctor-config";
 import { useAppointmentBookingStore } from "@/lib/stores/appointment-booking.store";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 export default function BookAppointmentPageClient() {
+  const searchParams = useSearchParams();
+  const doctorIdFromUrl = searchParams.get("doctorId");
+
   // Use Zustand store for booking state management
   const {
     selectedDoctorId,
@@ -37,6 +41,15 @@ export default function BookAppointmentPageClient() {
     goToPreviousStep,
     resetBooking,
   } = useAppointmentBookingStore();
+
+  // Auto-select doctor from URL and skip to step 2 if doctorId is provided
+  useEffect(() => {
+    if (doctorIdFromUrl && doctorIdFromUrl !== selectedDoctorId) {
+      setSelectedDoctorId(doctorIdFromUrl);
+      // Skip to step 2 (time selection) if doctor is already selected from URL
+      setCurrentStep(2);
+    }
+  }, [doctorIdFromUrl, setSelectedDoctorId, setCurrentStep]);
 
   const bookAppointmentMutation = useBookAppointment();
   const { data: appointmentTypes = [] } = useDoctorAppointmentTypes(selectedDoctorId);
@@ -121,9 +134,9 @@ export default function BookAppointmentPageClient() {
           <p className="text-muted-foreground">Find and book with verified doctors in your area</p>
         </div>
 
-        <ProgressSteps currentStep={currentStep} />
+        <ProgressSteps currentStep={currentStep} skipFirstStep={!!doctorIdFromUrl} />
 
-        {currentStep === 1 && (
+        {currentStep === 1 && !doctorIdFromUrl && (
           <DoctorSelectionStep
             selectedDentistId={selectedDoctorId}
             onContinue={goToNextStep}
@@ -137,7 +150,10 @@ export default function BookAppointmentPageClient() {
             selectedDate={selectedDate}
             selectedTime={selectedTime}
             selectedType={selectedAppointmentTypeId}
-            onBack={goToPreviousStep}
+            onBack={doctorIdFromUrl ? () => {
+              // Go back to dashboard if came from URL
+              window.location.href = "/patient/dashboard";
+            } : goToPreviousStep}
             onContinue={goToNextStep}
             onDateChange={setSelectedDate}
             onTimeChange={setSelectedTime}

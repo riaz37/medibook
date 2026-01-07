@@ -20,30 +20,68 @@ export async function POST(
     
     const { context } = authResult;
 
-    if (context.role === "doctor" && context.doctorId !== id) {
-      return NextResponse.json(
-        { error: "Forbidden - Can only set up your own payment account" },
-        { status: 403 }
-      );
-    }
-
-    // Only verified doctors (not pending) or admin can set up payments
-    if (context.role !== "doctor" && context.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only verified doctors can set up payment accounts" },
-        { status: 403 }
-      );
-    }
-
-    // Get doctor
+    // Get doctor first to check verification status
     const doctor = await prisma.doctor.findUnique({
       where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isVerified: true,
+        userId: true,
+      },
     });
 
     if (!doctor) {
       return NextResponse.json(
         { error: "Doctor not found" },
         { status: 404 }
+      );
+    }
+
+    // Admin can set up payment for any doctor
+    if (context.role === "admin") {
+      // Admin access granted, continue
+    }
+    // For doctors: allow both "doctor" and "doctor_pending" roles if doctor profile is verified
+    else if (context.role === "doctor" || context.role === "doctor_pending") {
+      // Check if doctor is setting up their own account
+      // Match by doctorId OR by userId (in case doctorId is null)
+      const isOwnAccount = context.doctorId === id || doctor.userId === context.userId;
+      
+      if (!isOwnAccount) {
+        console.log("[Payment Setup] Access denied: Not own account", {
+          contextDoctorId: context.doctorId,
+          requestedId: id,
+          doctorUserId: doctor.userId,
+          contextUserId: context.userId,
+        });
+        return NextResponse.json(
+          { error: "Forbidden - Can only set up your own payment account" },
+          { status: 403 }
+        );
+      }
+      
+      // Check if doctor profile is actually verified
+      if (!doctor.isVerified) {
+        console.log("[Payment Setup] Access denied: Doctor not verified", {
+          doctorId: id,
+          isVerified: doctor.isVerified,
+        });
+        return NextResponse.json(
+          { error: "Doctor must be verified before setting up payment account" },
+          { status: 403 }
+        );
+      }
+    }
+    // Reject patient or any other role
+    else {
+      console.log("[Payment Setup] Access denied: Invalid role", {
+        role: context.role,
+      });
+      return NextResponse.json(
+        { error: "Only verified doctors can set up payment accounts" },
+        { status: 403 }
       );
     }
 

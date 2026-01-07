@@ -33,6 +33,7 @@ function PaymentForm({
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Create payment intent on mount
@@ -56,6 +57,7 @@ function PaymentForm({
 
         const data = await response.json();
         setClientSecret(data.clientSecret);
+        setPaymentIntentId(data.paymentIntentId);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to initialize payment";
         setError(errorMessage);
@@ -102,6 +104,28 @@ function PaymentForm({
       }
 
       if (paymentIntent?.status === "succeeded") {
+        // Immediately confirm payment in database (don't wait for webhook)
+        if (paymentIntentId && appointmentId) {
+          try {
+            const confirmResponse = await fetch("/api/payments/confirm", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                paymentIntentId: paymentIntent.id,
+                appointmentId,
+              }),
+            });
+
+            if (!confirmResponse.ok) {
+              // Log error but don't block success - webhook will handle it
+              console.error("Failed to confirm payment immediately, webhook will handle it");
+            }
+          } catch (confirmError) {
+            // Log error but don't block success - webhook will handle it
+            console.error("Error confirming payment:", confirmError);
+          }
+        }
+        
         onSuccess();
       } else {
         setError("Payment was not completed");
@@ -116,26 +140,39 @@ function PaymentForm({
     }
   };
 
-  const cardElementOptions = {
-    style: {
-      base: {
-        fontSize: "16px",
-        color: "#424770",
-        "::placeholder": {
-          color: "#aab7c4",
+  // Get computed styles for theme-aware colors
+  const getCardElementOptions = () => {
+    // Check if dark mode is active (only on client side)
+    const isDark = typeof window !== "undefined" && (
+      window.matchMedia("(prefers-color-scheme: dark)").matches ||
+      document.documentElement.classList.contains("dark")
+    );
+    
+    return {
+      style: {
+        base: {
+          fontSize: "16px",
+          color: isDark ? "#ffffff" : "#1f2937", // White in dark mode, dark grey in light mode
+          fontFamily: "system-ui, sans-serif",
+          "::placeholder": {
+            color: isDark ? "#9ca3af" : "#6b7280", // Lighter grey for placeholders
+          },
+        },
+        invalid: {
+          color: "#ef4444", // Red for invalid input
+          iconColor: "#ef4444",
         },
       },
-      invalid: {
-        color: "#9e2146",
-      },
-    },
+    };
   };
+
+  const cardElementOptions = getCardElementOptions();
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="text-sm font-medium mb-2 block">Card Details</label>
-        <div className="border rounded-lg p-4">
+        <label className="text-sm font-medium mb-2 block text-foreground">Card Details</label>
+        <div className="border rounded-lg p-4 bg-background">
           <CardElement options={cardElementOptions} />
         </div>
       </div>
@@ -174,9 +211,24 @@ function PaymentForm({
 }
 
 export default function PaymentCheckout(props: PaymentCheckoutProps) {
+  // Detect theme for Stripe Elements appearance
+  const isDark = typeof window !== "undefined" && (
+    window.matchMedia("(prefers-color-scheme: dark)").matches ||
+    document.documentElement.classList.contains("dark")
+  );
+
   const options: StripeElementsOptions = {
     appearance: {
-      theme: "stripe",
+      theme: isDark ? "night" : "stripe",
+      variables: {
+        colorPrimary: "hsl(var(--primary))",
+        colorBackground: isDark ? "hsl(var(--background))" : "#ffffff",
+        colorText: isDark ? "#ffffff" : "#1f2937",
+        colorDanger: "#ef4444",
+        fontFamily: "system-ui, sans-serif",
+        spacingUnit: "4px",
+        borderRadius: "8px",
+      },
     },
   };
 

@@ -1,16 +1,18 @@
 import { useDoctorAppointmentTypes, useDoctorAvailableSlots, useDoctorConfig } from "@/hooks/use-doctor-config";
 import { getNextDays } from "@/lib/config/app.config";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, ChevronLeftIcon, ClockIcon, Info } from "lucide-react";
+import { AlertCircle, ChevronLeftIcon, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useMemo, useState } from "react";
 import { showError } from "@/lib/utils/toast";
-import { LoadingSpinner } from "@/components/ui/loading-skeleton";
 import type { DoctorAppointmentType } from "@/lib/types/doctor-config";
 import { useGetDoctorById } from "@/hooks/use-doctors";
 import Image from "next/image";
 import { format } from "date-fns";
+import { DateSelector } from "./DateSelector";
+import { TimeSlotGrid } from "./TimeSlotGrid";
+import { AppointmentTypePicker } from "./AppointmentTypePicker";
 
 interface TimeSelectionStepProps {
   selectedDentistId: string;
@@ -38,26 +40,30 @@ function TimeSelectionStep({
   // Fetch doctor's appointment types
   const { data: appointmentTypes = [], isLoading: isLoadingTypes } = useDoctorAppointmentTypes(selectedDentistId);
   const typedAppointmentTypes = appointmentTypes as DoctorAppointmentType[];
-  
-  // Fetch doctor's configuration for booking advance days
-  const { data: doctorConfig } = useDoctorConfig(selectedDentistId);
-  const bookingAdvanceDays = doctorConfig?.availability?.bookingAdvanceDays || 30;
-  
-  // Fetch available slots for selected date
-  const { data: availableTimeSlots = [], isLoading: isLoadingSlots } = useDoctorAvailableSlots(
-    selectedDentistId,
-    selectedDate
-  );
-  const typedAvailableSlots = availableTimeSlots as string[];
-  
-  // Get available dates based on doctor's booking advance days
-  const availableDates = getNextDays(bookingAdvanceDays);
-  const [showTypeError, setShowTypeError] = useState(false);
-  const { data: doctorDetails } = useGetDoctorById(selectedDentistId);
+
+  // Get selected appointment type details (must be declared before use)
   const selectedTypeDetails = useMemo(
     () => typedAppointmentTypes.find((type) => type.id === selectedType),
     [typedAppointmentTypes, selectedType]
   );
+
+  // Fetch doctor's configuration for booking advance days
+  const { data: doctorConfig } = useDoctorConfig(selectedDentistId);
+  const bookingAdvanceDays = doctorConfig?.availability?.bookingAdvanceDays || 30;
+
+  // Fetch available slots for selected date (filtered by appointment type duration if selected)
+  const selectedTypeDuration = selectedTypeDetails?.duration;
+  const { data: availableTimeSlots = [], isLoading: isLoadingSlots } = useDoctorAvailableSlots(
+    selectedDentistId,
+    selectedDate,
+    selectedTypeDuration // Pass duration to filter slots that can accommodate this duration
+  );
+  const typedAvailableSlots = availableTimeSlots as string[];
+
+  // Get available dates based on doctor's booking advance days
+  const availableDates = getNextDays(bookingAdvanceDays);
+  const [showTypeError, setShowTypeError] = useState(false);
+  const { data: doctorDetails } = useGetDoctorById(selectedDentistId);
   const canContinue = Boolean(selectedDate && selectedTime && selectedTypeDetails);
 
   const handleDateSelect = (date: string) => {
@@ -94,7 +100,7 @@ function TimeSelectionStep({
             Back
           </Button>
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Step 2</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Step {selectedDentistId ? "1" : "2"}</p>
             <h2 className="text-2xl font-semibold">Pick a date & time</h2>
             <p className="text-sm text-muted-foreground">Keep scrolling to choose your preferred slot.</p>
           </div>
@@ -113,78 +119,22 @@ function TimeSelectionStep({
               <CardDescription>Select why you’re visiting so we can prepare the right slot.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isLoadingTypes ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <LoadingSpinner size="sm" />
-                  Loading appointment types...
-                </div>
-              ) : typedAppointmentTypes.length === 0 ? (
+              {showTypeError && !selectedType && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    No appointment types available. Please contact the doctor or select another doctor.
-                  </AlertDescription>
+                  <AlertDescription>Please select an appointment type to continue.</AlertDescription>
                 </Alert>
-              ) : (
-                <>
-                  {showTypeError && !selectedType && (
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>Please select an appointment type to continue.</AlertDescription>
-                    </Alert>
-                  )}
-                  <div className="space-y-3">
-                    {typedAppointmentTypes.map((type) => (
-                      <Card
-                        key={type.id}
-                        className={`cursor-pointer transition-all hover:shadow-sm focus-within:ring-2 focus-within:ring-primary ${
-                          selectedType === type.id
-                            ? "ring-2 ring-primary border-primary/60 bg-primary/5"
-                            : showTypeError
-                              ? "ring-2 ring-destructive"
-                              : ""
-                        }`}
-                        onClick={() => {
-                          onTypeChange(type.id);
-                          setShowTypeError(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onTypeChange(type.id);
-                            setShowTypeError(false);
-                          }
-                        }}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={`Select ${type.name} appointment, ${type.duration} minutes${type.price ? `, $${type.price}` : ""}`}
-                        aria-pressed={selectedType === type.id}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start gap-4">
-                            <div>
-                              <h4 className="font-medium">{type.name}</h4>
-                              <p className="text-sm text-muted-foreground">{type.duration} minutes</p>
-                              {type.description && (
-                                <p className="text-xs text-muted-foreground mt-1">{type.description}</p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              {type.price && <span className="font-semibold text-primary">${type.price}</span>}
-                              {selectedType === type.id && (
-                                <span className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                                  <CheckCircle2 className="w-3 h-3 text-primary" />
-                                  Selected
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </>
               )}
+              <AppointmentTypePicker
+                types={typedAppointmentTypes}
+                selectedType={selectedType}
+                onTypeSelect={(typeId) => {
+                  onTypeChange(typeId);
+                  setShowTypeError(false);
+                }}
+                isLoading={isLoadingTypes}
+                showError={showTypeError}
+              />
             </CardContent>
           </Card>
 
@@ -194,23 +144,11 @@ function TimeSelectionStep({
               <CardDescription>Available dates are based on the doctor’s up-to-date schedule.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                {availableDates.map((date) => (
-                  <Button
-                    key={date}
-                    variant={selectedDate === date ? "default" : "outline"}
-                    onClick={() => handleDateSelect(date)}
-                    className="h-auto p-3 flex flex-col gap-1"
-                  >
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(date).toLocaleDateString("en-US", { weekday: "short" })}
-                    </span>
-                    <span className="text-base font-semibold">
-                      {new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                  </Button>
-                ))}
-              </div>
+              <DateSelector
+                dates={availableDates}
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+              />
 
               {selectedDate ? (
                 <div className="space-y-3">
@@ -218,34 +156,12 @@ function TimeSelectionStep({
                     <h4 className="font-medium">Available times</h4>
                     <span className="text-xs text-muted-foreground">Local timezone</span>
                   </div>
-                  {isLoadingSlots ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <LoadingSpinner size="sm" />
-                      Loading available times...
-                    </div>
-                  ) : typedAvailableSlots.length === 0 ? (
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        No available time slots for this date. Please try another day.
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {typedAvailableSlots.map((time) => (
-                        <Button
-                          key={time}
-                          variant={selectedTime === time ? "default" : "outline"}
-                          onClick={() => onTimeChange(time)}
-                          size="sm"
-                          className="min-h-[44px] touch-manipulation"
-                        >
-                          <ClockIcon className="w-3 h-3 mr-1" />
-                          {time}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
+                  <TimeSlotGrid
+                    slots={typedAvailableSlots}
+                    selectedTime={selectedTime}
+                    onTimeSelect={onTimeChange}
+                    isLoading={isLoadingSlots}
+                  />
                 </div>
               ) : (
                 <Alert>

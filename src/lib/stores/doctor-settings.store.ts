@@ -9,8 +9,8 @@ interface AvailabilityState {
 
 interface WorkingHour {
   dayOfWeek: number;
-  startTime: string;
-  endTime: string;
+  startTime?: string | null;
+  endTime?: string | null;
   isWorking: boolean;
 }
 
@@ -62,13 +62,13 @@ const defaultAvailability: AvailabilityState = {
 };
 
 const defaultWorkingHours: WorkingHour[] = [
-  { dayOfWeek: 0, startTime: "09:00", endTime: "17:00", isWorking: false }, // Sunday
+  { dayOfWeek: 0, startTime: null, endTime: null, isWorking: false }, // Sunday
   { dayOfWeek: 1, startTime: "09:00", endTime: "17:00", isWorking: true }, // Monday
   { dayOfWeek: 2, startTime: "09:00", endTime: "17:00", isWorking: true }, // Tuesday
   { dayOfWeek: 3, startTime: "09:00", endTime: "17:00", isWorking: true }, // Wednesday
   { dayOfWeek: 4, startTime: "09:00", endTime: "17:00", isWorking: true }, // Thursday
   { dayOfWeek: 5, startTime: "09:00", endTime: "17:00", isWorking: true }, // Friday
-  { dayOfWeek: 6, startTime: "09:00", endTime: "17:00", isWorking: false }, // Saturday
+  { dayOfWeek: 6, startTime: null, endTime: null, isWorking: false }, // Saturday
 ];
 
 export const useDoctorSettingsStore = create<DoctorSettingsState>((set) => ({

@@ -56,7 +56,7 @@ export async function createOnboardingLink(
 export async function getAccountStatus(accountId: string) {
   try {
     const account = await stripe.accounts.retrieve(accountId);
-    
+
     return {
       id: account.id,
       chargesEnabled: account.charges_enabled,
@@ -80,6 +80,24 @@ export async function isAccountReady(accountId: string): Promise<boolean> {
     return status.chargesEnabled && status.payoutsEnabled && status.detailsSubmitted;
   } catch (error) {
     return false;
+  }
+}
+
+/**
+ * Create a login link for Express Dashboard
+ * Allows doctors to access their Stripe account dashboard
+ */
+export async function createExpressDashboardLink(
+  accountId: string,
+  returnUrl: string
+) {
+  try {
+    const loginLink = await stripe.accounts.createLoginLink(accountId);
+
+    return loginLink;
+  } catch (error) {
+    console.error("Error creating Express Dashboard link:", error);
+    throw new Error("Failed to create Express Dashboard link");
   }
 }
 

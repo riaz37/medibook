@@ -86,11 +86,11 @@ class ApiClientService extends BaseService {
 
   async updateDoctorWorkingHours(doctorId: string, data: Array<{
     dayOfWeek: number;
-    startTime: string;
-    endTime: string;
+    startTime?: string | null;
+    endTime?: string | null;
     isWorking: boolean;
   }>) {
-    return this.put(`/api/doctors/${doctorId}/working-hours`, data);
+    return this.put(`/api/doctors/${doctorId}/working-hours`, { workingHours: data });
   }
 
   // Doctor Appointment Types API
@@ -122,8 +122,12 @@ class ApiClientService extends BaseService {
   }
 
   // Doctor Available Slots API
-  async getDoctorAvailableSlots(doctorId: string, date: string) {
-    const queryString = this.buildQueryString({ date });
+  async getDoctorAvailableSlots(doctorId: string, date: string, duration?: number) {
+    const queryParams: Record<string, string> = { date };
+    if (duration !== undefined) {
+      queryParams.duration = duration.toString();
+    }
+    const queryString = this.buildQueryString(queryParams);
     return this.get(`/api/doctors/${doctorId}/available-slots${queryString}`);
   }
 
@@ -176,6 +180,10 @@ class ApiClientService extends BaseService {
 
   async cancelAppointment(id: string, reason?: string) {
     return this.post(`/api/appointments/${id}/cancel`, { reason });
+  }
+
+  async bulkCancelTodayAppointments(reason?: string): Promise<import("@/lib/types").BulkCancelResponse> {
+    return this.post<import("@/lib/types").BulkCancelResponse>(`/api/appointments/bulk-cancel-today`, { reason });
   }
 
   async exportAppointmentToICS(id: string): Promise<Blob> {
